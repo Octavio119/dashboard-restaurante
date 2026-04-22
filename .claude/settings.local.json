@@ -5,6 +5,9 @@
       "Bash(bun --version)",
       "Bash(node -e ' *)",
       "Bash(powershell *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Master\\OneDrive\\Desktop\\Dashboard restaurante\\.git"
     ]
   }
 }
