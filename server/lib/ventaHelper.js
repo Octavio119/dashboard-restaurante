@@ -1,3 +1,5 @@
+const { toDate } = require('./dateUtils');
+
 /**
  * Genera ticket_id y crea la venta con reintentos automáticos ante colisión.
  * Necesario porque dos requests concurrentes pueden leer el mismo MAX antes
@@ -6,10 +8,14 @@
 async function createVentaConTicket(prisma, ventaData, cfg, fecha, rid, maxRetries = 8) {
   const prefijo = cfg.prefijo_ticket || 'TKT';
   const dateStr = fecha.replace(/-/g, '');
+  const fechaDate = toDate(fecha);
+
+  const ventaDataClean = { ...ventaData, fecha: fechaDate };
+  delete ventaDataClean.items; // items ya no viven en Venta
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const last = await prisma.venta.findFirst({
-      where:   { fecha, restaurante_id: rid },
+      where:   { fecha: fechaDate, restaurante_id: rid },
       orderBy: { id: 'desc' },
       select:  { ticket_id: true },
     });
@@ -23,14 +29,9 @@ async function createVentaConTicket(prisma, ventaData, cfg, fecha, rid, maxRetri
     const ticket_id = `${prefijo}-${dateStr}-${String(nextSeq).padStart(6, '0')}`;
 
     try {
-      return await prisma.venta.create({ data: { ...ventaData, ticket_id } });
+      return await prisma.venta.create({ data: { ...ventaDataClean, ticket_id } });
     } catch (e) {
-      // Retry on ANY unique constraint violation (ticket_id race condition).
-      // Prisma v5 puts the constraint name in meta.target, not the field name,
-      // so checking the code alone is the safest approach.
-      if (e.code === 'P2002' && attempt < maxRetries - 1) {
-        continue;
-      }
+      if (e.code === 'P2002' && attempt < maxRetries - 1) continue;
       throw e;
     }
   }

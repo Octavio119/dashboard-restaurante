@@ -3,6 +3,7 @@ const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
 const verifyAdminCode = require('../middleware/verifyAdminCode');
 const { createVentaConTicket } = require('../lib/ventaHelper');
+const { toDate, fromFilter }   = require('../lib/dateUtils');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -10,6 +11,17 @@ router.use(require('../middleware/requireTenant'));
 const RID = (req) => req.user.restaurante_id;
 const VALID_METODOS = ['efectivo', 'tarjeta', 'transferencia', 'qr'];
 
+function formatVenta(v) {
+  return {
+    ...v,
+    items: (v.venta_items || []).map(i => ({
+      nombre:          i.nombre,
+      qty:             i.qty,
+      precio_unitario: i.precio_unitario,
+      producto_id:     i.producto_id,
+    })),
+  };
+}
 
 // POST /api/ventas
 router.post('/', async (req, res) => {
@@ -32,7 +44,6 @@ router.post('/', async (req, res) => {
     const taxAmount    = impActivo ? parseFloat((subtotalCalc * taxRate / 100).toFixed(2)) : 0;
     const totalCalc    = parseFloat((subtotalCalc + taxAmount).toFixed(2));
 
-    // Verificar y descontar stock
     const itemsConProducto = (items || []).filter(i => i.producto_id);
     if (itemsConProducto.length > 0 && !skipStock) {
       for (const item of itemsConProducto) {
@@ -47,37 +58,50 @@ router.post('/', async (req, res) => {
 
     const venta = await createVentaConTicket(
       req.prisma,
-      { items: JSON.stringify(items), subtotal: subtotalCalc, total: totalCalc, metodo_pago, cajero: req.user.nombre, fecha: fechaVenta, restaurante_id: rid },
+      { subtotal: subtotalCalc, total: totalCalc, metodo_pago, cajero: req.user.nombre, restaurante_id: rid },
       cfg, fechaVenta, rid,
     );
 
-    if (itemsConProducto.length > 0 && !skipStock) {
-      await req.prisma.$transaction(
-        itemsConProducto.flatMap(item => [
+    // Crear VentaItems y descontar stock en una transacción
+    const ventaItemsData = items.map(i => ({
+      venta_id:        venta.id,
+      nombre:          i.nombre || '',
+      qty:             i.qty || 1,
+      precio_unitario: i.precio_unitario || i.precio_unit || 0,
+      producto_id:     i.producto_id || null,
+      restaurante_id:  rid,
+    }));
+
+    const stockOps = itemsConProducto.length > 0 && !skipStock
+      ? itemsConProducto.flatMap(item => [
           req.prisma.producto.update({ where: { id: item.producto_id }, data: { stock: { decrement: item.qty } } }),
           req.prisma.inventarioMovimiento.create({
             data: { producto_id: item.producto_id, usuario_id: req.user.id, tipo: 'salida', cantidad: item.qty, motivo: `Venta: ${venta.ticket_id}`, restaurante_id: rid },
           }),
         ])
-      );
-    }
+      : [];
+
+    await req.prisma.$transaction([
+      req.prisma.ventaItem.createMany({ data: ventaItemsData }),
+      ...stockOps,
+    ]);
 
     res.status(201).json({
-      ticket_id:      venta.ticket_id,
-      fecha:          venta.fecha,
-      hora:           new Date(venta.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-      restaurante:    cfg.nombre    || 'Mi Restaurante',
-      rut:            cfg.rut       || '',
-      direccion:      cfg.direccion || '',
-      logo_url:       cfg.logo_url  || '',
-      items:          JSON.parse(venta.items),
-      subtotal:       venta.subtotal,
-      tax_rate:       taxRate,
-      tax_amount:     taxAmount,
+      ticket_id:       venta.ticket_id,
+      fecha:           venta.fecha,
+      hora:            new Date(venta.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+      restaurante:     cfg.nombre    || 'Mi Restaurante',
+      rut:             cfg.rut       || '',
+      direccion:       cfg.direccion || '',
+      logo_url:        cfg.logo_url  || '',
+      items,
+      subtotal:        venta.subtotal,
+      tax_rate:        taxRate,
+      tax_amount:      taxAmount,
       impuesto_activo: impActivo,
-      total:          venta.total,
-      metodo_pago:    venta.metodo_pago,
-      cajero:         venta.cajero,
+      total:           venta.total,
+      metodo_pago:     venta.metodo_pago,
+      cajero:          venta.cajero,
     });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Error al registrar venta' }); }
 });
@@ -87,10 +111,11 @@ router.get('/', async (req, res) => {
   try {
     const fecha  = req.query.fecha || new Date().toISOString().split('T')[0];
     const ventas = await req.prisma.venta.findMany({
-      where: { fecha, restaurante_id: RID(req) },
+      where:   { fecha: toDate(fecha), restaurante_id: RID(req) },
+      include: { venta_items: true },
       orderBy: { id: 'desc' },
     });
-    res.json(ventas.map(v => ({ ...v, items: JSON.parse(v.items) })));
+    res.json(ventas.map(formatVenta));
   } catch (err) { res.status(500).json({ error: 'Error al obtener ventas' }); }
 });
 
@@ -102,8 +127,8 @@ router.get('/analytics', async (req, res) => {
     const ayer = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
     const [ventasHoy, ventasAyer] = await Promise.all([
-      req.prisma.venta.findMany({ where: { fecha: hoy,  restaurante_id: rid } }),
-      req.prisma.venta.findMany({ where: { fecha: ayer, restaurante_id: rid } }),
+      req.prisma.venta.findMany({ where: { fecha: toDate(hoy),  restaurante_id: rid } }),
+      req.prisma.venta.findMany({ where: { fecha: toDate(ayer), restaurante_id: rid } }),
     ]);
 
     const totalHoy  = ventasHoy.reduce((a, v) => a + v.total, 0);
@@ -118,12 +143,16 @@ router.get('/analytics', async (req, res) => {
     const ventas_por_hora = Object.entries(horaMap).map(([hour, orders]) => ({ hour, orders })).sort((a, b) => a.hour.localeCompare(b.hour));
 
     const fecha30 = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-    const ventasRecientes = await req.prisma.venta.findMany({ where: { fecha: { gte: fecha30 }, restaurante_id: rid }, select: { items: true } });
+    const ventaItems30 = await req.prisma.ventaItem.findMany({
+      where: {
+        restaurante_id: rid,
+        venta: { fecha: fromFilter(fecha30) },
+      },
+    });
 
     const prodMap = {};
-    for (const v of ventasRecientes) {
-      let its; try { its = JSON.parse(v.items); } catch { continue; }
-      for (const item of its) { if (item.nombre) prodMap[item.nombre] = (prodMap[item.nombre] || 0) + (item.qty || 1); }
+    for (const item of ventaItems30) {
+      if (item.nombre) prodMap[item.nombre] = (prodMap[item.nombre] || 0) + item.qty;
     }
     const top_productos = Object.entries(prodMap).map(([name, sales]) => ({ name, sales })).sort((a, b) => b.sales - a.sales).slice(0, 5);
 
@@ -148,7 +177,11 @@ router.get('/resumen', async (req, res) => {
     else if (periodo === 'semana') { const d = new Date(hoy); d.setDate(d.getDate() - 7); fechaDesde = d.toISOString().split('T')[0]; }
     else { const d = new Date(hoy); d.setDate(d.getDate() - 30); fechaDesde = d.toISOString().split('T')[0]; }
 
-    const ventas = await req.prisma.venta.findMany({ where: { fecha: { gte: fechaDesde }, restaurante_id: rid } });
+    const where = periodo === 'dia'
+      ? { fecha: toDate(fechaDesde), restaurante_id: rid }
+      : { fecha: fromFilter(fechaDesde), restaurante_id: rid };
+
+    const ventas = await req.prisma.venta.findMany({ where });
     const totalMonto = ventas.reduce((acc, v) => acc + v.total, 0);
     const por_metodo = ventas.reduce((acc, v) => { acc[v.metodo_pago] = (acc[v.metodo_pago] || 0) + v.total; return acc; }, {});
     res.json({ cantidad: ventas.length, total: parseFloat(totalMonto.toFixed(2)), por_metodo });

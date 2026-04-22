@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const requireAuth = require('../middleware/auth');
+const { toDate } = require('../lib/dateUtils');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -9,9 +10,9 @@ const RID = (req) => req.user.restaurante_id;
 // GET /api/caja/hoy
 router.get('/hoy', async (req, res) => {
   try {
-    const fecha = new Date().toISOString().split('T')[0];
+    const fechaStr = new Date().toISOString().split('T')[0];
     const caja = await req.prisma.caja.findUnique({
-      where: { fecha_restaurante_id: { fecha, restaurante_id: RID(req) } },
+      where: { fecha_restaurante_id: { fecha: toDate(fechaStr), restaurante_id: RID(req) } },
     });
     res.json(caja || null);
   } catch (e) { res.status(500).json({ error: 'Error interno' }); }
@@ -24,16 +25,17 @@ router.post('/abrir', async (req, res) => {
     if (monto_inicial == null || isNaN(monto_inicial) || monto_inicial < 0)
       return res.status(400).json({ error: 'monto_inicial requerido (número >= 0)' });
 
-    const fecha = new Date().toISOString().split('T')[0];
+    const fechaStr = new Date().toISOString().split('T')[0];
     const rid   = RID(req);
+    const fechaDate = toDate(fechaStr);
 
     const existente = await req.prisma.caja.findUnique({
-      where: { fecha_restaurante_id: { fecha, restaurante_id: rid } },
+      where: { fecha_restaurante_id: { fecha: fechaDate, restaurante_id: rid } },
     });
     if (existente) return res.status(409).json({ error: 'Ya existe una caja para hoy', caja: existente });
 
     const caja = await req.prisma.caja.create({
-      data: { fecha, restaurante_id: rid, monto_inicial: parseFloat(monto_inicial), cajero_apertura: req.user.nombre, estado: 'abierta' },
+      data: { fecha: fechaDate, restaurante_id: rid, monto_inicial: parseFloat(monto_inicial), cajero_apertura: req.user.nombre, estado: 'abierta' },
     });
     res.status(201).json(caja);
   } catch (e) { console.error(e); res.status(500).json({ error: 'No se pudo abrir la caja' }); }
@@ -46,16 +48,17 @@ router.post('/cerrar', async (req, res) => {
     if (monto_final == null || isNaN(monto_final) || monto_final < 0)
       return res.status(400).json({ error: 'monto_final requerido (número >= 0)' });
 
-    const fecha = new Date().toISOString().split('T')[0];
+    const fechaStr = new Date().toISOString().split('T')[0];
     const rid   = RID(req);
+    const fechaDate = toDate(fechaStr);
 
     const caja = await req.prisma.caja.findFirst({
-      where: { fecha, restaurante_id: rid, estado: 'abierta' },
+      where: { fecha: fechaDate, restaurante_id: rid, estado: 'abierta' },
     });
     if (!caja) return res.status(404).json({ error: 'No hay caja abierta hoy' });
 
     const ventas = await req.prisma.venta.findMany({
-      where: { fecha, restaurante_id: rid },
+      where: { fecha: fechaDate, restaurante_id: rid },
       select: { total: true, metodo_pago: true },
     });
 
