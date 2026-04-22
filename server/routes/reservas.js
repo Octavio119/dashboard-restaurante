@@ -2,6 +2,7 @@ const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
 const verifyAdminCode = require('../middleware/verifyAdminCode');
+const { toDate, fromFilter }   = require('../lib/dateUtils');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -28,10 +29,10 @@ router.get('/', async (req, res) => {
     const hoy = new Date().toISOString().split('T')[0];
     let where = { restaurante_id: rid };
 
-    if (fecha)               where.fecha = fecha;
-    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = { gte: d.toISOString().split('T')[0] }; }
-    else if (periodo === 'mes')    { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = { gte: d.toISOString().split('T')[0] }; }
-    else                     where.fecha = hoy;
+    if (fecha)               where.fecha = toDate(fecha);
+    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
+    else if (periodo === 'mes')    { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
+    else                     where.fecha = toDate(hoy);
 
     const rows = await req.prisma.reserva.findMany({ where, orderBy: [{ fecha: 'asc' }, { hora: 'asc' }] });
     res.json(rows);
@@ -46,9 +47,9 @@ router.get('/totales', async (req, res) => {
     const hoy = new Date().toISOString().split('T')[0];
     let where = { restaurante_id: rid, estado: { not: 'cancelada' } };
 
-    if (periodo === 'dia')    where.fecha = hoy;
-    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = { gte: d.toISOString().split('T')[0] }; }
-    else                     { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = { gte: d.toISOString().split('T')[0] }; }
+    if (periodo === 'dia')    where.fecha = toDate(hoy);
+    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
+    else                     { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
 
     const total = await req.prisma.reserva.count({ where });
     res.json({ total });
@@ -66,7 +67,7 @@ router.post('/', async (req, res) => {
     const cliente = await buscarOCrearCliente(req.prisma, rid, nombre, email, telefono);
 
     const reserva = await req.prisma.reserva.create({
-      data: { nombre, email: (email || '').trim().toLowerCase(), telefono: (telefono || '').trim(), hora, personas: parseInt(personas), mesa: mesa || '', estado: 'pendiente', fecha, consumo_base: parseFloat(consumo_base), cliente_id: cliente.id, restaurante_id: rid },
+      data: { nombre, email: (email || '').trim().toLowerCase(), telefono: (telefono || '').trim(), hora, personas: parseInt(personas), mesa: mesa || '', estado: 'pendiente', fecha: toDate(fecha), consumo_base: parseFloat(consumo_base), cliente_id: cliente.id, restaurante_id: rid },
     });
     res.status(201).json(reserva);
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }

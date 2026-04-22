@@ -5,6 +5,7 @@ const verifyAdminCode = require('../middleware/verifyAdminCode');
 const { getIO }       = require('../lib/socket');
 const { sendStockAlert } = require('../lib/mailer');
 const { createVentaConTicket } = require('../lib/ventaHelper');
+const { toDate, fromFilter }   = require('../lib/dateUtils');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -31,10 +32,10 @@ router.get('/', async (req, res) => {
     const hoy = new Date().toISOString().split('T')[0];
     let where = { restaurante_id: rid };
 
-    if (fecha)               where.fecha = fecha;
-    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = { gte: d.toISOString().split('T')[0] }; }
-    else if (periodo === 'mes')    { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = { gte: d.toISOString().split('T')[0] }; }
-    else                     where.fecha = hoy;
+    if (fecha)               where.fecha = toDate(fecha);
+    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
+    else if (periodo === 'mes')    { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
+    else                     where.fecha = toDate(hoy);
 
     const rows = await req.prisma.pedido.findMany({ where, include: { pedido_items: { orderBy: { id: 'asc' } } }, orderBy: { id: 'desc' } });
     res.json(rows.map(p => ({ ...p, items: p.pedido_items })));
@@ -49,9 +50,9 @@ router.get('/ventas', async (req, res) => {
     let where = { restaurante_id: rid, estado: { not: 'cancelado' } };
     const hoy = new Date().toISOString().split('T')[0];
 
-    if (periodo === 'dia')    where.fecha = hoy;
-    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = { gte: d.toISOString().split('T')[0] }; }
-    else                     { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = { gte: d.toISOString().split('T')[0] }; }
+    if (periodo === 'dia')    where.fecha = toDate(hoy);
+    else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
+    else                     { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
 
     const agg = await req.prisma.pedido.aggregate({ where, _sum: { total: true } });
     res.json({ total: agg._sum.total ?? 0 });
@@ -84,7 +85,8 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), async (req, re
 
     const rid = RID(req);
     const numero = await getNextNumero(req.prisma, rid);
-    const fechaHoy = fecha || new Date().toISOString().split('T')[0];
+    const fechaStr = fecha || new Date().toISOString().split('T')[0];
+    const fechaHoy = toDate(fechaStr);
 
     // Si vienen items del POS, calcular total desde ellos
     if (Array.isArray(items) && items.length > 0) {
@@ -288,16 +290,19 @@ router.patch('/:id/estado', async (req, res) => {
     if (estado === 'confirmado') {
       if (pedido.estado === 'confirmado') return res.json({ ok: true });
 
-      const ventaExistente = await req.prisma.venta.findFirst({ where: { pedido_id: pedidoId } });
+      const ventaExistente = await req.prisma.venta.findFirst({
+        where:   { pedido_id: pedidoId },
+        include: { venta_items: true },
+      });
       if (ventaExistente) {
         await req.prisma.pedido.update({ where: { id: pedidoId }, data: { estado } });
-        return res.json({ ok: true, venta: { ...ventaExistente, items: JSON.parse(ventaExistente.items) } });
+        return res.json({ ok: true, venta: { ...ventaExistente, items: ventaExistente.venta_items } });
       }
 
       const cfg = await req.prisma.configNegocio.findUnique({ where: { restaurante_id: rid } }) || {};
       const taxRate   = cfg.tax_rate ?? 19;
       const impActivo = cfg.impuesto_activo != null ? Boolean(cfg.impuesto_activo) : true;
-      const fechaVenta = new Date().toISOString().split('T')[0];
+      const fechaVenta = new Date().toISOString().split('T')[0]; // string for ventaHelper
 
       const dbItems = await req.prisma.pedidoItem.findMany({ where: { pedido_id: pedidoId } });
       let ventaItems;
@@ -317,19 +322,32 @@ router.patch('/:id/estado', async (req, res) => {
       try {
         venta = await createVentaConTicket(
           req.prisma,
-          { items: JSON.stringify(ventaItems), subtotal: subtotalCalc, total: totalCalc, metodo_pago: metodo, cajero: req.user.nombre, fecha: fechaVenta, restaurante_id: rid, pedido_id: pedidoId },
+          { subtotal: subtotalCalc, total: totalCalc, metodo_pago: metodo, cajero: req.user.nombre, restaurante_id: rid, pedido_id: pedidoId },
           cfg, fechaVenta, rid,
         );
+        await req.prisma.ventaItem.createMany({
+          data: ventaItems.map(i => ({
+            venta_id:        venta.id,
+            nombre:          i.nombre || '',
+            qty:             i.qty || 1,
+            precio_unitario: i.precio_unit || i.precio_unitario || 0,
+            producto_id:     i.producto_id || null,
+            restaurante_id:  rid,
+          })),
+        });
       } catch (e) {
         if (e.code === 'P2002') {
-          // Concurrent request already created the venta — fetch and return it
-          venta = await req.prisma.venta.findFirst({ where: { pedido_id: pedidoId } });
+          venta = await req.prisma.venta.findFirst({
+            where:   { pedido_id: pedidoId },
+            include: { venta_items: true },
+          });
           if (!venta) throw e;
         } else { throw e; }
       }
+      const ventaItems2 = venta.venta_items || await req.prisma.ventaItem.findMany({ where: { venta_id: venta.id } });
       await req.prisma.pedido.update({ where: { id: pedidoId }, data: { estado, metodo_pago: metodo } });
       getIO()?.to(`rest_${rid}`).emit('pedido:estado', { id: pedidoId, numero: pedido.numero, estado, cliente_nombre: pedido.cliente_nombre, mesa: pedido.mesa });
-      return res.json({ ok: true, venta: { ...venta, items: JSON.parse(venta.items) } });
+      return res.json({ ok: true, venta: { ...venta, items: ventaItems2 } });
     }
 
     await req.prisma.pedido.update({ where: { id: pedidoId }, data: { estado } });

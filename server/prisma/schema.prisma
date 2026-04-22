@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  output   = "C:/prisma-gen"
 }
 
 datasource db {
@@ -16,18 +16,19 @@ model Restaurante {
   activo     Boolean  @default(true)
   created_at DateTime @default(now())
 
-  usuarios              Usuario[]
-  clientes              Cliente[]
-  productos             Producto[]
-  categorias            Categoria[]
-  pedidos               Pedido[]
-  pedido_items          PedidoItem[]
-  reservas              Reserva[]
-  reserva_consumos      ReservaConsumo[]
-  ventas                Venta[]
-  cajas                 Caja[]
-  config_negocio        ConfigNegocio?
-  proveedores           Proveedor[]
+  usuarios               Usuario[]
+  clientes               Cliente[]
+  productos              Producto[]
+  categorias             Categoria[]
+  pedidos                Pedido[]
+  pedido_items           PedidoItem[]
+  reservas               Reserva[]
+  reserva_consumos       ReservaConsumo[]
+  ventas                 Venta[]
+  venta_items            VentaItem[]
+  cajas                  Caja[]
+  config_negocio         ConfigNegocio?
+  proveedores            Proveedor[]
   inventario_movimientos InventarioMovimiento[]
 }
 
@@ -45,6 +46,7 @@ model Usuario {
   inventario_movimientos InventarioMovimiento[]
 
   @@unique([email, restaurante_id])
+  @@index([restaurante_id])
 }
 
 model Cliente {
@@ -63,6 +65,8 @@ model Cliente {
 
   restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
   reservas    Reserva[]
+
+  @@index([restaurante_id])
 }
 
 model Categoria {
@@ -73,6 +77,7 @@ model Categoria {
   restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
 
   @@unique([nombre, restaurante_id])
+  @@index([restaurante_id])
 }
 
 model Producto {
@@ -90,6 +95,8 @@ model Producto {
   inventario_movimientos InventarioMovimiento[]
   reserva_consumos       ReservaConsumo[]
   pedido_items           PedidoItem[]
+
+  @@index([restaurante_id])
 }
 
 model Pedido {
@@ -102,7 +109,7 @@ model Pedido {
   metodo_pago    String   @default("efectivo")
   mesa           String   @default("")
   personas       Int      @default(0)
-  fecha          String
+  fecha          DateTime
   reserva_id     Int?
   restaurante_id Int      @default(1)
   created_at     DateTime @default(now())
@@ -110,6 +117,10 @@ model Pedido {
   restaurante  Restaurante  @relation(fields: [restaurante_id], references: [id])
   pedido_items PedidoItem[]
   venta        Venta?
+
+  @@index([restaurante_id])
+  @@index([restaurante_id, fecha])
+  @@index([restaurante_id, estado])
 }
 
 model PedidoItem {
@@ -125,6 +136,9 @@ model PedidoItem {
   pedido      Pedido      @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
   producto    Producto?   @relation(fields: [producto_id], references: [id])
   restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+
+  @@index([pedido_id])
+  @@index([restaurante_id])
 }
 
 model Reserva {
@@ -136,7 +150,7 @@ model Reserva {
   personas       Int
   mesa           String   @default("")
   estado         String   @default("pendiente")
-  fecha          String
+  fecha          DateTime
   consumo_base   Float    @default(0)
   cliente_id     Int?
   restaurante_id Int      @default(1)
@@ -145,6 +159,10 @@ model Reserva {
   restaurante      Restaurante      @relation(fields: [restaurante_id], references: [id])
   cliente          Cliente?         @relation(fields: [cliente_id], references: [id])
   reserva_consumos ReservaConsumo[]
+
+  @@index([restaurante_id])
+  @@index([restaurante_id, fecha])
+  @@index([restaurante_id, estado])
 }
 
 model ReservaConsumo {
@@ -160,43 +178,67 @@ model ReservaConsumo {
   reserva     Reserva     @relation(fields: [reserva_id], references: [id], onDelete: Cascade)
   producto    Producto?   @relation(fields: [producto_id], references: [id])
   restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+
+  @@index([reserva_id])
+  @@index([restaurante_id])
 }
 
 model Venta {
   id             Int      @id @default(autoincrement())
   ticket_id      String   @unique
-  items          String
   subtotal       Float
   total          Float
   metodo_pago    String
   cajero         String
-  fecha          String
+  fecha          DateTime
   restaurante_id Int      @default(1)
   pedido_id      Int?     @unique
   created_at     DateTime @default(now())
 
   restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
   pedido      Pedido?     @relation(fields: [pedido_id], references: [id])
+  venta_items VentaItem[]
+
+  @@index([restaurante_id])
+  @@index([restaurante_id, fecha])
+}
+
+model VentaItem {
+  id              Int      @id @default(autoincrement())
+  venta_id        Int
+  producto_id     Int?
+  nombre          String
+  qty             Int      @default(1)
+  precio_unitario Float    @default(0)
+  restaurante_id  Int      @default(1)
+  created_at      DateTime @default(now())
+
+  venta       Venta       @relation(fields: [venta_id], references: [id], onDelete: Cascade)
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+
+  @@index([venta_id])
+  @@index([restaurante_id])
 }
 
 model Caja {
-  id               Int      @id @default(autoincrement())
-  fecha            String
-  restaurante_id   Int      @default(1)
-  monto_inicial    Float    @default(0)
+  id               Int       @id @default(autoincrement())
+  fecha            DateTime
+  restaurante_id   Int       @default(1)
+  monto_inicial    Float     @default(0)
   total_ventas     Float?
   total_efectivo   Float?
   monto_final      Float?
   diferencia       Float?
-  cajero_apertura  String   @default("")
+  cajero_apertura  String    @default("")
   cajero_cierre    String?
-  estado           String   @default("abierta")
-  created_at       DateTime @default(now())
+  estado           String    @default("abierta")
+  created_at       DateTime  @default(now())
   closed_at        DateTime?
 
   restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
 
   @@unique([fecha, restaurante_id])
+  @@index([restaurante_id])
 }
 
 model ConfigNegocio {
@@ -234,6 +276,8 @@ model Proveedor {
 
   restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id])
   inventario_movimientos InventarioMovimiento[]
+
+  @@index([restaurante_id])
 }
 
 model InventarioMovimiento {
@@ -252,6 +296,9 @@ model InventarioMovimiento {
   usuario     Usuario     @relation(fields: [usuario_id], references: [id])
   proveedor   Proveedor?  @relation(fields: [proveedor_id], references: [id])
   restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+
+  @@index([restaurante_id])
+  @@index([producto_id])
 }
 
 model Metadata {
