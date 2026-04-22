@@ -1,0 +1,37 @@
+{
+  "name": "dashboard-restaurante-server",
+  "version": "1.0.0",
+  "description": "Backend API para Dashboard Restaurante",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "@sqlite.org/sqlite-wasm": "^3.51.2-build8",
+    "@supabase/supabase-js": "^2.104.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.3.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "node-sqlite3-wasm": "^0.8.5",
+    "nodemailer": "^8.0.5",
+    "prisma": "^5.22.0",
+    "redis": "^5.12.1",
+    "socket.io": "^4.8.3",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.2.2"
+  }
+}

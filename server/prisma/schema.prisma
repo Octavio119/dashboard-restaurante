@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurante {
+  id         Int      @id @default(autoincrement())
+  nombre     String
+  slug       String   @unique
+  plan       String   @default("free")
+  activo     Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  usuarios              Usuario[]
+  clientes              Cliente[]
+  productos             Producto[]
+  categorias            Categoria[]
+  pedidos               Pedido[]
+  pedido_items          PedidoItem[]
+  reservas              Reserva[]
+  reserva_consumos      ReservaConsumo[]
+  ventas                Venta[]
+  cajas                 Caja[]
+  config_negocio        ConfigNegocio?
+  proveedores           Proveedor[]
+  inventario_movimientos InventarioMovimiento[]
+}
+
+model Usuario {
+  id             Int         @id @default(autoincrement())
+  nombre         String
+  email          String
+  password_hash  String
+  rol            String      @default("staff")
+  activo         Boolean     @default(true)
+  restaurante_id Int         @default(1)
+  created_at     DateTime    @default(now())
+
+  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id])
+  inventario_movimientos InventarioMovimiento[]
+
+  @@unique([email, restaurante_id])
+}
+
+model Cliente {
+  id             Int      @id @default(autoincrement())
+  nombre         String
+  email          String   @default("")
+  telefono       String   @default("")
+  rut            String   @default("")
+  tipo_cliente   String   @default("persona")
+  razon_social   String   @default("")
+  visitas        Int      @default(0)
+  total_gastado  Float    @default(0)
+  estado         String   @default("Nuevo")
+  restaurante_id Int      @default(1)
+  created_at     DateTime @default(now())
+
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  reservas    Reserva[]
+}
+
+model Categoria {
+  id             Int    @id @default(autoincrement())
+  nombre         String
+  restaurante_id Int    @default(1)
+
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+
+  @@unique([nombre, restaurante_id])
+}
+
+model Producto {
+  id             Int     @id @default(autoincrement())
+  nombre         String
+  categoria      String
+  precio         Float
+  stock          Int     @default(0)
+  stock_minimo   Int     @default(10)
+  unidad         String  @default("unidades")
+  activo         Boolean @default(true)
+  restaurante_id Int     @default(1)
+
+  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id])
+  inventario_movimientos InventarioMovimiento[]
+  reserva_consumos       ReservaConsumo[]
+  pedido_items           PedidoItem[]
+}
+
+model Pedido {
+  id             Int      @id @default(autoincrement())
+  numero         String   @unique
+  cliente_nombre String
+  item           String
+  total          Float
+  estado         String   @default("pendiente")
+  metodo_pago    String   @default("efectivo")
+  mesa           String   @default("")
+  personas       Int      @default(0)
+  fecha          String
+  reserva_id     Int?
+  restaurante_id Int      @default(1)
+  created_at     DateTime @default(now())
+
+  restaurante  Restaurante  @relation(fields: [restaurante_id], references: [id])
+  pedido_items PedidoItem[]
+  venta        Venta?
+}
+
+model PedidoItem {
+  id              Int      @id @default(autoincrement())
+  pedido_id       Int
+  producto_id     Int?
+  nombre          String
+  cantidad        Int      @default(1)
+  precio_unitario Float    @default(0)
+  restaurante_id  Int      @default(1)
+  created_at      DateTime @default(now())
+
+  pedido      Pedido      @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  producto    Producto?   @relation(fields: [producto_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+}
+
+model Reserva {
+  id             Int      @id @default(autoincrement())
+  nombre         String
+  email          String   @default("")
+  telefono       String   @default("")
+  hora           String
+  personas       Int
+  mesa           String   @default("")
+  estado         String   @default("pendiente")
+  fecha          String
+  consumo_base   Float    @default(0)
+  cliente_id     Int?
+  restaurante_id Int      @default(1)
+  created_at     DateTime @default(now())
+
+  restaurante      Restaurante      @relation(fields: [restaurante_id], references: [id])
+  cliente          Cliente?         @relation(fields: [cliente_id], references: [id])
+  reserva_consumos ReservaConsumo[]
+}
+
+model ReservaConsumo {
+  id              Int      @id @default(autoincrement())
+  reserva_id      Int
+  producto_id     Int?
+  nombre          String
+  cantidad        Int      @default(1)
+  precio_unitario Float    @default(0)
+  restaurante_id  Int      @default(1)
+  created_at      DateTime @default(now())
+
+  reserva     Reserva     @relation(fields: [reserva_id], references: [id], onDelete: Cascade)
+  producto    Producto?   @relation(fields: [producto_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+}
+
+model Venta {
+  id             Int      @id @default(autoincrement())
+  ticket_id      String   @unique
+  items          String
+  subtotal       Float
+  total          Float
+  metodo_pago    String
+  cajero         String
+  fecha          String
+  restaurante_id Int      @default(1)
+  pedido_id      Int?     @unique
+  created_at     DateTime @default(now())
+
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  pedido      Pedido?     @relation(fields: [pedido_id], references: [id])
+}
+
+model Caja {
+  id               Int      @id @default(autoincrement())
+  fecha            String
+  restaurante_id   Int      @default(1)
+  monto_inicial    Float    @default(0)
+  total_ventas     Float?
+  total_efectivo   Float?
+  monto_final      Float?
+  diferencia       Float?
+  cajero_apertura  String   @default("")
+  cajero_cierre    String?
+  estado           String   @default("abierta")
+  created_at       DateTime @default(now())
+  closed_at        DateTime?
+
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+
+  @@unique([fecha, restaurante_id])
+}
+
+model ConfigNegocio {
+  id              Int      @id @default(autoincrement())
+  restaurante_id  Int      @unique @default(1)
+  nombre          String   @default("Mi Restaurante")
+  rut             String   @default("")
+  direccion       String   @default("")
+  currency        String   @default("$")
+  currency_code   String   @default("CLP")
+  open_time       String   @default("11:00")
+  close_time      String   @default("23:30")
+  tax_rate        Float    @default(19)
+  payment_methods String   @default("{\"cash\":true,\"card\":true,\"transfer\":true,\"qr\":false}")
+  timezone        String   @default("America/Santiago")
+  idioma          String   @default("es")
+  formato_fecha   String   @default("DD/MM/YYYY")
+  prefijo_ticket  String   @default("TKT")
+  numero_inicial  Int      @default(1)
+  impuesto_activo Boolean  @default(true)
+  logo_url        String   @default("")
+  updated_at      DateTime @updatedAt
+
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+}
+
+model Proveedor {
+  id             Int      @id @default(autoincrement())
+  nombre         String
+  contacto       String?
+  telefono       String?
+  email          String?
+  restaurante_id Int      @default(1)
+  created_at     DateTime @default(now())
+
+  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id])
+  inventario_movimientos InventarioMovimiento[]
+}
+
+model InventarioMovimiento {
+  id             Int      @id @default(autoincrement())
+  producto_id    Int
+  usuario_id     Int
+  tipo           String
+  cantidad       Int
+  motivo         String?
+  proveedor_id   Int?
+  restaurante_id Int      @default(1)
+  stock_anterior Int?
+  fecha          DateTime @default(now())
+
+  producto    Producto    @relation(fields: [producto_id], references: [id])
+  usuario     Usuario     @relation(fields: [usuario_id], references: [id])
+  proveedor   Proveedor?  @relation(fields: [proveedor_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+}
+
+model Metadata {
+  key   String @id
+  value String
+}

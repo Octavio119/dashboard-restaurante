@@ -1,0 +1,13 @@
+node_modules
+server/node_modules
+dist
+coverage
+server/coverage
+playwright-report
+.git
+.gitignore
+*.log
+server/.env
+.env*
+!.env.example
+server/uploads

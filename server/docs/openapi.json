@@ -1,0 +1,934 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Dashboard Restaurante API",
+    "version": "1.0.0",
+    "description": "API REST para gestión de pedidos, reservas, ventas, inventario y clientes de restaurante.",
+    "contact": { "email": "soporte@mirestaurante.com" }
+  },
+  "servers": [
+    { "url": "http://localhost:9000/api", "description": "Desarrollo local" },
+    { "url": "https://tu-dominio.com/api", "description": "Producción" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" } }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email":    { "type": "string", "example": "admin@mirestaurante.com" },
+          "password": { "type": "string", "example": "admin123" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token":        { "type": "string" },
+          "refreshToken": { "type": "string" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id":             { "type": "integer" },
+              "nombre":         { "type": "string" },
+              "email":          { "type": "string" },
+              "rol":            { "type": "string", "enum": ["admin","gerente","mozo"] },
+              "restaurante_id": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "Pedido": {
+        "type": "object",
+        "properties": {
+          "id":             { "type": "integer" },
+          "numero":         { "type": "string", "example": "P-001" },
+          "item":           { "type": "string" },
+          "mesa":           { "type": "string" },
+          "estado":         { "type": "string", "enum": ["pendiente","en preparación","listo","confirmado","entregado","cancelado"] },
+          "total":          { "type": "number" },
+          "metodo_pago":    { "type": "string", "enum": ["efectivo","tarjeta","transferencia","qr"] },
+          "cliente_nombre": { "type": "string" },
+          "fecha":          { "type": "string", "format": "date" },
+          "items":          { "type": "array", "items": { "$ref": "#/components/schemas/PedidoItem" } }
+        }
+      },
+      "PedidoItem": {
+        "type": "object",
+        "properties": {
+          "id":             { "type": "integer" },
+          "nombre":         { "type": "string" },
+          "cantidad":       { "type": "integer" },
+          "precio_unitario":{ "type": "number" },
+          "producto_id":    { "type": "integer", "nullable": true }
+        }
+      },
+      "Reserva": {
+        "type": "object",
+        "properties": {
+          "id":         { "type": "integer" },
+          "nombre":     { "type": "string" },
+          "email":      { "type": "string" },
+          "telefono":   { "type": "string" },
+          "fecha":      { "type": "string", "format": "date" },
+          "hora":       { "type": "string", "example": "20:00" },
+          "personas":   { "type": "integer" },
+          "mesa":       { "type": "string" },
+          "estado":     { "type": "string", "enum": ["pendiente","confirmada","asistió","cancelada","no asistió"] },
+          "notas":      { "type": "string" }
+        }
+      },
+      "Producto": {
+        "type": "object",
+        "properties": {
+          "id":           { "type": "integer" },
+          "nombre":       { "type": "string" },
+          "precio":       { "type": "number" },
+          "stock":        { "type": "integer" },
+          "categoria_id": { "type": "integer" },
+          "activo":       { "type": "boolean" }
+        }
+      },
+      "Venta": {
+        "type": "object",
+        "properties": {
+          "ticket_id":  { "type": "string", "example": "TKT-20260420-000001" },
+          "fecha":      { "type": "string", "format": "date" },
+          "total":      { "type": "number" },
+          "subtotal":   { "type": "number" },
+          "tax_rate":   { "type": "number" },
+          "tax_amount": { "type": "number" },
+          "metodo_pago":{ "type": "string" },
+          "cajero":     { "type": "string" },
+          "items":      { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "Cliente": {
+        "type": "object",
+        "properties": {
+          "id":           { "type": "integer" },
+          "nombre":       { "type": "string" },
+          "email":        { "type": "string" },
+          "telefono":     { "type": "string" },
+          "rut":          { "type": "string" },
+          "tipo_cliente": { "type": "string", "enum": ["persona","empresa"] },
+          "estado":       { "type": "string", "enum": ["Nuevo","Regular","VIP"] },
+          "visitas":      { "type": "integer" }
+        }
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "id":             { "type": "integer" },
+          "nombre":         { "type": "string" },
+          "email":          { "type": "string" },
+          "rol":            { "type": "string", "enum": ["admin","gerente","staff","chef","mozo"] },
+          "activo":         { "type": "boolean" },
+          "restaurante_id": { "type": "integer" },
+          "created_at":     { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Iniciar sesión",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Login exitoso", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } } },
+          "400": { "description": "Campos requeridos faltantes" },
+          "401": { "description": "Credenciales inválidas" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Renovar access token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "refreshToken": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Token renovado", "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" } } } } } },
+          "401": { "description": "Refresh token inválido o expirado" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Cerrar sesión",
+        "responses": {
+          "200": { "description": "Sesión cerrada" }
+        }
+      }
+    },
+    "/pedidos": {
+      "get": {
+        "tags": ["Pedidos"],
+        "summary": "Listar pedidos",
+        "parameters": [
+          { "name": "fecha", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "Filtrar por fecha (YYYY-MM-DD)" },
+          { "name": "estado", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Lista de pedidos", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Pedido" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Pedidos"],
+        "summary": "Crear pedido",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["item", "total"],
+                "properties": {
+                  "item":           { "type": "string" },
+                  "mesa":           { "type": "string" },
+                  "total":          { "type": "number" },
+                  "cliente_nombre": { "type": "string" },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "nombre":          { "type": "string" },
+                        "cantidad":        { "type": "integer" },
+                        "precio_unitario": { "type": "number" },
+                        "producto_id":     { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Pedido creado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pedido" } } } }
+        }
+      }
+    },
+    "/pedidos/{id}": {
+      "get": {
+        "tags": ["Pedidos"],
+        "summary": "Obtener pedido por ID",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Pedido encontrado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pedido" } } } },
+          "404": { "description": "Pedido no encontrado" }
+        }
+      },
+      "delete": {
+        "tags": ["Pedidos"],
+        "summary": "Eliminar pedido (admin)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "admin_code": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Pedido eliminado" },
+          "403": { "description": "Sin permisos" }
+        }
+      }
+    },
+    "/pedidos/{id}/estado": {
+      "patch": {
+        "tags": ["Pedidos"],
+        "summary": "Cambiar estado del pedido",
+        "description": "Al pasar a `confirmado` se genera una venta automáticamente.",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["estado"],
+                "properties": {
+                  "estado":      { "type": "string", "enum": ["pendiente","en preparación","listo","confirmado","entregado","cancelado"] },
+                  "metodo_pago": { "type": "string", "enum": ["efectivo","tarjeta","transferencia","qr"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Estado actualizado. Si estado=confirmado incluye `venta` en la respuesta." }
+        }
+      }
+    },
+    "/pedidos/por-mesa": {
+      "get": {
+        "tags": ["Pedidos"],
+        "summary": "Pedidos activos agrupados por mesa",
+        "responses": {
+          "200": { "description": "Array de mesas con sus pedidos activos" }
+        }
+      }
+    },
+    "/pedidos/{id}/items": {
+      "post": {
+        "tags": ["Pedidos"],
+        "summary": "Agregar ítem al pedido",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre", "cantidad", "precio_unitario"],
+                "properties": {
+                  "nombre":          { "type": "string" },
+                  "cantidad":        { "type": "integer" },
+                  "precio_unitario": { "type": "number" },
+                  "producto_id":     { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Ítem agregado" }
+        }
+      }
+    },
+    "/pedidos/{id}/items/{itemId}": {
+      "patch": {
+        "tags": ["Pedidos"],
+        "summary": "Actualizar ítem del pedido (cantidad o precio)",
+        "parameters": [
+          { "name": "id",     "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cantidad":        { "type": "integer" },
+                  "precio_unitario": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Ítem actualizado con nuevo total del pedido" }
+        }
+      },
+      "delete": {
+        "tags": ["Pedidos"],
+        "summary": "Eliminar ítem del pedido",
+        "description": "Elimina el ítem y restaura el stock del producto si corresponde.",
+        "parameters": [
+          { "name": "id",     "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Ítem eliminado. Retorna `{ ok: true, nuevoTotal }`" },
+          "404": { "description": "Ítem no encontrado" }
+        }
+      }
+    },
+    "/ventas": {
+      "get": {
+        "tags": ["Ventas"],
+        "summary": "Listar ventas del día",
+        "parameters": [
+          { "name": "fecha", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "Lista de ventas", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Venta" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Ventas"],
+        "summary": "Registrar venta directa",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items", "total", "metodo_pago"],
+                "properties": {
+                  "items":       { "type": "array", "items": { "type": "object" } },
+                  "total":       { "type": "number" },
+                  "metodo_pago": { "type": "string", "enum": ["efectivo","tarjeta","transferencia","qr"] },
+                  "fecha":       { "type": "string", "format": "date" },
+                  "skipStock":   { "type": "boolean", "description": "No descontar stock" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Venta registrada con ticket", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Venta" } } } }
+        }
+      }
+    },
+    "/ventas/analytics": {
+      "get": {
+        "tags": ["Ventas"],
+        "summary": "Analytics del día vs ayer",
+        "responses": {
+          "200": {
+            "description": "Métricas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_hoy":           { "type": "number" },
+                    "total_ayer":          { "type": "number" },
+                    "cantidad_hoy":        { "type": "integer" },
+                    "comparacion_pct":     { "type": "number", "nullable": true },
+                    "ventas_por_hora":     { "type": "array", "items": { "type": "object" } },
+                    "top_productos":       { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ventas/resumen": {
+      "get": {
+        "tags": ["Ventas"],
+        "summary": "Resumen por período",
+        "parameters": [
+          { "name": "periodo", "in": "query", "schema": { "type": "string", "enum": ["dia","semana","mes"] } }
+        ],
+        "responses": {
+          "200": { "description": "Resumen de ventas" }
+        }
+      }
+    },
+    "/ventas/{id}": {
+      "delete": {
+        "tags": ["Ventas"],
+        "summary": "Eliminar venta (admin)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "admin_code": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Venta eliminada" } }
+      }
+    },
+    "/reservas": {
+      "get": {
+        "tags": ["Reservas"],
+        "summary": "Listar reservas",
+        "parameters": [
+          { "name": "fecha", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "desde", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "hasta", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "Lista de reservas", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Reserva" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Reservas"],
+        "summary": "Crear reserva",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre", "fecha", "hora", "personas"],
+                "properties": {
+                  "nombre":   { "type": "string" },
+                  "email":    { "type": "string" },
+                  "telefono": { "type": "string" },
+                  "fecha":    { "type": "string", "format": "date" },
+                  "hora":     { "type": "string", "example": "20:00" },
+                  "personas": { "type": "integer" },
+                  "mesa":     { "type": "string" },
+                  "notas":    { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reserva creada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reserva" } } } }
+        }
+      }
+    },
+    "/reservas/{id}": {
+      "patch": {
+        "tags": ["Reservas"],
+        "summary": "Actualizar datos de una reserva",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/Reserva" } }
+          }
+        },
+        "responses": { "200": { "description": "Reserva actualizada" } }
+      },
+      "delete": {
+        "tags": ["Reservas"],
+        "summary": "Eliminar reserva (admin)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "admin_code": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Reserva eliminada" } }
+      }
+    },
+    "/reservas/{id}/crear-pedido": {
+      "post": {
+        "tags": ["Reservas"],
+        "summary": "Crear pedido desde una reserva",
+        "description": "Genera un pedido vinculado a la reserva con los datos del cliente y mesa.",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "201": { "description": "Pedido creado y vinculado a la reserva", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pedido" } } } },
+          "404": { "description": "Reserva no encontrada" }
+        }
+      }
+    },
+    "/reservas/{id}/consumos": {
+      "get": {
+        "tags": ["Reservas"],
+        "summary": "Listar consumos de la reserva",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Lista de ítems consumidos durante la reserva" } }
+      },
+      "post": {
+        "tags": ["Reservas"],
+        "summary": "Agregar consumo a la reserva",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre", "cantidad", "precio_unitario"],
+                "properties": {
+                  "nombre":          { "type": "string" },
+                  "cantidad":        { "type": "integer" },
+                  "precio_unitario": { "type": "number" },
+                  "producto_id":     { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Consumo agregado" } }
+      }
+    },
+    "/reservas/{id}/consumos/{consumoId}": {
+      "delete": {
+        "tags": ["Reservas"],
+        "summary": "Eliminar consumo de la reserva",
+        "parameters": [
+          { "name": "id",        "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "consumoId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Consumo eliminado. Retorna nuevo total." } }
+      }
+    },
+    "/reservas/{id}/estado": {
+      "patch": {
+        "tags": ["Reservas"],
+        "summary": "Cambiar estado de reserva",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["estado"],
+                "properties": {
+                  "estado": { "type": "string", "enum": ["pendiente","confirmada","asistió","cancelada","no asistió"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Estado actualizado" } }
+      }
+    },
+    "/clientes": {
+      "get": {
+        "tags": ["Clientes"],
+        "summary": "Listar clientes",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Búsqueda por nombre, email o RUT" }
+        ],
+        "responses": {
+          "200": { "description": "Lista de clientes", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Cliente" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Clientes"],
+        "summary": "Crear cliente",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre"],
+                "properties": {
+                  "nombre":       { "type": "string" },
+                  "email":        { "type": "string" },
+                  "telefono":     { "type": "string" },
+                  "rut":          { "type": "string" },
+                  "tipo_cliente": { "type": "string", "enum": ["persona","empresa"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Cliente creado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } } }
+        }
+      }
+    },
+    "/clientes/{id}": {
+      "get": {
+        "tags": ["Clientes"],
+        "summary": "Obtener cliente con historial de pedidos",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Cliente con pedidos" } }
+      },
+      "put": {
+        "tags": ["Clientes"],
+        "summary": "Actualizar cliente",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Cliente" } } }
+        },
+        "responses": { "200": { "description": "Cliente actualizado" } }
+      },
+      "delete": {
+        "tags": ["Clientes"],
+        "summary": "Eliminar cliente (admin)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Cliente eliminado" } }
+      }
+    },
+    "/usuarios": {
+      "get": {
+        "tags": ["Usuarios"],
+        "summary": "Listar usuarios del restaurante",
+        "description": "Requiere rol admin o gerente.",
+        "responses": {
+          "200": { "description": "Lista de usuarios (sin password_hash)", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Usuario" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Usuarios"],
+        "summary": "Crear usuario",
+        "description": "Requiere rol admin.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre", "email", "password"],
+                "properties": {
+                  "nombre":   { "type": "string" },
+                  "email":    { "type": "string" },
+                  "password": { "type": "string", "minLength": 6 },
+                  "rol":      { "type": "string", "enum": ["admin","gerente","staff","chef","mozo"], "default": "staff" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Usuario creado" },
+          "409": { "description": "Email ya registrado" }
+        }
+      }
+    },
+    "/usuarios/{id}": {
+      "put": {
+        "tags": ["Usuarios"],
+        "summary": "Actualizar usuario",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre":   { "type": "string" },
+                  "rol":      { "type": "string" },
+                  "activo":   { "type": "boolean" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Usuario actualizado" } }
+      },
+      "delete": {
+        "tags": ["Usuarios"],
+        "summary": "Eliminar usuario (admin)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "admin_code": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "description": "Usuario eliminado" } }
+      }
+    },
+    "/config": {
+      "get": {
+        "tags": ["Configuración"],
+        "summary": "Obtener configuración del negocio",
+        "description": "Retorna nombre, moneda, impuesto, prefijo de ticket, logo, etc.",
+        "responses": { "200": { "description": "Configuración actual del restaurante" } }
+      },
+      "put": {
+        "tags": ["Configuración"],
+        "summary": "Guardar configuración del negocio",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre_negocio":  { "type": "string" },
+                  "moneda":          { "type": "string", "example": "CLP" },
+                  "currency":        { "type": "string", "example": "$" },
+                  "tax_rate":        { "type": "number", "example": 19 },
+                  "impuesto_activo": { "type": "boolean" },
+                  "prefijo_ticket":  { "type": "string", "example": "TKT" },
+                  "numero_inicial":  { "type": "integer", "example": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Configuración guardada" } }
+      }
+    },
+    "/config/logo": {
+      "post": {
+        "tags": ["Configuración"],
+        "summary": "Subir logo del restaurante",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": { "type": "object", "properties": { "logo": { "type": "string", "format": "binary" } } }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Logo subido. Retorna `logo_url`." } }
+      }
+    },
+    "/productos": {
+      "get": {
+        "tags": ["Productos"],
+        "summary": "Listar productos",
+        "parameters": [
+          { "name": "categoria_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "activo", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Lista de productos", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Producto" } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Productos"],
+        "summary": "Crear producto",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nombre", "precio"],
+                "properties": {
+                  "nombre":       { "type": "string" },
+                  "precio":       { "type": "number" },
+                  "stock":        { "type": "integer" },
+                  "categoria_id": { "type": "integer" },
+                  "descripcion":  { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Producto creado" } }
+      }
+    },
+    "/productos/{id}": {
+      "get": {
+        "tags": ["Productos"],
+        "summary": "Obtener producto por ID",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": {
+          "200": { "description": "Producto encontrado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Producto" } } } },
+          "404": { "description": "Producto no encontrado" }
+        }
+      },
+      "put": {
+        "tags": ["Productos"],
+        "summary": "Actualizar producto",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Producto" } } }
+        },
+        "responses": { "200": { "description": "Producto actualizado" } }
+      },
+      "delete": {
+        "tags": ["Productos"],
+        "summary": "Eliminar producto (soft delete, marca como inactivo)",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+        "responses": { "200": { "description": "Producto desactivado" } }
+      }
+    },
+    "/categorias": {
+      "get": {
+        "tags": ["Productos"],
+        "summary": "Listar categorías",
+        "responses": { "200": { "description": "Lista de categorías del restaurante" } }
+      },
+      "post": {
+        "tags": ["Productos"],
+        "summary": "Crear categoría",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["nombre"], "properties": { "nombre": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Categoría creada" } }
+      }
+    },
+    "/inventario/movimientos": {
+      "get": {
+        "tags": ["Inventario"],
+        "summary": "Historial de movimientos",
+        "parameters": [
+          { "name": "producto_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "tipo", "in": "query", "schema": { "type": "string", "enum": ["entrada","salida","ajuste"] } }
+        ],
+        "responses": { "200": { "description": "Lista de movimientos" } }
+      }
+    },
+    "/inventario/ajuste": {
+      "post": {
+        "tags": ["Inventario"],
+        "summary": "Ajuste manual de stock",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["producto_id", "cantidad", "tipo"],
+                "properties": {
+                  "producto_id": { "type": "integer" },
+                  "cantidad":   { "type": "integer" },
+                  "tipo":       { "type": "string", "enum": ["entrada","ajuste"] },
+                  "motivo":     { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Stock ajustado" } }
+      }
+    },
+    "/caja/estado": {
+      "get": {
+        "tags": ["Caja"],
+        "summary": "Estado actual de caja",
+        "responses": { "200": { "description": "Estado de caja (abierta/cerrada, fondo, etc.)" } }
+      }
+    },
+    "/caja/abrir": {
+      "post": {
+        "tags": ["Caja"],
+        "summary": "Abrir caja",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "fondo_inicial": { "type": "number" } } }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Caja abierta" } }
+      }
+    },
+    "/caja/cerrar": {
+      "post": {
+        "tags": ["Caja"],
+        "summary": "Cerrar caja con arqueo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "monto_contado": { "type": "number" }, "notas": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Caja cerrada con resumen" } }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Sistema"],
+        "summary": "Health check",
+        "security": [],
+        "responses": {
+          "200": { "description": "Servidor funcionando", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "ts": { "type": "string" } } } } } }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Auth",       "description": "Autenticación JWT" },
+    { "name": "Pedidos",    "description": "Gestión de pedidos y sus ítems" },
+    { "name": "Ventas",     "description": "Registro de ventas y analytics" },
+    { "name": "Reservas",   "description": "Reservas de mesas" },
+    { "name": "Clientes",   "description": "CRM de clientes" },
+    { "name": "Productos",  "description": "Catálogo de productos" },
+    { "name": "Inventario",     "description": "Movimientos de stock" },
+    { "name": "Caja",           "description": "Apertura y cierre de caja" },
+    { "name": "Usuarios",       "description": "Gestión de usuarios y roles" },
+    { "name": "Configuración",  "description": "Configuración del negocio (nombre, moneda, impuesto, logo)" },
+    { "name": "Sistema",        "description": "Health y utilidades" }
+  ]
+}

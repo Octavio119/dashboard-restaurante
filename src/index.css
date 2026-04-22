@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09090b;
+  --card-bg: #111113;
+  --card-border: #27272a;
+  --primary: #fbbf24;
+  --text-main: #fafafa;
+  --text-secondary: #a1a1aa;
+}
+
+@theme {
+  --font-inter: "Inter", sans-serif;
+  --font-outfit: "Outfit", sans-serif;
+  --color-amber-500: #fbbf24;
+  --color-amber-400: #fcd34d;
+  --color-zinc-950: #09090b;
+  --color-zinc-900: #18181b;
+  --color-zinc-800: #27272a;
+  --color-zinc-700: #3f3f46;
+}
+
+@layer base {
+  body {
+    @apply font-inter bg-[#09090b] text-white antialiased selection:bg-amber-500/20;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-zinc-900 border border-zinc-800 rounded-xl;
+  }
+
+  .brand {
+    @apply font-outfit font-bold;
+  }
+
+  .input {
+    @apply bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/60 transition-colors text-white placeholder:text-zinc-600;
+  }
+
+  .btn-primary {
+    @apply px-5 py-2.5 rounded-lg bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-colors active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply px-5 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium text-sm hover:bg-zinc-700 hover:text-white transition-colors;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { @apply bg-[#09090b]; }
+::-webkit-scrollbar-thumb { @apply bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors; }
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Print */
+@media print {
+  body { background: white !important; color: black !important; }
+  aside, header, .no-print, button { display: none !important; }
+  .fixed { position: static !important; padding: 0 !important; margin: 0 !important; }
+  .card { background: white !important; color: black !important; border: 1px solid #eee !important; box-shadow: none !important; }
+}
+
+.no-print { @media print { display: none !important; } }
+
+/* Recharts */
+.recharts-default-tooltip {
+  @apply !bg-zinc-900 !border-zinc-700 !rounded-lg !shadow-xl !px-4 !py-3 !border;
+}
+.recharts-tooltip-item-list { @apply !text-amber-400 !font-bold; }

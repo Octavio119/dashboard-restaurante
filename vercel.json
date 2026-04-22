@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/(api|uploads|socket.io)(.*)",
+      "destination": "https://dashboard-restaurante-api.up.railway.app/$1$2"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
