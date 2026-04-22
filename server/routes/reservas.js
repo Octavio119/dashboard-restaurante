@@ -155,7 +155,7 @@ router.post('/:id/crear-pedido', async (req, res) => {
     const nextNum = Number(numResult[0]?.max_num ?? 7281) + 1;
 
     const pedido = await req.prisma.pedido.create({
-      data: { numero: `#ORD-${nextNum}`, cliente_nombre: reserva.nombre, item: `Pedido de mesa ${reserva.mesa || 'sin asignar'}`, total: 0, estado: 'pendiente', fecha: reserva.fecha, restaurante_id: rid, reserva_id: id, mesa: reserva.mesa || '', personas: reserva.personas || 0 }, // reserva.fecha ya es DateTime
+      data: { numero: `#ORD-${nextNum}`, cliente_nombre: reserva.nombre, item: `Pedido de mesa ${reserva.mesa || 'sin asignar'}`, total: 0, estado: 'pendiente', fecha: reserva.fecha, restaurante_id: rid, reserva_id: id, mesa: reserva.mesa || '', personas: reserva.personas || 0 },
     });
     res.status(201).json({ ...pedido, items: [] });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
