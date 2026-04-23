@@ -1,3 +1,4 @@
+const logger = require('../lib/logger');
 const router = require('express').Router();
 const requireAuth = require('../middleware/auth');
 const verifyRole  = require('../middleware/verifyRole');
@@ -105,7 +106,7 @@ router.get('/movimientos', async (req, res) => {
     }
 
     res.json({ rows: mappedRows, total, stats });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // POST /api/inventario/movimientos
@@ -162,7 +163,7 @@ router.post('/movimientos', async (req, res) => {
     }
 
     res.status(201).json({ ok: true, stock_anterior: stockAnterior, stock_nuevo: stockNuevo });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error al procesar el movimiento: ' + e.message }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error al procesar el movimiento: ' + e.message }); }
 });
 
 module.exports = router;

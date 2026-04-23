@@ -357,20 +357,31 @@ const App = () => {
   // ─── WebSocket — notificaciones en tiempo real ───────────────────────────────
   useEffect(() => {
     if (!user) return;
-    const socket = socketIO({ path: '/socket.io', auth: { restaurante_id: user.restaurante_id || 1 }, reconnection: true, reconnectionDelay: 2000 });
+    const socket = socketIO({
+      path: '/socket.io',
+      auth: { restaurante_id: user.restaurante_id || 1, rol: user.rol || 'staff' },
+      reconnection: true,
+      reconnectionDelay: 2000,
+      reconnectionAttempts: Infinity,
+    });
     socketRef.current = socket;
 
-    socket.on('pedido:nuevo', data => {
+    socket.on('pedido:creado', data => {
       addToast(`${data.numero} · ${data.cliente_nombre}${data.mesa ? ` · Mesa ${data.mesa}` : ''}`, 'info', { icon: '🛎️', title: 'Nuevo pedido' });
       loadPedidos();
     });
-    socket.on('pedido:estado', data => {
+    socket.on('pedido:actualizado', data => {
       if (data.estado === 'listo') {
         addToast(`${data.numero} listo para entregar`, 'success', { icon: '✅', title: 'Pedido listo' });
       } else if (data.estado === 'en preparación') {
         addToast(`${data.numero} pasó a cocina`, 'info', { icon: '👨‍🍳', title: 'En preparación' });
+      } else if (data.estado === 'confirmado') {
+        addToast(`${data.numero} confirmado y cobrado`, 'success', { icon: '💰', title: 'Pedido confirmado' });
       }
       loadPedidos();
+    });
+    socket.on('venta:realizada', data => {
+      addToast(`Venta $${data.total?.toFixed(0)} · ${data.metodo_pago}`, 'success', { icon: '💵', title: 'Venta registrada' });
     });
     socket.on('stock:alerta', data => {
       addToast(`${data.nombre}: ${data.stock} uds restantes (mín: ${data.minimo})`, 'warning', { icon: '⚠️', title: 'Stock bajo' });

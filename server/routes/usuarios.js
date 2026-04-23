@@ -1,3 +1,4 @@
+const logger = require('../lib/logger');
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const requireAuth = require('../middleware/auth');
@@ -42,7 +43,7 @@ router.post('/', verifyRole('admin'), async (req, res) => {
       data: { nombre: nombre.trim(), email: emailNorm, password_hash: hash, rol, restaurante_id: RID(req) },
     });
     res.status(201).json({ id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, activo: user.activo });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // PATCH /api/usuarios/:id

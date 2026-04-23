@@ -1,3 +1,4 @@
+const logger = require('../lib/logger');
 const router = require('express').Router();
 const requireAuth = require('../middleware/auth');
 const { toDate } = require('../lib/dateUtils');
@@ -38,7 +39,7 @@ router.post('/abrir', async (req, res) => {
       data: { fecha: fechaDate, restaurante_id: rid, monto_inicial: parseFloat(monto_inicial), cajero_apertura: req.user.nombre, estado: 'abierta' },
     });
     res.status(201).json(caja);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'No se pudo abrir la caja' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'No se pudo abrir la caja' }); }
 });
 
 // POST /api/caja/cerrar
@@ -80,7 +81,7 @@ router.post('/cerrar', async (req, res) => {
       },
     });
     res.json(cajaActualizada);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'No se pudo cerrar la caja' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'No se pudo cerrar la caja' }); }
 });
 
 module.exports = router;

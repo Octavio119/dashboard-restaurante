@@ -1,3 +1,4 @@
+const logger = require('../lib/logger');
 const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
@@ -21,21 +22,27 @@ async function buscarOCrearCliente(prisma, rid, nombre, email, telefono) {
   return cliente;
 }
 
-// GET /api/reservas?fecha=|periodo=
+// GET /api/reservas?fecha=|periodo=&page=1&limit=50
 router.get('/', async (req, res) => {
   try {
     const { fecha, periodo } = req.query;
-    const rid = RID(req);
-    const hoy = new Date().toISOString().split('T')[0];
-    let where = { restaurante_id: rid };
+    const rid   = RID(req);
+    const hoy   = new Date().toISOString().split('T')[0];
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const skip  = (page - 1) * limit;
+    let where   = { restaurante_id: rid };
 
     if (fecha)               where.fecha = toDate(fecha);
     else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
     else if (periodo === 'mes')    { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
     else                     where.fecha = toDate(hoy);
 
-    const rows = await req.prisma.reserva.findMany({ where, orderBy: [{ fecha: 'asc' }, { hora: 'asc' }] });
-    res.json(rows);
+    const [rows, total] = await Promise.all([
+      req.prisma.reserva.findMany({ where, orderBy: [{ fecha: 'asc' }, { hora: 'asc' }], take: limit, skip }),
+      req.prisma.reserva.count({ where }),
+    ]);
+    res.json({ rows, total, page, pages: Math.ceil(total / limit) });
   } catch (e) { res.status(500).json({ error: 'Error interno' }); }
 });
 
@@ -70,7 +77,7 @@ router.post('/', async (req, res) => {
       data: { nombre, email: (email || '').trim().toLowerCase(), telefono: (telefono || '').trim(), hora, personas: parseInt(personas), mesa: mesa || '', estado: 'pendiente', fecha: toDate(fecha), consumo_base: parseFloat(consumo_base), cliente_id: cliente.id, restaurante_id: rid },
     });
     res.status(201).json(reserva);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // PATCH /api/reservas/:id/estado
@@ -111,7 +118,7 @@ router.patch('/:id/estado', async (req, res) => {
       }
     }
     res.json({ ok: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // POST /api/reservas/backfill-clientes
@@ -149,8 +156,11 @@ router.post('/:id/crear-pedido', async (req, res) => {
     if (existing) return res.status(400).json({ error: 'Ya existe un pedido activo para esta reserva', pedido_id: existing.id });
 
     const numResult = await req.prisma.$queryRaw`
-      SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(numero, '#ORD-', '') AS INTEGER)), 7281) AS max_num
-      FROM "Pedido" WHERE restaurante_id = ${rid} AND numero ~ '^#ORD-[0-9]+$'
+      SELECT COALESCE(MAX(SUBSTRING(numero FROM 6)::INTEGER), 7281) AS max_num
+      FROM "Pedido"
+      WHERE restaurante_id = ${rid}
+        AND numero LIKE '#ORD-%'
+        AND SUBSTRING(numero FROM 6) ~ '^[0-9]+$'
     `;
     const nextNum = Number(numResult[0]?.max_num ?? 7281) + 1;
 
@@ -158,7 +168,7 @@ router.post('/:id/crear-pedido', async (req, res) => {
       data: { numero: `#ORD-${nextNum}`, cliente_nombre: reserva.nombre, item: `Pedido de mesa ${reserva.mesa || 'sin asignar'}`, total: 0, estado: 'pendiente', fecha: reserva.fecha, restaurante_id: rid, reserva_id: id, mesa: reserva.mesa || '', personas: reserva.personas || 0 },
     });
     res.status(201).json({ ...pedido, items: [] });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // DELETE /api/reservas/:id
@@ -218,7 +228,7 @@ router.post('/:id/consumos', async (req, res) => {
     ]);
 
     res.status(201).json(consumo);
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message }); }
 });
 
 // DELETE /api/reservas/:id/consumos/:cid
@@ -249,7 +259,7 @@ router.delete('/:id/consumos/:cid', async (req, res) => {
     await req.prisma.reserva.update({ where: { id: reserva_id }, data: { consumo_base: nuevoTotal } });
 
     res.json({ ok: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;

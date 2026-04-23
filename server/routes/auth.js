@@ -1,3 +1,4 @@
+const logger = require('../lib/logger');
 const router   = require('express').Router();
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
@@ -56,7 +57,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       refresh_token: refreshToken,
       user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id },
     });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // POST /api/auth/refresh
@@ -81,7 +82,7 @@ router.post('/refresh', async (req, res) => {
     await storeRefreshToken(req.prisma, user.id, newRefresh);
 
     res.json({ token: newAccess, refresh_token: newRefresh });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // POST /api/auth/logout
@@ -121,7 +122,7 @@ router.post('/change-password', requireAuth, async (req, res) => {
     await req.prisma.usuario.update({ where: { id: req.user.id }, data: { password_hash: newHash } });
     await clearRefreshToken(req.prisma, req.user.id); // invalida todas las sesiones
     res.json({ ok: true, message: 'Contraseña actualizada. Por seguridad, vuelve a iniciar sesión.' });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // POST /api/auth/register — solo admin puede crear usuarios
@@ -151,7 +152,7 @@ router.post('/register', requireAuth, verifyRole('admin', 'gerente'), async (req
     });
 
     res.status(201).json({ id: user.id, nombre: user.nombre, email: user.email, rol: user.rol });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 module.exports = router;

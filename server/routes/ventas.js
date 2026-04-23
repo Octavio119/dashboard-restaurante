@@ -1,9 +1,11 @@
+const logger = require('../lib/logger');
 const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
 const verifyAdminCode = require('../middleware/verifyAdminCode');
 const { createVentaConTicket } = require('../lib/ventaHelper');
 const { toDate, fromFilter }   = require('../lib/dateUtils');
+const { emit: socketEmit }     = require('../lib/socket');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -86,6 +88,15 @@ router.post('/', async (req, res) => {
       ...stockOps,
     ]);
 
+    socketEmit(rid, 'venta:realizada', {
+      ticket_id:   venta.ticket_id,
+      total:       venta.total,
+      metodo_pago: venta.metodo_pago,
+      cajero:      venta.cajero,
+      fecha:       venta.fecha,
+      items_count: items.length,
+    });
+
     res.status(201).json({
       ticket_id:       venta.ticket_id,
       fecha:           venta.fecha,
@@ -103,67 +114,82 @@ router.post('/', async (req, res) => {
       metodo_pago:     venta.metodo_pago,
       cajero:          venta.cajero,
     });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Error al registrar venta' }); }
+  } catch (err) { logger.error({ err }, 'route error'); res.status(500).json({ error: 'Error al registrar venta' }); }
 });
 
-// GET /api/ventas?fecha=YYYY-MM-DD
+// GET /api/ventas?fecha=YYYY-MM-DD&page=1&limit=50
 router.get('/', async (req, res) => {
   try {
-    const fecha  = req.query.fecha || new Date().toISOString().split('T')[0];
-    const ventas = await req.prisma.venta.findMany({
-      where:   { fecha: toDate(fecha), restaurante_id: RID(req) },
-      include: { venta_items: true },
-      orderBy: { id: 'desc' },
-    });
-    res.json(ventas.map(formatVenta));
+    const fecha    = req.query.fecha || new Date().toISOString().split('T')[0];
+    const page     = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit    = Math.min(parseInt(req.query.limit) || 50, 200);
+    const skip     = (page - 1) * limit;
+    const where    = { fecha: toDate(fecha), restaurante_id: RID(req) };
+
+    const [ventas, total] = await Promise.all([
+      req.prisma.venta.findMany({ where, include: { venta_items: true }, orderBy: { id: 'desc' }, take: limit, skip }),
+      req.prisma.venta.count({ where }),
+    ]);
+    res.json({ rows: ventas.map(formatVenta), total, page, pages: Math.ceil(total / limit) });
   } catch (err) { res.status(500).json({ error: 'Error al obtener ventas' }); }
 });
 
 // GET /api/ventas/analytics
 router.get('/analytics', async (req, res) => {
   try {
-    const rid  = RID(req);
-    const hoy  = new Date().toISOString().split('T')[0];
-    const ayer = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const rid   = RID(req);
+    const hoy   = new Date().toISOString().split('T')[0];
+    const ayer  = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const fecha30 = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
 
-    const [ventasHoy, ventasAyer] = await Promise.all([
-      req.prisma.venta.findMany({ where: { fecha: toDate(hoy),  restaurante_id: rid } }),
-      req.prisma.venta.findMany({ where: { fecha: toDate(ayer), restaurante_id: rid } }),
+    const [aggHoy, aggAyer, horaRows, topRows] = await Promise.all([
+      req.prisma.venta.aggregate({
+        where: { fecha: toDate(hoy), restaurante_id: rid },
+        _sum: { total: true }, _count: { id: true },
+      }),
+      req.prisma.venta.aggregate({
+        where: { fecha: toDate(ayer), restaurante_id: rid },
+        _sum: { total: true }, _count: { id: true },
+      }),
+      req.prisma.$queryRaw`
+        SELECT TO_CHAR(created_at AT TIME ZONE 'America/Santiago', 'HH24') || ':00' AS hour,
+               COUNT(*)::int AS orders
+        FROM "Venta"
+        WHERE restaurante_id = ${rid}
+          AND fecha = ${toDate(hoy)}
+        GROUP BY hour ORDER BY hour
+      `,
+      req.prisma.$queryRaw`
+        SELECT vi.nombre AS name, SUM(vi.qty)::int AS sales
+        FROM "VentaItem" vi
+        JOIN "Venta" v ON v.id = vi.venta_id
+        WHERE vi.restaurante_id = ${rid}
+          AND v.fecha >= ${toDate(fecha30)}
+          AND vi.nombre IS NOT NULL AND vi.nombre <> ''
+        GROUP BY vi.nombre
+        ORDER BY sales DESC
+        LIMIT 5
+      `,
     ]);
 
-    const totalHoy  = ventasHoy.reduce((a, v) => a + v.total, 0);
-    const totalAyer = ventasAyer.reduce((a, v) => a + v.total, 0);
+    const totalHoy   = aggHoy._sum.total   ?? 0;
+    const totalAyer  = aggAyer._sum.total  ?? 0;
+    const cantidadHoy  = aggHoy._count.id  ?? 0;
+    const cantidadAyer = aggAyer._count.id ?? 0;
     const comparacionPct = totalAyer > 0 ? parseFloat((((totalHoy - totalAyer) / totalAyer) * 100).toFixed(1)) : null;
 
-    const horaMap = {};
-    for (const v of ventasHoy) {
-      const key = `${String(new Date(v.created_at).getHours()).padStart(2, '0')}:00`;
-      horaMap[key] = (horaMap[key] || 0) + 1;
-    }
-    const ventas_por_hora = Object.entries(horaMap).map(([hour, orders]) => ({ hour, orders })).sort((a, b) => a.hour.localeCompare(b.hour));
-
-    const fecha30 = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-    const ventaItems30 = await req.prisma.ventaItem.findMany({
-      where: {
-        restaurante_id: rid,
-        venta: { fecha: fromFilter(fecha30) },
-      },
-    });
-
-    const prodMap = {};
-    for (const item of ventaItems30) {
-      if (item.nombre) prodMap[item.nombre] = (prodMap[item.nombre] || 0) + item.qty;
-    }
-    const top_productos = Object.entries(prodMap).map(([name, sales]) => ({ name, sales })).sort((a, b) => b.sales - a.sales).slice(0, 5);
-
     res.json({
-      total_hoy: parseFloat(totalHoy.toFixed(2)), total_ayer: parseFloat(totalAyer.toFixed(2)),
-      cantidad_hoy: ventasHoy.length, cantidad_ayer: ventasAyer.length,
-      ticket_promedio_hoy:  parseFloat((ventasHoy.length  ? totalHoy  / ventasHoy.length  : 0).toFixed(2)),
-      ticket_promedio_ayer: parseFloat((ventasAyer.length ? totalAyer / ventasAyer.length : 0).toFixed(2)),
-      comparacion_pct: comparacionPct, ventas_por_hora, top_productos,
+      total_hoy:            parseFloat(totalHoy.toFixed(2)),
+      total_ayer:           parseFloat(totalAyer.toFixed(2)),
+      cantidad_hoy:         cantidadHoy,
+      cantidad_ayer:        cantidadAyer,
+      ticket_promedio_hoy:  parseFloat((cantidadHoy  ? totalHoy  / cantidadHoy  : 0).toFixed(2)),
+      ticket_promedio_ayer: parseFloat((cantidadAyer ? totalAyer / cantidadAyer : 0).toFixed(2)),
+      comparacion_pct:      comparacionPct,
+      ventas_por_hora:      horaRows.map(r => ({ hour: r.hour, orders: Number(r.orders) })),
+      top_productos:        topRows.map(r => ({ name: r.name, sales: Number(r.sales) })),
     });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Error al obtener analytics' }); }
+  } catch (err) { logger.error({ err }, 'route error'); res.status(500).json({ error: 'Error al obtener analytics' }); }
 });
 
 // GET /api/ventas/resumen?periodo=dia|semana|mes
@@ -181,10 +207,19 @@ router.get('/resumen', async (req, res) => {
       ? { fecha: toDate(fechaDesde), restaurante_id: rid }
       : { fecha: fromFilter(fechaDesde), restaurante_id: rid };
 
-    const ventas = await req.prisma.venta.findMany({ where });
-    const totalMonto = ventas.reduce((acc, v) => acc + v.total, 0);
-    const por_metodo = ventas.reduce((acc, v) => { acc[v.metodo_pago] = (acc[v.metodo_pago] || 0) + v.total; return acc; }, {});
-    res.json({ cantidad: ventas.length, total: parseFloat(totalMonto.toFixed(2)), por_metodo });
+    const [agg, byMetodo] = await Promise.all([
+      req.prisma.venta.aggregate({ where, _sum: { total: true }, _count: { id: true } }),
+      req.prisma.venta.groupBy({ by: ['metodo_pago'], where, _sum: { total: true } }),
+    ]);
+
+    const por_metodo = {};
+    for (const row of byMetodo) por_metodo[row.metodo_pago] = row._sum.total ?? 0;
+
+    res.json({
+      cantidad: agg._count.id ?? 0,
+      total:    parseFloat((agg._sum.total ?? 0).toFixed(2)),
+      por_metodo,
+    });
   } catch (err) { res.status(500).json({ error: 'Error al obtener resumen' }); }
 });
 
@@ -195,7 +230,7 @@ router.delete('/:id', verifyRole('admin'), verifyAdminCode, async (req, res) => 
     if (!venta) return res.status(404).json({ error: 'Venta no encontrada' });
     await req.prisma.venta.delete({ where: { id: venta.id } });
     res.json({ ok: true });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Error al eliminar venta' }); }
+  } catch (err) { logger.error({ err }, 'route error'); res.status(500).json({ error: 'Error al eliminar venta' }); }
 });
 
 module.exports = router;

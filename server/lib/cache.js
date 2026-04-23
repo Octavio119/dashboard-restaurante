@@ -6,16 +6,18 @@
  *      await cache.del('key')
  */
 
+const logger = require('./logger');
+
 let redisClient = null;
 
 if (process.env.REDIS_URL) {
   try {
     const { createClient } = require('redis');
     redisClient = createClient({ url: process.env.REDIS_URL });
-    redisClient.on('error', (e) => console.warn('[cache] Redis error:', e.message));
-    redisClient.connect().catch((e) => { console.warn('[cache] Redis no disponible, usando memoria:', e.message); redisClient = null; });
+    redisClient.on('error', (e) => logger.warn({ err: e }, '[cache] Redis error'));
+    redisClient.connect().catch((e) => { logger.warn({ err: e }, '[cache] Redis no disponible, usando memoria'); redisClient = null; });
   } catch {
-    console.warn('[cache] módulo redis no instalado, usando memoria');
+    logger.warn('[cache] módulo redis no instalado, usando memoria');
   }
 }
 

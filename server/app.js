@@ -9,6 +9,10 @@ const rateLimit  = require('express-rate-limit');
 const swaggerUi  = require('swagger-ui-express');
 const openApiSpec = require('./docs/openapi.json');
 const prisma     = require('./lib/prisma');
+const logger     = require('./lib/logger');
+const validateEnv = require('./lib/validateEnv');
+
+validateEnv();
 
 const app = express();
 
@@ -93,8 +97,20 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(publicDir)) {
   app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 }
 
+// ── HTTP request logging ───────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    logger[level]({ method: req.method, url: req.url, status: res.statusCode, ms,
+      tenant: req.user?.restaurante_id }, 'request');
+  });
+  next();
+});
+
 app.use((err, _req, res, _next) => {
-  console.error(err);
+  logger.error({ err }, 'unhandled error');
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 

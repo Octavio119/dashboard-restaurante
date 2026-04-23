@@ -1,11 +1,10 @@
+const logger = require('../lib/logger');
 const router  = require('express').Router();
 const multer  = require('multer');
 const path    = require('path');
-const fs      = require('fs');
 const requireAuth = require('../middleware/auth');
 const verifyRole  = require('../middleware/verifyRole');
-
-const supabase = require('../lib/supabase');
+const r2      = require('../lib/r2');
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -37,7 +36,7 @@ router.get('/', async (req, res) => {
       row = await req.prisma.configNegocio.create({ data: { restaurante_id: rid } });
     }
     res.json(parseRow({ ...row }));
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // PUT /api/config
@@ -78,33 +77,23 @@ router.put('/', verifyRole('admin', 'gerente'), async (req, res) => {
       create: { restaurante_id: rid, ...data },
     });
     res.json(parseRow({ ...row }));
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // POST /api/config/logo
 router.post('/logo', verifyRole('admin', 'gerente'), upload.single('logo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo de imagen' });
-    
+
+    if (!r2.isConfigured()) {
+      return res.status(503).json({ error: 'Almacenamiento de imágenes no configurado. Contacta al administrador.' });
+    }
+
     const rid = RID(req);
     const fileExt = path.extname(req.file.originalname);
-    const fileName = `logo-${rid}-${Date.now()}${fileExt}`;
-    const filePath = `${rid}/${fileName}`;
+    const key = `logos/${rid}/logo-${rid}-${Date.now()}${fileExt}`;
 
-    // Subir a Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('logos')
-      .upload(filePath, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: true
-      });
-
-    if (uploadError) throw uploadError;
-
-    // Obtener URL pública
-    const { data: { publicUrl } } = supabase.storage
-      .from('logos')
-      .getPublicUrl(filePath);
+    const publicUrl = await r2.upload(key, req.file.buffer, req.file.mimetype);
 
     await req.prisma.configNegocio.upsert({
       where:  { restaurante_id: rid },
@@ -113,9 +102,9 @@ router.post('/logo', verifyRole('admin', 'gerente'), upload.single('logo'), asyn
     });
 
     res.json({ logoUrl: publicUrl });
-  } catch (e) { 
-    console.error('❌ Error subiendo logo a Supabase:', e);
-    res.status(500).json({ error: 'Error al subir la imagen a la nube' }); 
+  } catch (e) {
+    logger.error({ err: e }, 'logo upload error');
+    res.status(500).json({ error: 'Error al subir la imagen a la nube' });
   }
 });
 

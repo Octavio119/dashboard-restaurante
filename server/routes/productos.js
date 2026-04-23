@@ -1,3 +1,4 @@
+const logger = require('../lib/logger');
 const router = require('express').Router();
 const requireAuth = require('../middleware/auth');
 const verifyRole  = require('../middleware/verifyRole');
@@ -37,7 +38,7 @@ router.post('/', verifyRole('admin', 'gerente'), async (req, res) => {
       data: { nombre: nombre.trim(), categoria, precio: parseFloat(precio), stock: parseInt(stock), restaurante_id: rid },
     });
     res.status(201).json(producto);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // PUT /api/productos/:id
@@ -85,7 +86,7 @@ router.patch('/:id/stock', async (req, res) => {
       }),
     ]);
     res.json({ id: producto.id, nombre: producto.nombre, stock: producto.stock });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // DELETE /api/productos/:id — soft delete

@@ -1,8 +1,9 @@
+const logger = require('../lib/logger');
 const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
 const verifyAdminCode = require('../middleware/verifyAdminCode');
-const { getIO }       = require('../lib/socket');
+const { getIO, emit: socketEmit } = require('../lib/socket');
 const { sendStockAlert } = require('../lib/mailer');
 const { createVentaConTicket } = require('../lib/ventaHelper');
 const { toDate, fromFilter }   = require('../lib/dateUtils');
@@ -15,31 +16,38 @@ const VALID_METODOS = ['efectivo', 'tarjeta', 'transferencia', 'qr'];
 
 async function getNextNumero(prisma, rid) {
   const result = await prisma.$queryRaw`
-    SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(numero, '#ORD-', '') AS INTEGER)), 7281) AS max_num
+    SELECT COALESCE(MAX(SUBSTRING(numero FROM 6)::INTEGER), 7281) AS max_num
     FROM "Pedido"
     WHERE restaurante_id = ${rid}
-    AND numero ~ '^#ORD-[0-9]+$'
+      AND numero LIKE '#ORD-%'
+      AND SUBSTRING(numero FROM 6) ~ '^[0-9]+$'
   `;
   const maxNum = Number(result[0]?.max_num ?? 7281);
   return `#ORD-${maxNum + 1}`;
 }
 
-// GET /api/pedidos?fecha=|periodo=
+// GET /api/pedidos?fecha=|periodo=&page=1&limit=50
 router.get('/', async (req, res) => {
   try {
     const { fecha, periodo } = req.query;
-    const rid = RID(req);
-    const hoy = new Date().toISOString().split('T')[0];
-    let where = { restaurante_id: rid };
+    const rid   = RID(req);
+    const hoy   = new Date().toISOString().split('T')[0];
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const skip  = (page - 1) * limit;
+    let where   = { restaurante_id: rid };
 
     if (fecha)               where.fecha = toDate(fecha);
     else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate() - 7); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
     else if (periodo === 'mes')    { const d = new Date(); d.setDate(d.getDate() - 30); where.fecha = fromFilter(d.toISOString().split('T')[0]); }
     else                     where.fecha = toDate(hoy);
 
-    const rows = await req.prisma.pedido.findMany({ where, include: { pedido_items: { orderBy: { id: 'asc' } } }, orderBy: { id: 'desc' } });
-    res.json(rows.map(p => ({ ...p, items: p.pedido_items })));
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Error interno' }); }
+    const [rows, total] = await Promise.all([
+      req.prisma.pedido.findMany({ where, include: { pedido_items: { orderBy: { id: 'asc' } } }, orderBy: { id: 'desc' }, take: limit, skip }),
+      req.prisma.pedido.count({ where }),
+    ]);
+    res.json({ rows: rows.map(p => ({ ...p, items: p.pedido_items })), total, page, pages: Math.ceil(total / limit) });
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
 // GET /api/pedidos/ventas?periodo=dia|semana|mes
@@ -129,7 +137,7 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), async (req, re
         throw e;
       }
 
-      getIO()?.to(`rest_${rid}`).emit('pedido:nuevo', { id: pedido.id, numero: pedido.numero, cliente_nombre, mesa: mesa || '', total: totalCalc });
+      socketEmit(rid, 'pedido:creado', { id: pedido.id, numero: pedido.numero, cliente_nombre, mesa: mesa || '', total: totalCalc });
       return res.status(201).json({ ...pedido, items: createdItems });
     }
 
@@ -140,7 +148,7 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), async (req, re
     });
     getIO()?.to(`rest_${rid}`).emit('pedido:nuevo', { id: pedido.id, numero: pedido.numero, cliente_nombre, mesa: mesa || '', total: parseFloat(total) });
     res.status(201).json({ ...pedido, items: [] });
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message || 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message || 'Error interno' }); }
 });
 
 // POST /api/pedidos/:id/items
@@ -190,13 +198,13 @@ router.post('/:id/items', verifyRole('admin', 'staff', 'chef', 'gerente'), async
       const prodActualizado = await req.prisma.producto.findUnique({ where: { id: parseInt(producto_id) } });
       const stockReal = prodActualizado?.stock ?? (prodRef.stock - parseInt(cantidad));
       if (prodRef.stock_minimo > 0 && stockReal <= prodRef.stock_minimo) {
-        getIO()?.to(`rest_${rid}`).emit('stock:alerta', { nombre: prodRef.nombre, stock: stockReal, minimo: prodRef.stock_minimo });
+        socketEmit(rid, 'stock:alerta', { nombre: prodRef.nombre, stock: stockReal, minimo: prodRef.stock_minimo });
         sendStockAlert({ ...prodRef, stock: stockReal }, stockReal);
       }
     }
 
     res.status(201).json(item);
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message }); }
 });
 
 // PATCH /api/pedidos/:id/items/:itemId — actualizar cantidad
@@ -249,7 +257,7 @@ router.patch('/:id/items/:itemId', verifyRole('admin', 'staff', 'chef', 'gerente
     }
 
     res.json({ ...updated, nuevoTotal });
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message }); }
 });
 
 // DELETE /api/pedidos/:id/items/:itemId
@@ -280,7 +288,7 @@ router.delete('/:id/items/:itemId', verifyRole('admin', 'staff', 'chef', 'gerent
     await req.prisma.pedido.update({ where: { id: pedidoId }, data: { total: nuevoTotal } });
 
     res.json({ ok: true, nuevoTotal });
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message }); }
 });
 
 // PATCH /api/pedidos/:id/estado
@@ -354,14 +362,15 @@ router.patch('/:id/estado', async (req, res) => {
       }
       const ventaItems2 = venta.venta_items || await req.prisma.ventaItem.findMany({ where: { venta_id: venta.id } });
       await req.prisma.pedido.update({ where: { id: pedidoId }, data: { estado, metodo_pago: metodo } });
-      getIO()?.to(`rest_${rid}`).emit('pedido:estado', { id: pedidoId, numero: pedido.numero, estado, cliente_nombre: pedido.cliente_nombre, mesa: pedido.mesa });
+      socketEmit(rid, 'pedido:actualizado', { id: pedidoId, numero: pedido.numero, estado, cliente_nombre: pedido.cliente_nombre, mesa: pedido.mesa });
+      socketEmit(rid, 'venta:realizada', { ticket_id: venta.ticket_id, total: venta.total, metodo_pago: metodo, cajero: req.user.nombre, pedido_id: pedidoId });
       return res.json({ ok: true, venta: { ...venta, items: ventaItems2 } });
     }
 
     await req.prisma.pedido.update({ where: { id: pedidoId }, data: { estado } });
-    getIO()?.to(`rest_${rid}`).emit('pedido:estado', { id: pedidoId, numero: pedido.numero, estado, cliente_nombre: pedido.cliente_nombre, mesa: pedido.mesa });
+    socketEmit(rid, 'pedido:actualizado', { id: pedidoId, numero: pedido.numero, estado, cliente_nombre: pedido.cliente_nombre, mesa: pedido.mesa });
     res.json({ ok: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: e.message || 'Error interno' }); }
+  } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message || 'Error interno' }); }
 });
 
 // DELETE /api/pedidos/:id
