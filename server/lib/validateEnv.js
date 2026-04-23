@@ -21,6 +21,10 @@ const OPTIONAL = [
   { key: 'SMTP_USER',              hint: 'Usuario SMTP' },
   { key: 'SMTP_PASS',              hint: 'Contraseña / app-password SMTP' },
   { key: 'ALERT_EMAIL',            hint: 'Email destino para alertas de stock' },
+  { key: 'STRIPE_SECRET_KEY',      hint: 'sk_live_... o sk_test_... — Stripe billing' },
+  { key: 'STRIPE_WEBHOOK_SECRET',  hint: 'whsec_... — firma de webhooks Stripe' },
+  { key: 'STRIPE_PRICE_PRO',       hint: 'price_... — ID del precio Pro en Stripe' },
+  { key: 'STRIPE_PRICE_BUSINESS',  hint: 'price_... — ID del precio Business en Stripe' },
 ];
 
 function validateEnv() {

@@ -3,6 +3,7 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const requireAuth = require('../middleware/auth');
 const verifyRole  = require('../middleware/verifyRole');
+const { checkUserLimit } = require('../middleware/checkPlanLimit');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -22,7 +23,7 @@ router.get('/', verifyRole('admin', 'gerente'), async (req, res) => {
 });
 
 // POST /api/usuarios
-router.post('/', verifyRole('admin'), async (req, res) => {
+router.post('/', verifyRole('admin'), checkUserLimit, async (req, res) => {
   try {
     const { nombre, email, password, rol = 'staff' } = req.body;
     if (!nombre || !email || !password)

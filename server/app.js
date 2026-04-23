@@ -67,10 +67,15 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 app.use(cors({ origin: allowedOrigins }));
+
+// Raw body para webhook de Stripe — DEBE ir antes de express.json()
+app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use((req, _res, next) => { req.prisma = prisma; next(); });
 
 app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/billing',    require('./routes/billing'));
 app.use('/api/pedidos',    require('./routes/pedidos'));
 app.use('/api/reservas',   require('./routes/reservas'));
 app.use('/api/clientes',   require('./routes/clientes'));
@@ -81,6 +86,7 @@ app.use('/api/ventas',     require('./routes/ventas'));
 app.use('/api/caja',       require('./routes/caja'));
 app.use('/api/config',     require('./routes/config'));
 app.use('/api/inventario', require('./routes/inventario'));
+app.use('/api/analytics', require('./routes/analytics'));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 

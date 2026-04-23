@@ -125,6 +125,57 @@ router.post('/change-password', requireAuth, async (req, res) => {
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
+// POST /api/auth/signup — registro público: crea Restaurante + admin en una sola transacción
+router.post('/signup', async (req, res) => {
+  try {
+    const { nombre_restaurante, email, password, nombre_admin } = req.body;
+    if (!nombre_restaurante || !email || !password || !nombre_admin)
+      return res.status(400).json({ error: 'nombre_restaurante, email, password y nombre_admin son requeridos' });
+    if (password.length < 8)
+      return res.status(400).json({ error: 'Contraseña mínimo 8 caracteres' });
+
+    const emailNorm = email.toLowerCase().trim();
+
+    // Generar slug único desde el nombre del restaurante
+    const baseSlug = nombre_restaurante
+      .toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // quitar tildes
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    // Asegurar unicidad del slug
+    const existingSlug = await req.prisma.restaurante.findFirst({ where: { slug: { startsWith: baseSlug } }, orderBy: { id: 'desc' } });
+    const slug = existingSlug ? `${baseSlug}-${Date.now()}` : baseSlug;
+
+    const hash = bcrypt.hashSync(password, 12);
+
+    const { restaurante, usuario } = await req.prisma.$transaction(async (tx) => {
+      const restaurante = await tx.restaurante.create({
+        data: { nombre: nombre_restaurante.trim(), slug, plan: 'free' },
+      });
+      const usuario = await tx.usuario.create({
+        data: { nombre: nombre_admin.trim(), email: emailNorm, password_hash: hash, rol: 'admin', restaurante_id: restaurante.id },
+      });
+      return { restaurante, usuario };
+    });
+
+    const payload     = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, restaurante_id: restaurante.id };
+    const accessToken = signAccess(payload);
+    const refreshToken = signRefresh(payload);
+    await storeRefreshToken(req.prisma, usuario.id, refreshToken);
+
+    res.status(201).json({
+      token: accessToken,
+      refresh_token: refreshToken,
+      user: payload,
+    });
+  } catch (e) {
+    if (e.code === 'P2002') return res.status(409).json({ error: 'Email o restaurante ya registrado' });
+    logger.error({ err: e }, 'signup error');
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 // POST /api/auth/register — solo admin puede crear usuarios
 router.post('/register', requireAuth, verifyRole('admin', 'gerente'), async (req, res) => {
   try {

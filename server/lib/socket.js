@@ -3,6 +3,8 @@ const { Server } = require('socket.io');
 const { createClient } = require('redis');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const logger = require('./logger');
+const prisma = require('./prisma');
+const { PLAN_LIMITS } = require('./planLimits');
 
 let _io = null;
 
@@ -62,10 +64,32 @@ async function init(httpServer) {
     }
   }
 
-  _io.on('connection', socket => {
+  _io.on('connection', async socket => {
     const rid = socket.handshake.auth?.restaurante_id;
     const rol = socket.handshake.auth?.rol;
-    if (!rid) return;
+    if (!rid) return socket.disconnect(true);
+
+    try {
+      const restaurante = await prisma.restaurante.findUnique({
+        where:  { id: Number(rid) },
+        select: { plan: true },
+      });
+      const plan   = restaurante?.plan || 'free';
+      const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+
+      if (!limits.websocket) {
+        socket.emit('plan_upgrade_required', {
+          feature:        'websocket',
+          plan_actual:    plan,
+          plan_requerido: 'pro',
+          upgrade_url:    '/billing',
+        });
+        return socket.disconnect(true);
+      }
+    } catch (err) {
+      logger.error({ err, rid }, 'socket plan check error');
+      return socket.disconnect(true);
+    }
 
     // Sala general del restaurante
     socket.join(`rest_${rid}`);

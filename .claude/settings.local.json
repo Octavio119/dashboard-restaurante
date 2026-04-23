@@ -4,7 +4,8 @@
       "Bash(npx skills *)",
       "Bash(bun --version)",
       "Bash(node -e ' *)",
-      "Bash(powershell *)"
+      "Bash(powershell *)",
+      "Bash(npx jest *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Master\\OneDrive\\Desktop\\Dashboard restaurante\\.git"

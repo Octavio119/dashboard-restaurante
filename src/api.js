@@ -76,8 +76,17 @@ async function request(path, options = {}) {
   }
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  if (!res.ok) {
+    _handlePlanError(data);
+    throw new Error(data.error || `Error ${res.status}`);
+  }
   return data;
+}
+
+function _handlePlanError(data) {
+  if (data.error === 'plan_required' || data.error === 'limite_alcanzado') {
+    window.dispatchEvent(new CustomEvent('upgrade_required', { detail: data }));
+  }
 }
 
 async function _retryRequest(path, options, newToken) {
@@ -88,7 +97,10 @@ async function _retryRequest(path, options, newToken) {
   };
   const res = await fetch(`${BASE}${path}`, { ...options, headers: retryHeaders });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  if (!res.ok) {
+    _handlePlanError(data);
+    throw new Error(data.error || `Error ${res.status}`);
+  }
   return data;
 }
 
@@ -216,6 +228,13 @@ export const api = {
   createUsuario: (data) => request('/usuarios', { method: 'POST', body: JSON.stringify(data) }),
   patchUsuario: (id, data) => request(`/usuarios/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteUsuario: (id) => request(`/usuarios/${id}`, { method: 'DELETE' }),
+
+  // Billing
+  getBillingUsage:   ()     => request('/billing/usage'),
+  createCheckout:    (plan) => request('/billing/checkout', { method: 'POST', body: JSON.stringify({ plan }) }),
+  getBillingPortal:  ()     => request('/billing/portal'),
+  signup: (nombre_restaurante, email, password, nombre_admin) =>
+    request('/auth/signup', { method: 'POST', body: JSON.stringify({ nombre_restaurante, email, password, nombre_admin }) }),
 
   // Inventario
   getProveedores: () => request('/inventario/proveedores'),

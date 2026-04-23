@@ -9,12 +9,17 @@ datasource db {
 }
 
 model Restaurante {
-  id         Int      @id @default(autoincrement())
-  nombre     String
-  slug       String   @unique
-  plan       String   @default("free")
-  activo     Boolean  @default(true)
-  created_at DateTime @default(now())
+  id                      Int      @id @default(autoincrement())
+  nombre                  String
+  slug                    String   @unique
+  plan                    String   @default("free")
+  activo                  Boolean  @default(true)
+  created_at              DateTime @default(now())
+  ordenes_mes_actual      Int      @default(0)
+  billing_ciclo_inicio    DateTime @default(now())
+  stripe_customer_id      String?  @unique
+  stripe_subscription_id  String?
+  locales_count           Int      @default(1)
 
   usuarios               Usuario[]
   clientes               Cliente[]
@@ -30,6 +35,20 @@ model Restaurante {
   config_negocio         ConfigNegocio?
   proveedores            Proveedor[]
   inventario_movimientos InventarioMovimiento[]
+  api_keys               ApiKey[]
+}
+
+model ApiKey {
+  id             Int      @id @default(autoincrement())
+  key_hash       String   @unique
+  nombre         String
+  restaurante_id Int
+  activo         Boolean  @default(true)
+  creado_at      DateTime @default(now())
+
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+
+  @@index([restaurante_id])
 }
 
 model Usuario {

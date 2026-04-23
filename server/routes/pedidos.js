@@ -7,6 +7,7 @@ const { getIO, emit: socketEmit } = require('../lib/socket');
 const { sendStockAlert } = require('../lib/mailer');
 const { createVentaConTicket } = require('../lib/ventaHelper');
 const { toDate, fromFilter }   = require('../lib/dateUtils');
+const { checkOrderLimit, incrementarOrden } = require('../middleware/checkPlanLimit');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -86,7 +87,7 @@ router.get('/por-mesa', async (req, res) => {
 });
 
 // POST /api/pedidos
-router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), async (req, res) => {
+router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), checkOrderLimit, async (req, res) => {
   try {
     const { cliente_nombre, items, item, total, estado = 'pendiente', fecha, reserva_id, mesa, personas } = req.body;
     if (!cliente_nombre) return res.status(400).json({ error: 'cliente_nombre requerido' });
@@ -121,6 +122,7 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), async (req, re
           pedido = await tx.pedido.create({
             data: { numero, cliente_nombre, item: resumen, total: totalCalc, estado, fecha: fechaHoy, restaurante_id: rid, reserva_id: reserva_id || null, mesa: mesa || '', personas: parseInt(personas) || 0 },
           });
+          await incrementarOrden(tx, rid);
 
           for (const i of items.filter(i => i.producto_id)) {
             await tx.inventarioMovimiento.create({
@@ -146,6 +148,7 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), async (req, re
     const pedido = await req.prisma.pedido.create({
       data: { numero, cliente_nombre, item, total: parseFloat(total), estado, fecha: fechaHoy, restaurante_id: rid, reserva_id: reserva_id || null, mesa: mesa || '', personas: parseInt(personas) || 0 },
     });
+    await incrementarOrden(req.prisma, rid);
     getIO()?.to(`rest_${rid}`).emit('pedido:nuevo', { id: pedido.id, numero: pedido.numero, cliente_nombre, mesa: mesa || '', total: parseFloat(total) });
     res.status(201).json({ ...pedido, items: [] });
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: e.message || 'Error interno' }); }
