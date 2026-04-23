@@ -119,30 +119,49 @@ router.post('/movimientos', async (req, res) => {
     if (!['entrada', 'salida', 'ajuste'].includes(tipo))
       return res.status(400).json({ error: 'tipo debe ser entrada, salida o ajuste' });
 
-    const prod = await req.prisma.producto.findFirst({ where: { id: parseInt(producto_id), restaurante_id: rid } });
-    if (!prod) return res.status(404).json({ error: 'Producto no encontrado' });
+    let stockAnterior;
+    let stockNuevo;
+    try {
+      await req.prisma.$transaction(async (tx) => {
+        const prod = await tx.producto.findFirst({ where: { id: parseInt(producto_id), restaurante_id: rid } });
+        if (!prod) throw Object.assign(new Error('Producto no encontrado'), { status: 404 });
+        stockAnterior = prod.stock;
 
-    const stockAnterior = prod.stock;
-    const stockDelta    = tipo === 'entrada' ? Number(cantidad) : -Number(cantidad);
-    const newStock      = Math.max(0, stockAnterior + stockDelta);
+        if (tipo === 'entrada') {
+          const updated = await tx.producto.update({
+            where: { id: parseInt(producto_id) },
+            data: { stock: { increment: Number(cantidad) } },
+          });
+          stockNuevo = updated.stock;
+        } else {
+          // salida / ajuste: rechazar si stock insuficiente (condición atómica)
+          const result = await tx.producto.updateMany({
+            where: { id: parseInt(producto_id), restaurante_id: rid, stock: { gte: Number(cantidad) } },
+            data: { stock: { decrement: Number(cantidad) } },
+          });
+          if (result.count === 0) throw Object.assign(new Error('Stock insuficiente para registrar salida'), { status: 400 });
+          stockNuevo = stockAnterior - Number(cantidad);
+        }
 
-    await req.prisma.$transaction([
-      req.prisma.inventarioMovimiento.create({
-        data: {
-          producto_id: parseInt(producto_id),
-          usuario_id:  req.user.id,
-          tipo,
-          cantidad:    Number(cantidad),
-          motivo:      motivo || null,
-          proveedor_id: proveedor_id ? parseInt(proveedor_id) : null,
-          restaurante_id: rid,
-          stock_anterior: stockAnterior,
-        },
-      }),
-      req.prisma.producto.update({ where: { id: parseInt(producto_id) }, data: { stock: newStock } }),
-    ]);
+        await tx.inventarioMovimiento.create({
+          data: {
+            producto_id: parseInt(producto_id),
+            usuario_id:  req.user.id,
+            tipo,
+            cantidad:    Number(cantidad),
+            motivo:      motivo || null,
+            proveedor_id: proveedor_id ? parseInt(proveedor_id) : null,
+            restaurante_id: rid,
+            stock_anterior: stockAnterior,
+          },
+        });
+      });
+    } catch (e) {
+      if (e.status) return res.status(e.status).json({ error: e.message });
+      throw e;
+    }
 
-    res.status(201).json({ ok: true, stock_anterior: stockAnterior, stock_nuevo: newStock });
+    res.status(201).json({ ok: true, stock_anterior: stockAnterior, stock_nuevo: stockNuevo });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Error al procesar el movimiento: ' + e.message }); }
 });
 

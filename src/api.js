@@ -6,6 +6,37 @@ function getToken() {
   return localStorage.getItem('token');
 }
 
+// Estado global para evitar múltiples llamadas concurrentes a /auth/refresh
+let _isRefreshing = false;
+let _refreshQueue = []; // [{ resolve, reject }]
+
+function _processQueue(error, newToken = null) {
+  _refreshQueue.forEach(({ resolve, reject }) => error ? reject(error) : resolve(newToken));
+  _refreshQueue = [];
+}
+
+function _clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user');
+  window.dispatchEvent(new Event('auth:logout'));
+}
+
+async function _doRefresh() {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) throw new Error('Sin refresh token');
+  const res = await fetch(`${BASE}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Refresh fallido');
+  localStorage.setItem('token', data.token);
+  if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+  return data.token;
+}
+
 async function request(path, options = {}) {
   const token = getToken();
   const headers = {
@@ -17,13 +48,45 @@ async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
 
   if (res.status === 401) {
-    // Token expirado o inválido — limpiar sesión
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.dispatchEvent(new Event('auth:logout'));
-    throw new Error('Sesión expirada');
+    // No reintentar si el propio refresh/login falla
+    if (path === '/auth/refresh' || path === '/auth/login') {
+      _clearSession();
+      throw new Error('Sesión expirada');
+    }
+
+    // Si ya hay un refresh en curso, encolar esta request
+    if (_isRefreshing) {
+      return new Promise((resolve, reject) => {
+        _refreshQueue.push({ resolve, reject });
+      }).then(newToken => _retryRequest(path, options, newToken));
+    }
+
+    _isRefreshing = true;
+    try {
+      const newToken = await _doRefresh();
+      _processQueue(null, newToken);
+      return _retryRequest(path, options, newToken);
+    } catch (err) {
+      _processQueue(err);
+      _clearSession();
+      throw new Error('Sesión expirada');
+    } finally {
+      _isRefreshing = false;
+    }
   }
 
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+}
+
+async function _retryRequest(path, options, newToken) {
+  const retryHeaders = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${newToken}`,
+    ...options.headers,
+  };
+  const res = await fetch(`${BASE}${path}`, { ...options, headers: retryHeaders });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
   return data;
@@ -110,25 +173,42 @@ export const api = {
   saveConfig: (data) => request('/config', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Upload logo (multipart/form-data — no JSON, no Content-Type manual)
-  uploadLogo: (file) => {
-    const token = getToken();
-    const form  = new FormData();
-    form.append('logo', file);
-    return fetch(`${BASE}/config/logo`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: form,
-    }).then(async res => {
-      if (res.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.dispatchEvent(new Event('auth:logout'));
-        throw new Error('Sesión expirada');
+  uploadLogo: async (file) => {
+    const doUpload = async (token) => {
+      const form = new FormData();
+      form.append('logo', file);
+      return fetch(`${BASE}/config/logo`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+    };
+
+    let res = await doUpload(getToken());
+    if (res.status === 401) {
+      if (_isRefreshing) {
+        const newToken = await new Promise((resolve, reject) => {
+          _refreshQueue.push({ resolve, reject });
+        });
+        res = await doUpload(newToken);
+      } else {
+        _isRefreshing = true;
+        try {
+          const newToken = await _doRefresh();
+          _processQueue(null, newToken);
+          res = await doUpload(newToken);
+        } catch (err) {
+          _processQueue(err);
+          _clearSession();
+          throw new Error('Sesión expirada');
+        } finally {
+          _isRefreshing = false;
+        }
       }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
-      return data;
-    });
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    return data;
   },
 
   // Usuarios

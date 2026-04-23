@@ -93,33 +93,41 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), async (req, re
       const totalCalc = items.reduce((s, i) => s + (parseFloat(i.precio_unitario) * parseInt(i.cantidad)), 0);
       const resumen   = items.map(i => `${i.nombre} x${i.cantidad}`).join(', ');
 
-      // FIX #3: verificar stock antes de crear el pedido
-      const stockSnap = {};
-      for (const i of items.filter(i => i.producto_id)) {
-        const prod = await req.prisma.producto.findFirst({ where: { id: parseInt(i.producto_id), restaurante_id: rid } });
-        if (!prod) return res.status(404).json({ error: `Producto "${i.nombre}" no encontrado` });
-        if (prod.stock < parseInt(i.cantidad)) return res.status(400).json({ error: `Stock insuficiente para ${prod.nombre}` });
-        stockSnap[i.producto_id] = prod.stock;
+      // Stock check + pedido creation + stock decrement son atómicos en una sola transacción interactiva
+      let pedido;
+      let createdItems;
+      try {
+        await req.prisma.$transaction(async (tx) => {
+          const stockSnap = {};
+          for (const i of items.filter(i => i.producto_id)) {
+            const prod = await tx.producto.findFirst({ where: { id: parseInt(i.producto_id), restaurante_id: rid } });
+            if (!prod) throw Object.assign(new Error(`Producto "${i.nombre}" no encontrado`), { status: 404 });
+            stockSnap[i.producto_id] = prod.stock; // capturar antes del decrement
+            const stockResult = await tx.producto.updateMany({
+              where: { id: parseInt(i.producto_id), restaurante_id: rid, stock: { gte: parseInt(i.cantidad) } },
+              data: { stock: { decrement: parseInt(i.cantidad) } },
+            });
+            if (stockResult.count === 0) throw Object.assign(new Error(`Stock insuficiente para ${prod.nombre}`), { status: 400 });
+          }
+
+          pedido = await tx.pedido.create({
+            data: { numero, cliente_nombre, item: resumen, total: totalCalc, estado, fecha: fechaHoy, restaurante_id: rid, reserva_id: reserva_id || null, mesa: mesa || '', personas: parseInt(personas) || 0 },
+          });
+
+          for (const i of items.filter(i => i.producto_id)) {
+            await tx.inventarioMovimiento.create({
+              data: { producto_id: parseInt(i.producto_id), usuario_id: req.user.id, tipo: 'salida', cantidad: parseInt(i.cantidad), motivo: `Pedido ${pedido.numero}`, restaurante_id: rid, stock_anterior: stockSnap[i.producto_id] ?? 0 },
+            });
+          }
+
+          createdItems = await Promise.all(items.map(i => tx.pedidoItem.create({
+            data: { pedido_id: pedido.id, producto_id: i.producto_id ? parseInt(i.producto_id) : null, nombre: i.nombre, cantidad: parseInt(i.cantidad), precio_unitario: parseFloat(i.precio_unitario), restaurante_id: rid },
+          })));
+        });
+      } catch (e) {
+        if (e.status) return res.status(e.status).json({ error: e.message });
+        throw e;
       }
-
-      const pedido = await req.prisma.pedido.create({
-        data: { numero, cliente_nombre, item: resumen, total: totalCalc, estado, fecha: fechaHoy, restaurante_id: rid, reserva_id: reserva_id || null, mesa: mesa || '', personas: parseInt(personas) || 0 },
-      });
-
-      const stockOps = items.filter(i => i.producto_id).flatMap(i => [
-        req.prisma.producto.update({ where: { id: parseInt(i.producto_id) }, data: { stock: { decrement: parseInt(i.cantidad) } } }),
-        req.prisma.inventarioMovimiento.create({
-          data: { producto_id: parseInt(i.producto_id), usuario_id: req.user.id, tipo: 'salida', cantidad: parseInt(i.cantidad), motivo: `Pedido ${pedido.numero}`, restaurante_id: rid, stock_anterior: stockSnap[i.producto_id] ?? 0 },
-        }),
-      ]);
-
-      const txResults = await req.prisma.$transaction([
-        ...items.map(i => req.prisma.pedidoItem.create({
-          data: { pedido_id: pedido.id, producto_id: i.producto_id ? parseInt(i.producto_id) : null, nombre: i.nombre, cantidad: parseInt(i.cantidad), precio_unitario: parseFloat(i.precio_unitario), restaurante_id: rid },
-        })),
-        ...stockOps,
-      ]);
-      const createdItems = txResults.slice(0, items.length);
 
       getIO()?.to(`rest_${rid}`).emit('pedido:nuevo', { id: pedido.id, numero: pedido.numero, cliente_nombre, mesa: mesa || '', total: totalCalc });
       return res.status(201).json({ ...pedido, items: createdItems });
