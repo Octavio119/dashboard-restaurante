@@ -20,12 +20,12 @@ RUN npx prisma generate
 # Copiar el resto del código del servidor
 COPY . .
 
-# Puerto expuesto (debe coincidir con la variable PORT)
-EXPOSE 9000
+# Puerto expuesto (Railway inyecta PORT en runtime — 3000 es el fallback)
+EXPOSE 3000
 
 # Variables de entorno por defecto
 ENV NODE_ENV=production
-ENV PORT=9000
+ENV PORT=3000
 
 # Comando para iniciar la aplicación
 CMD ["node", "index.js"]

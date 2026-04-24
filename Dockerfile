@@ -27,10 +27,10 @@ COPY --from=frontend-builder /app/dist ./public
 # Generar Prisma client
 RUN npx prisma generate
 
-EXPOSE 9000
+EXPOSE 3000
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget -qO- http://localhost:9000/api/health || exit 1
+# Healthcheck — usa ${PORT} para que coincida con la variable que Railway inyecta
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD wget -qO- http://localhost:${PORT:-3000}/api/health || exit 1
 
 CMD ["node", "index.js"]

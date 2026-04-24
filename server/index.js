@@ -7,6 +7,7 @@ const logger = require('./lib/logger');
   await initSocket(server);
 
   server.listen(PORT, () => {
+    console.log(`[server] Servidor listo en http://localhost:${PORT}`);
     logger.info({ port: PORT }, `Servidor listo en http://localhost:${PORT}`);
   });
 
