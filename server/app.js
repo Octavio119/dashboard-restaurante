@@ -74,6 +74,18 @@ app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use((req, _res, next) => { req.prisma = prisma; next(); });
 
+// ── HTTP request logging — debe ir ANTES de las rutas para capturar todas las peticiones ──
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    logger[level]({ method: req.method, url: req.url, status: res.statusCode, ms,
+      tenant: req.user?.restaurante_id }, 'request');
+  });
+  next();
+});
+
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/billing',    require('./routes/billing'));
 app.use('/api/pedidos',    require('./routes/pedidos'));
@@ -103,18 +115,6 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(publicDir)) {
   app.use(express.static(publicDir));
   app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 }
-
-// ── HTTP request logging ───────────────────────────────────────────────────────
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const ms = Date.now() - start;
-    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
-    logger[level]({ method: req.method, url: req.url, status: res.statusCode, ms,
-      tenant: req.user?.restaurante_id }, 'request');
-  });
-  next();
-});
 
 app.use((err, _req, res, _next) => {
   logger.error({ err }, 'unhandled error');

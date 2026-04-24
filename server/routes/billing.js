@@ -4,12 +4,15 @@ const logger      = require('../lib/logger');
 const requireAuth = require('../middleware/auth');
 const { PLAN_LIMITS } = require('../lib/planLimits');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY || '');
+if (!process.env.STRIPE_SECRET_KEY) {
+  logger.warn('STRIPE_SECRET_KEY no configurada — rutas de billing no funcionarán');
+}
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 
-const PRICE_TO_PLAN = {
-  [process.env.STRIPE_PRICE_PRO]:      'pro',
-  [process.env.STRIPE_PRICE_BUSINESS]: 'business',
-};
+// Construir el mapa solo con las claves que estén definidas para evitar undefined como key
+const PRICE_TO_PLAN = {};
+if (process.env.STRIPE_PRICE_PRO)      PRICE_TO_PLAN[process.env.STRIPE_PRICE_PRO]      = 'pro';
+if (process.env.STRIPE_PRICE_BUSINESS) PRICE_TO_PLAN[process.env.STRIPE_PRICE_BUSINESS] = 'business';
 
 // POST /api/billing/checkout
 router.post('/checkout', requireAuth, async (req, res) => {

@@ -16,9 +16,9 @@ const prisma = basePrisma.$extends({
     $allModels: {
       async $allOperations({ args, query }) {
         const rid = getRestaurantId();
-        if (rid) {
-          // Ejecutamos SET LOCAL en la misma transacción que la consulta para que PostgreSQL reconozca la variable.
-          // Nota: SET LOCAL solo dura mientras dure la transacción actual.
+        if (rid && Number.isFinite(rid)) {
+          // SET LOCAL solo dura mientras dure la transacción actual.
+          // rid es siempre entero (parseInt en runWithContext), Number.isFinite protege contra NaN.
           const [_, result] = await basePrisma.$transaction([
             basePrisma.$executeRawUnsafe(`SET LOCAL "app.current_restaurant_id" = '${rid}'`),
             query(args)
