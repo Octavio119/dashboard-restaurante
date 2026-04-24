@@ -1,4 +1,4 @@
-const { PrismaClient } = require('C:/prisma-gen');
+const { PrismaClient } = require('@prisma/client');
 const { getRestaurantId } = require('./context');
 
 const basePrisma = new PrismaClient({

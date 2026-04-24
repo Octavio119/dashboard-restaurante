@@ -7,7 +7,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "postinstall": "prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1035.0",
@@ -37,5 +38,8 @@
     "jest": "^30.3.0",
     "nodemon": "^3.1.0",
     "supertest": "^7.2.2"
+  },
+  "prisma": {
+    "schema": "./prisma/schema.prisma"
   }
 }

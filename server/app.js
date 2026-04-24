@@ -89,6 +89,7 @@ app.use('/api/inventario', require('./routes/inventario'));
 app.use('/api/analytics', require('./routes/analytics'));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+app.get('/health',     (_req, res) => res.status(200).json({ status: 'ok' }));
 
 // ── Swagger UI ─────────────────────────────────────────────────────────────────
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {

@@ -19,7 +19,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run test:backend && npm run test",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "start": "cd server && node index.js",
+    "postinstall": "cd server && npm install && prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {
     "framer-motion": "^11.11.1",
