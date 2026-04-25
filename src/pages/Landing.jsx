@@ -52,7 +52,7 @@ function VideoModal({ open, onClose }) {
           <iframe
             className="w-full h-full"
             src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-            title="Demo MesaOS"
+            title="Demo MastexoPOS"
             allow="autoplay; encrypted-media"
             allowFullScreen
           />
@@ -89,8 +89,8 @@ function Navbar({ onDemoOpen }) {
         {/* Logo */}
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2">
           <span className="text-xl font-extrabold tracking-tight">
-            <span className="text-[#1D9E75]">Mesa</span>
-            <span className="text-gray-900">OS</span>
+            <span className="text-[#1D9E75]">Mastexo</span>
+            <span className="text-gray-900">POS</span>
           </span>
         </button>
 
@@ -198,7 +198,7 @@ function Hero({ onDemoOpen }) {
             <span className="w-3 h-3 rounded-full bg-red-400" />
             <span className="w-3 h-3 rounded-full bg-yellow-400" />
             <span className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="mx-auto text-xs text-gray-400">app.mesaos.com/dashboard</span>
+            <span className="mx-auto text-xs text-gray-400">app.mastexopos.com/dashboard</span>
           </div>
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 aspect-[16/9] flex items-center justify-center">
             <div className="grid grid-cols-3 gap-4 p-8 w-full opacity-60">
@@ -454,7 +454,7 @@ function Pricing() {
 const FAQ_ITEMS = [
   {
     q: '¿Necesito instalar algo?',
-    a: 'No. MesaOS funciona completamente desde el navegador, en cualquier dispositivo. Solo necesitas internet.',
+    a: 'No. MastexoPOS funciona completamente desde el navegador, en cualquier dispositivo. Solo necesitas internet.',
   },
   {
     q: '¿Puedo cambiar de plan?',
@@ -545,15 +545,15 @@ function Footer() {
     <footer className="bg-gray-900 text-gray-400 py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
         <span className="font-bold text-base">
-          <span className="text-[#1D9E75]">Mesa</span>
-          <span className="text-white">OS</span>
+          <span className="text-[#1D9E75]">Mastexo</span>
+          <span className="text-white">POS</span>
         </span>
         <div className="flex items-center gap-5">
           <a href="/terminos" className="hover:text-white transition">Términos</a>
           <a href="/privacidad" className="hover:text-white transition">Privacidad</a>
-          <a href="mailto:hola@mesaos.com" className="hover:text-white transition">Contacto</a>
+          <a href="mailto:hola@mastexopos.com" className="hover:text-white transition">Contacto</a>
         </div>
-        <span className="text-xs text-gray-600">© {new Date().getFullYear()} MesaOS. Todos los derechos reservados.</span>
+        <span className="text-xs text-gray-600">© {new Date().getFullYear()} MastexoPOS. Todos los derechos reservados.</span>
       </div>
     </footer>
   );

@@ -195,8 +195,8 @@ export default function Register() {
       {/* Navbar mínimo */}
       <header className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto w-full">
         <a href="/" className="text-xl font-extrabold tracking-tight">
-          <span className="text-[#1D9E75]">Mesa</span>
-          <span className="text-gray-900">OS</span>
+          <span className="text-[#1D9E75]">Mastexo</span>
+          <span className="text-gray-900">POS</span>
         </a>
         <a
           href="/login"
