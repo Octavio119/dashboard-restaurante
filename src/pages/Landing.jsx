@@ -158,25 +158,124 @@ function Navbar({ onDemoOpen }) {
   );
 }
 
+// ─── Animated Counter hook ────────────────────────────────────────────────────
+function useCounter(target, duration = 1800, active = false) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const startTime = performance.now();
+    let raf;
+    const tick = (now) => {
+      const p = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.floor(eased * target));
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setValue(target);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration, active]);
+  return value;
+}
+
+// ─── Hero Metric Card ─────────────────────────────────────────────────────────
+const HERO_METRICS = [
+  {
+    label: 'Órdenes hoy',
+    target: 847,
+    format: (n) => n.toLocaleString('es-CL'),
+    delta: '+12% vs ayer',
+    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  },
+  {
+    label: 'Ventas del mes',
+    target: 24,
+    format: (n) => `$${(n / 10).toFixed(1)}M`,
+    delta: '+23% este mes',
+    icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  },
+  {
+    label: 'Mesas activas',
+    target: 23,
+    format: (n) => `${n}/30`,
+    delta: '76% ocupación',
+    icon: 'M3 10h18M3 14h18M10 6h4M10 18h4M5 6h.01M5 18h.01M19 6h.01M19 18h.01',
+  },
+];
+
+function HeroMetricCard({ label, target, format, delta, icon, active }) {
+  const value = useCounter(target, 1800, active);
+  return (
+    <div className="flex-1 bg-white border border-[#E2EDE9] rounded-2xl p-5 text-left shadow-sm hover:shadow-md hover:border-[#1D9E75]/30 transition-all duration-200">
+      <div className="w-8 h-8 rounded-lg bg-[#1D9E75]/10 flex items-center justify-center mb-3">
+        <Icon path={icon} className="w-4 h-4 text-[#1D9E75]" />
+      </div>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8AAAA0] mb-1">{label}</p>
+      <p className="text-3xl font-extrabold text-gray-900 tracking-tight leading-none mb-2">
+        {format(value)}
+      </p>
+      <p className="flex items-center gap-1 text-xs font-semibold text-[#1D9E75]">
+        <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+        </svg>
+        {delta}
+      </p>
+    </div>
+  );
+}
+
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({ onDemoOpen }) {
   const navigate = useNavigate();
+  const [animate, setAnimate] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setAnimate(true); },
+      { threshold: 0.15 }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="pt-32 pb-20 px-4 sm:px-6 bg-gradient-to-b from-[#f0fdf8] to-white text-center">
+    <section ref={sectionRef} className="pt-32 pb-20 px-4 sm:px-6 bg-gradient-to-b from-[#f0fdf8] to-white text-center">
       <div className="max-w-3xl mx-auto">
+        {/* Badge */}
         <span className="inline-block mb-4 px-3 py-1 rounded-full bg-[#1D9E75]/10 text-[#1D9E75] text-xs font-semibold tracking-wide uppercase">
           Nuevo · Gratis para empezar
         </span>
+
+        {/* Headline — "primer" con underline verde */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
           Gestiona tu restaurante<br />
-          <span className="text-[#1D9E75]">desde el primer día</span>
+          desde el{' '}
+          <span className="relative inline-block text-[#1D9E75]">
+            primer
+            <span
+              aria-hidden="true"
+              className="absolute bottom-0.5 left-0 right-0 h-1 rounded-full bg-[#1D9E75]/70"
+            />
+          </span>
+          {' '}día
         </h1>
+
+        {/* Subtitle */}
         <p className="text-lg sm:text-xl text-gray-500 mb-8 max-w-xl mx-auto">
           Pedidos, mesas, ventas y stock en un solo sistema.&nbsp;
           <span className="font-medium text-gray-700">Sin instalar nada.</span>
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
+        {/* Metric cards con contadores animados */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 max-w-2xl mx-auto">
+          {HERO_METRICS.map((m) => (
+            <HeroMetricCard key={m.label} {...m} active={animate} />
+          ))}
+        </div>
+
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-3">
           <button
             onClick={() => navigate('/register')}
             className="px-7 py-3.5 rounded-xl bg-[#1D9E75] text-white font-semibold text-base hover:bg-[#178a64] transition shadow-md shadow-[#1D9E75]/30"
@@ -192,7 +291,12 @@ function Hero({ onDemoOpen }) {
           </button>
         </div>
 
-        {/* Dashboard screenshot placeholder */}
+        {/* Social proof */}
+        <p className="text-xs text-gray-400 mb-14">
+          127 restaurantes ya lo usan · Sin tarjeta de crédito · Cancela cuando quieras
+        </p>
+
+        {/* Dashboard mockup */}
         <div className="relative mx-auto max-w-4xl rounded-2xl overflow-hidden border border-gray-200 shadow-2xl">
           <div className="bg-gray-800 h-8 flex items-center gap-2 px-4">
             <span className="w-3 h-3 rounded-full bg-red-400" />
