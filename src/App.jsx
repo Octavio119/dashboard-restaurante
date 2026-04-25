@@ -50,6 +50,8 @@ import ClientesPage from './pages/ClientesPage';
 import InventarioPage from './pages/InventarioPage';
 import VentasPage from './pages/VentasPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import Landing from './pages/Landing';
+import Register from './pages/Register';
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 const App = () => {
@@ -1337,7 +1339,12 @@ const App = () => {
       </div>
     );
   }
-  if (!user) return <LoginScreen />;
+  if (!user) {
+    const path = window.location.pathname;
+    if (path === '/' || path === '') return <Landing />;
+    if (path === '/register') return <Register />;
+    return <LoginScreen />;
+  }
 
   // ─── Derived ─────────────────────────────────────────────────────────────────
   const todayReservations  = reservas.filter(r => r.fecha === new Date().toISOString().split('T')[0]);
