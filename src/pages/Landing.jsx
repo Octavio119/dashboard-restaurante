@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import PricingCards from '../components/PricingCards';
+import HeroSplit from '../components/HeroSplit';
+import LogosBiMarquee from '../components/LogosBiMarquee';
+import FeaturesStagger from '../components/FeaturesStagger';
 
 const useNavigate = () => (path) => { window.location.href = path; };
 
@@ -429,63 +433,7 @@ function Features() {
 }
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
-const PLANS = [
-  {
-    name: 'Starter',
-    price: '$0',
-    period: '/mes',
-    desc: 'Para empezar sin riesgo',
-    highlight: false,
-    features: [
-      '50 órdenes por mes',
-      '2 usuarios',
-      'Pedidos y mesas',
-      'Reservas básicas',
-      'Soporte por email',
-    ],
-    cta: 'Empezar gratis',
-    href: '/register',
-  },
-  {
-    name: 'Pro',
-    price: '$29',
-    period: '/mes',
-    desc: 'Para restaurantes en crecimiento',
-    highlight: true,
-    badge: 'Más popular',
-    features: [
-      'Órdenes ilimitadas',
-      'Usuarios ilimitados',
-      'Analytics avanzado',
-      'WebSocket tiempo real',
-      'Alertas de stock por email',
-      'Tickets en PDF',
-      'Soporte prioritario',
-    ],
-    cta: 'Empezar Pro',
-    href: '/register?plan=pro',
-  },
-  {
-    name: 'Business',
-    price: '$79',
-    period: '/mes',
-    desc: 'Para cadenas y multi-local',
-    highlight: false,
-    features: [
-      'Todo lo de Pro',
-      'Hasta 5 locales',
-      'Dashboard global multi-local',
-      'API access (integrations)',
-      'Soporte dedicado',
-    ],
-    cta: 'Empezar Business',
-    href: '/register?plan=business',
-  },
-];
-
 function Pricing() {
-  const navigate = useNavigate();
-
   return (
     <section id="precios" className="py-24 px-4 sm:px-6 bg-gray-50">
       <div className="max-w-5xl mx-auto">
@@ -495,60 +443,7 @@ function Pricing() {
           </h2>
           <p className="text-gray-500 text-lg">Empieza gratis, escala cuando lo necesites.</p>
         </div>
-
-        <div className="grid md:grid-cols-3 gap-7 items-stretch">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative flex flex-col rounded-2xl p-7 border transition-all ${
-                plan.highlight
-                  ? 'border-[#1D9E75] shadow-xl shadow-[#1D9E75]/15 bg-white'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
-              }`}
-            >
-              {plan.badge && (
-                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#1D9E75] text-white text-xs font-bold tracking-wide shadow">
-                  {plan.badge}
-                </span>
-              )}
-
-              <div className="mb-6">
-                <h3 className={`text-sm font-semibold uppercase tracking-widest mb-1 ${plan.highlight ? 'text-[#1D9E75]' : 'text-gray-400'}`}>
-                  {plan.name}
-                </h3>
-                <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-extrabold text-gray-900">{plan.price}</span>
-                  <span className="text-gray-400 text-sm mb-1.5">{plan.period}</span>
-                </div>
-                <p className="text-gray-500 text-sm">{plan.desc}</p>
-              </div>
-
-              <ul className="space-y-3 flex-1 mb-7">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
-                    <Icon path={ICONS.check} className="w-4 h-4 text-[#1D9E75] mt-0.5 shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => navigate(plan.href)}
-                className={`w-full py-3 rounded-xl font-semibold text-sm transition ${
-                  plan.highlight
-                    ? 'bg-[#1D9E75] text-white hover:bg-[#178a64] shadow-md shadow-[#1D9E75]/30'
-                    : 'border border-gray-300 text-gray-700 hover:border-[#1D9E75] hover:text-[#1D9E75]'
-                }`}
-              >
-                {plan.cta}
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <p className="text-center text-gray-400 text-sm mt-6">
-          Sin tarjeta de crédito para Starter &nbsp;·&nbsp; Cancela cuando quieras
-        </p>
+        <PricingCards />
       </div>
     </section>
   );
@@ -672,9 +567,9 @@ export default function Landing() {
       <VideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
       <Navbar onDemoOpen={() => setVideoOpen(true)} />
       <main>
-        <Hero onDemoOpen={() => setVideoOpen(true)} />
-        <SocialProof />
-        <Features />
+        <HeroSplit onDemoOpen={() => setVideoOpen(true)} />
+        <LogosBiMarquee />
+        <FeaturesStagger />
         <Pricing />
         <FAQ />
         <FooterCTA />
