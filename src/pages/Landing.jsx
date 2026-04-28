@@ -1,580 +1,590 @@
 import { useState, useEffect, useRef } from 'react';
-import PricingCards from '../components/PricingCards';
-import HeroSplit from '../components/HeroSplit';
-import LogosBiMarquee from '../components/LogosBiMarquee';
-import FeaturesStagger from '../components/FeaturesStagger';
+import logo from '../../assets/logo.png';
+import './landing.css';
 
-const useNavigate = () => (path) => { window.location.href = path; };
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-const Icon = ({ path, className = 'w-6 h-6' }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d={path} />
+const STAR = (
+  <svg className="star-svg" viewBox="0 0 20 20">
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
   </svg>
 );
 
-const ICONS = {
-  menu:      'M4 6h16M4 12h16M4 18h16',
-  close:     'M6 18L18 6M6 6l12 12',
-  check:     'M5 13l4 4L19 7',
-  bolt:      'M13 10V3L4 14h7v7l9-11h-7z',
-  calendar:  'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-  receipt:   'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z',
-  bell:      'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-  users:     'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-  chart:     'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-  play:      'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-  chevron:   'M19 9l-7 7-7-7',
-  star:      'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z',
-};
+const STARS = <div className="tcard-stars" aria-label="5 de 5 estrellas">{STAR}{STAR}{STAR}{STAR}{STAR}</div>;
 
-// ─── Video Modal ──────────────────────────────────────────────────────────────
-function VideoModal({ open, onClose }) {
+const VERIFIED_ICON = (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
+const CHECK_ICON = (
+  <svg className="fi on" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const X_ICON = (
+  <svg className="fi off" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+export default function Landing() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  // Theme init + Google Fonts + counter animation
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    if (open) document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+    const saved = localStorage.getItem('theme');
+    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && sysDark)) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else if (saved === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
 
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/80 transition"
-        >
-          <Icon path={ICONS.close} className="w-5 h-5" />
-        </button>
-        <div className="aspect-video bg-black">
-          <iframe
-            className="w-full h-full"
-            src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-            title="Demo MastexoPOS"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
+    if (!document.getElementById('landing-fonts')) {
+      const link = document.createElement('link');
+      link.id = 'landing-fonts';
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap';
+      document.head.appendChild(link);
+    }
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar({ onDemoOpen }) {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const navigate = useNavigate();
+    function animateCount(el, target, duration) {
+      const start = performance.now();
+      function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(target * ease);
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const counterObs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const target = parseInt(el.dataset.count, 10);
+          if (!isNaN(target)) { animateCount(el, target, 1400); counterObs.unobserve(el); }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('[data-count]').forEach(el => counterObs.observe(el));
+    return () => counterObs.disconnect();
   }, []);
 
-  const scrollTo = (id) => {
-    setMobileOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  return (
-    <header
-      className={`fixed top-0 inset-x-0 z-40 transition-all duration-300 ${
-        scrolled ? 'bg-white/95 backdrop-blur shadow-sm' : 'bg-transparent'
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2">
-          <span className="text-xl font-extrabold tracking-tight">
-            <span className="text-[#1D9E75]">Mastexo</span>
-            <span className="text-gray-900">POS</span>
-          </span>
-        </button>
-
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-gray-600">
-          <button onClick={() => scrollTo('features')} className="hover:text-[#1D9E75] transition">Features</button>
-          <button onClick={() => scrollTo('precios')} className="hover:text-[#1D9E75] transition">Precios</button>
-          <button onClick={() => scrollTo('faq')} className="hover:text-[#1D9E75] transition">FAQ</button>
-        </nav>
-
-        {/* Desktop CTA */}
-        <div className="hidden md:flex items-center gap-3">
-          <button
-            onClick={() => navigate('/login')}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:border-[#1D9E75] hover:text-[#1D9E75] transition"
-          >
-            Iniciar sesión
-          </button>
-          <button
-            onClick={() => navigate('/register')}
-            className="px-4 py-2 rounded-lg bg-[#1D9E75] text-white text-sm font-semibold hover:bg-[#178a64] transition shadow-sm"
-          >
-            Empezar gratis
-          </button>
-        </div>
-
-        {/* Mobile hamburger */}
-        <button
-          className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Menú"
-        >
-          <Icon path={mobileOpen ? ICONS.close : ICONS.menu} className="w-6 h-6" />
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 px-4 pb-5 pt-3 space-y-3 shadow-lg">
-          {['features', 'precios', 'faq'].map((id) => (
-            <button
-              key={id}
-              onClick={() => scrollTo(id)}
-              className="block w-full text-left text-gray-700 font-medium py-2 capitalize hover:text-[#1D9E75] transition"
-            >
-              {id === 'precios' ? 'Precios' : id.charAt(0).toUpperCase() + id.slice(1)}
-            </button>
-          ))}
-          <hr className="border-gray-100" />
-          <button
-            onClick={() => { setMobileOpen(false); navigate('/login'); }}
-            className="block w-full text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:border-[#1D9E75] transition"
-          >
-            Iniciar sesión
-          </button>
-          <button
-            onClick={() => { setMobileOpen(false); navigate('/register'); }}
-            className="block w-full text-center px-4 py-2.5 rounded-lg bg-[#1D9E75] text-white font-semibold hover:bg-[#178a64] transition"
-          >
-            Empezar gratis
-          </button>
-        </div>
-      )}
-    </header>
-  );
-}
-
-// ─── Animated Counter hook ────────────────────────────────────────────────────
-function useCounter(target, duration = 1800, active = false) {
-  const [value, setValue] = useState(0);
+  // Close mobile menu on outside click
   useEffect(() => {
-    if (!active) return;
-    const startTime = performance.now();
-    let raf;
-    const tick = (now) => {
-      const p = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setValue(Math.floor(eased * target));
-      if (p < 1) raf = requestAnimationFrame(tick);
-      else setValue(target);
+    if (!menuOpen) return;
+    const handler = (e) => {
+      if (!e.target.closest('#mobileMenu') && !e.target.closest('#burgerBtn')) setMenuOpen(false);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration, active]);
-  return value;
-}
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [menuOpen]);
 
-// ─── Hero Metric Card ─────────────────────────────────────────────────────────
-const HERO_METRICS = [
-  {
-    label: 'Órdenes hoy',
-    target: 847,
-    format: (n) => n.toLocaleString('es-CL'),
-    delta: '+12% vs ayer',
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-  },
-  {
-    label: 'Ventas del mes',
-    target: 24,
-    format: (n) => `$${(n / 10).toFixed(1)}M`,
-    delta: '+23% este mes',
-    icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-  },
-  {
-    label: 'Mesas activas',
-    target: 23,
-    format: (n) => `${n}/30`,
-    delta: '76% ocupación',
-    icon: 'M3 10h18M3 14h18M10 6h4M10 18h4M5 6h.01M5 18h.01M19 6h.01M19 18h.01',
-  },
-];
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    document.documentElement.classList.toggle('light', !isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
 
-function HeroMetricCard({ label, target, format, delta, icon, active }) {
-  const value = useCounter(target, 1800, active);
-  return (
-    <div className="flex-1 bg-white border border-[#E2EDE9] rounded-2xl p-5 text-left shadow-sm hover:shadow-md hover:border-[#1D9E75]/30 transition-all duration-200">
-      <div className="w-8 h-8 rounded-lg bg-[#1D9E75]/10 flex items-center justify-center mb-3">
-        <Icon path={icon} className="w-4 h-4 text-[#1D9E75]" />
-      </div>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-[#8AAAA0] mb-1">{label}</p>
-      <p className="text-3xl font-extrabold text-gray-900 tracking-tight leading-none mb-2">
-        {format(value)}
-      </p>
-      <p className="flex items-center gap-1 text-xs font-semibold text-[#1D9E75]">
-        <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-        </svg>
-        {delta}
-      </p>
-    </div>
-  );
-}
-
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-function Hero({ onDemoOpen }) {
-  const navigate = useNavigate();
-  const [animate, setAnimate] = useState(false);
-  const sectionRef = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setAnimate(true); },
-      { threshold: 0.15 }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+  function toggleFaq(id) {
+    setOpenFaq(prev => (prev === id ? null : id));
+  }
 
   return (
-    <section ref={sectionRef} className="pt-32 pb-20 px-4 sm:px-6 bg-gradient-to-b from-[#f0fdf8] to-white text-center">
-      <div className="max-w-3xl mx-auto">
-        {/* Badge */}
-        <span className="inline-block mb-4 px-3 py-1 rounded-full bg-[#1D9E75]/10 text-[#1D9E75] text-xs font-semibold tracking-wide uppercase">
-          Nuevo · Gratis para empezar
-        </span>
+    <>
+      {/* ── NAVBAR ── */}
+      <nav id="nav" role="navigation" aria-label="Principal">
+        <div className="nav-pill">
+          <a href="#" className="nav-logo" aria-label="MastexoPOS inicio">
+            <img src={logo} alt="MastexoPOS" style={{ height: '40px', width: 'auto', display: 'block', objectFit: 'contain' }} />
+          </a>
 
-        {/* Headline — "primer" con underline verde */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-5">
-          Gestiona tu restaurante<br />
-          desde el{' '}
-          <span className="relative inline-block text-[#1D9E75]">
-            primer
-            <span
-              aria-hidden="true"
-              className="absolute bottom-0.5 left-0 right-0 h-1 rounded-full bg-[#1D9E75]/70"
-            />
-          </span>
-          {' '}día
-        </h1>
+          <ul className="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#pricing">Precios</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
 
-        {/* Subtitle */}
-        <p className="text-lg sm:text-xl text-gray-500 mb-8 max-w-xl mx-auto">
-          Pedidos, mesas, ventas y stock en un solo sistema.&nbsp;
-          <span className="font-medium text-gray-700">Sin instalar nada.</span>
-        </p>
+          <div className="nav-spacer" />
 
-        {/* Metric cards con contadores animados */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 max-w-2xl mx-auto">
-          {HERO_METRICS.map((m) => (
-            <HeroMetricCard key={m.label} {...m} active={animate} />
-          ))}
-        </div>
-
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-3">
-          <button
-            onClick={() => navigate('/register')}
-            className="px-7 py-3.5 rounded-xl bg-[#1D9E75] text-white font-semibold text-base hover:bg-[#178a64] transition shadow-md shadow-[#1D9E75]/30"
-          >
-            Empezar gratis
-          </button>
-          <button
-            onClick={onDemoOpen}
-            className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-base hover:border-[#1D9E75] hover:text-[#1D9E75] transition"
-          >
-            <Icon path={ICONS.play} className="w-5 h-5" />
-            Ver demo en 2 minutos
-          </button>
-        </div>
-
-        {/* Social proof */}
-        <p className="text-xs text-gray-400 mb-14">
-          127 restaurantes ya lo usan · Sin tarjeta de crédito · Cancela cuando quieras
-        </p>
-
-        {/* Dashboard mockup */}
-        <div className="relative mx-auto max-w-4xl rounded-2xl overflow-hidden border border-gray-200 shadow-2xl">
-          <div className="bg-gray-800 h-8 flex items-center gap-2 px-4">
-            <span className="w-3 h-3 rounded-full bg-red-400" />
-            <span className="w-3 h-3 rounded-full bg-yellow-400" />
-            <span className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="mx-auto text-xs text-gray-400">app.mastexopos.com/dashboard</span>
+          <div className="nav-actions">
+            <button id="theme-toggle" onClick={toggleTheme} aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+              <svg className="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+              <svg className="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </button>
+            <a href="/login" className="btn-nav-ghost">Iniciar sesión</a>
+            <a href="/register" className="btn-nav-primary">Empezar gratis</a>
+            <button className="nav-burger" id="burgerBtn" onClick={() => setMenuOpen(o => !o)} aria-label="Menú" aria-expanded={menuOpen}>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 aspect-[16/9] flex items-center justify-center">
-            <div className="grid grid-cols-3 gap-4 p-8 w-full opacity-60">
-              {['Pedidos activos', 'Ventas hoy', 'Mesas ocupadas', 'Stock crítico', 'Clientes', 'Tickets'].map((label, i) => (
-                <div key={i} className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="text-xs text-gray-400 mb-1">{label}</div>
-                  <div className="text-2xl font-bold text-white">{['12', '$182k', '8/12', '3', '47', '24'][i]}</div>
-                  <div className="mt-2 h-1.5 bg-[#1D9E75]/30 rounded-full">
-                    <div className="h-full bg-[#1D9E75] rounded-full" style={{ width: `${[75, 60, 66, 25, 80, 55][i]}%` }} />
+        </div>
+
+        <div className={`nav-mobile-menu${menuOpen ? ' open' : ''}`} id="mobileMenu" role="menu">
+          <a href="#features" role="menuitem" onClick={() => setMenuOpen(false)}>Features</a>
+          <a href="#pricing" role="menuitem" onClick={() => setMenuOpen(false)}>Precios</a>
+          <a href="#faq" role="menuitem" onClick={() => setMenuOpen(false)}>FAQ</a>
+          <hr className="nav-mobile-divider" />
+          <a href="/login" role="menuitem" style={{ color: 'var(--subtle)' }} onClick={() => setMenuOpen(false)}>Iniciar sesión</a>
+          <a href="/register" className="nav-mobile-cta" role="menuitem" onClick={() => setMenuOpen(false)}>Empezar gratis →</a>
+        </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section id="hero" aria-label="Encabezado principal">
+        <div className="hero-glow" aria-hidden="true" />
+
+        <div className="hero-grid container">
+          <div className="hero-copy">
+            <div className="hero-badge">
+              <span className="live-dot" aria-hidden="true" />
+              +200 restaurantes activos · Chile y LatAm
+            </div>
+
+            <h1 className="hero-h1">
+              Tu restaurante,<br />
+              <em>sin caos</em><br />
+              desde el primer pedido
+            </h1>
+
+            <p className="hero-sub">
+              Pedidos, mesas, ventas y stock en un solo sistema. Sin instalar nada, sin técnicos, sin sorpresas.
+            </p>
+
+            <div className="hero-ctas">
+              <a href="/register" className="btn btn-green">
+                Crear mi restaurante gratis
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </a>
+              <a href="#features" className="btn btn-outline">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Ver demo en 2 min
+              </a>
+            </div>
+
+            <p className="hero-trust">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Sin tarjeta de crédito
+              <span className="trust-dot" aria-hidden="true" />
+              Cancela cuando quieras
+              <span className="trust-dot" aria-hidden="true" />
+              Setup en 5 minutos
+            </p>
+          </div>
+
+          {/* Dashboard Mockup */}
+          <div className="hero-mockup" aria-hidden="true">
+            <div className="mockup-glow" />
+            <div className="mockup-window">
+              <div className="mockup-chrome">
+                <div className="chrome-dots">
+                  <div className="cd r" /><div className="cd y" /><div className="cd g" />
+                </div>
+                <div className="chrome-addr">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  app.mastexopos.com
+                </div>
+              </div>
+              <div className="mockup-body">
+                <div className="mock-sb">
+                  <div className="mock-sb-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                    </svg>
+                  </div>
+                  <div className="mock-sb-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div className="mock-sb-item inactive">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div className="mock-sb-item inactive">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="mock-sb-item inactive">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
                   </div>
                 </div>
-              ))}
+                <div className="mock-main">
+                  <div className="mock-topbar">
+                    <span className="mock-topbar-title">Dashboard</span>
+                    <span className="mock-topbar-date">Hoy, 14:32</span>
+                  </div>
+                  <div className="mock-kpis">
+                    <div className="mock-kpi">
+                      <div className="mock-kpi-label">Ventas hoy</div>
+                      <div className="mock-kpi-val">$847K</div>
+                      <div className="mock-kpi-delta">↑ +12.4%</div>
+                    </div>
+                    <div className="mock-kpi">
+                      <div className="mock-kpi-label">Pedidos activos</div>
+                      <div className="mock-kpi-val">14</div>
+                      <div className="mock-kpi-delta">8 en curso</div>
+                    </div>
+                    <div className="mock-kpi">
+                      <div className="mock-kpi-label">Mesas ocupadas</div>
+                      <div className="mock-kpi-val">6/9</div>
+                      <div className="mock-kpi-delta">↑ 67% ocupación</div>
+                    </div>
+                  </div>
+                  <div className="mock-row">
+                    <div className="mock-card">
+                      <div className="mock-card-hdr">
+                        <span className="mock-card-ttl">Ventas esta semana</span>
+                        <span className="mock-card-badge">+18%</span>
+                      </div>
+                      <div className="mock-bars">
+                        <div className="mock-bar" style={{ height: '42%' }} />
+                        <div className="mock-bar" style={{ height: '58%' }} />
+                        <div className="mock-bar" style={{ height: '35%' }} />
+                        <div className="mock-bar" style={{ height: '72%' }} />
+                        <div className="mock-bar" style={{ height: '50%' }} />
+                        <div className="mock-bar hi" style={{ height: '100%' }} />
+                        <div className="mock-bar" style={{ height: '62%' }} />
+                      </div>
+                    </div>
+                    <div className="mock-card mock-orders">
+                      <div className="mock-card-hdr">
+                        <span className="mock-card-ttl">Pedidos live</span>
+                      </div>
+                      <div className="mock-order-row">
+                        <span className="mock-order-dot dot-open" />
+                        <span className="mock-order-name">Mesa 3 · 4 items</span>
+                        <span className="mock-order-status s-open">Abierto</span>
+                      </div>
+                      <div className="mock-order-row">
+                        <span className="mock-order-dot dot-prep" />
+                        <span className="mock-order-name">Mesa 7 · 2 items</span>
+                        <span className="mock-order-status s-prep">Cocina</span>
+                      </div>
+                      <div className="mock-order-row">
+                        <span className="mock-order-dot dot-open" />
+                        <span className="mock-order-name">Mesa 1 · 6 items</span>
+                        <span className="mock-order-status s-open">Abierto</span>
+                      </div>
+                      <div className="mock-order-row">
+                        <span className="mock-order-dot dot-done" />
+                        <span className="mock-order-name">Mesa 5 · 3 items</span>
+                        <span className="mock-order-status s-done">Listo</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// ─── Social Proof ─────────────────────────────────────────────────────────────
-function SocialProof() {
-  const testimonials = [
-    { name: 'Restaurante Don Carlos', location: 'Santiago, Chile', quote: '"Antes anotábamos los pedidos en papel. Ahora todo está en pantalla y no perdemos ninguna orden."' },
-    { name: 'La Terraza Bistró', location: 'Valparaíso, Chile', quote: '"El control de stock nos ahorró pérdidas que no sabíamos que teníamos."' },
-    { name: 'Parrilla Los Robles', location: 'Concepción, Chile', quote: '"En 30 minutos ya teníamos el sistema corriendo. Increíblemente fácil."' },
-  ];
+      {/* ── SOCIAL PROOF ── */}
+      <section id="social" aria-label="Prueba social">
+        <div className="social-top container">
+          <div className="stats-row">
+            <div className="stat-item">
+              <div className="stat-num"><span className="g">+200</span></div>
+              <div className="stat-label">Restaurantes activos</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-num"><span className="g">98</span>%</div>
+              <div className="stat-label">Tasa de retención</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-num"><span className="g">4.9</span></div>
+              <div className="stat-label">Calificación promedio</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-num"><span className="g">5 min</span></div>
+              <div className="stat-label">Setup promedio</div>
+            </div>
+          </div>
 
-  return (
-    <section className="py-14 bg-gray-50 border-y border-gray-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <p className="text-center text-sm font-semibold text-gray-400 uppercase tracking-widest mb-10">
-          Ya usado por restaurantes en Chile
-        </p>
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(5)].map((_, j) => (
-                  <Icon key={j} path={ICONS.star} className="w-4 h-4 text-amber-400 fill-amber-400" />
-                ))}
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-4">{t.quote}</p>
-              <div className="flex items-center gap-3 mt-auto">
-                <div className="w-9 h-9 rounded-full bg-[#1D9E75]/15 flex items-center justify-center text-[#1D9E75] font-bold text-sm">
-                  {t.name[0]}
-                </div>
+          <div className="testimonials">
+            <article className="tcard">
+              <div className="tcard-metric">Cierre de caja: 20 min → 2 min</div>
+              {STARS}
+              <p className="tcard-quote">Antes tardábamos 20 minutos en cuadrar caja al cierre. Con MastexoPOS lo hacemos en 2. El sistema te da todo en tiempo real, no hay espacio para errores.</p>
+              <div className="tcard-author">
+                <div className="tcard-avatar">CP</div>
                 <div>
-                  <p className="font-semibold text-gray-800 text-sm">{t.name}</p>
-                  <p className="text-gray-400 text-xs">{t.location}</p>
+                  <div className="tcard-restaurant">Resto&amp;Bar Central</div>
+                  <div className="tcard-name">Carlos Pereira · Dueño · Santiago</div>
+                  <div className="tcard-verified">{VERIFIED_ICON} Cliente activo</div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+            </article>
 
-// ─── Features ─────────────────────────────────────────────────────────────────
-const FEATURES = [
-  {
-    icon: ICONS.bolt,
-    title: 'Pedidos en tiempo real',
-    desc: 'Comandas que llegan al instante a cocina sin recargar. WebSocket nativo para que nada se pierda.',
-  },
-  {
-    icon: ICONS.calendar,
-    title: 'Mesas y reservas',
-    desc: 'Vista de plano de sala con estado por mesa. Reservas con vista calendario y consumos inline.',
-  },
-  {
-    icon: ICONS.receipt,
-    title: 'Ventas con ticket PDF',
-    desc: 'Cierra cuentas en segundos. Ticket descargable en PDF listo para entregar al cliente.',
-  },
-  {
-    icon: ICONS.bell,
-    title: 'Stock con alertas automáticas',
-    desc: 'Alertas por email cuando el inventario baja del mínimo. Nunca más te quedas sin insumos.',
-  },
-  {
-    icon: ICONS.users,
-    title: 'CRM básico de clientes',
-    desc: 'Historial de visitas y consumo por cliente. Identifica a tus mejores mesas en segundos.',
-  },
-  {
-    icon: ICONS.chart,
-    title: 'Analytics por hora',
-    desc: 'Descubre tus horas pico, tus platos más vendidos y tus días más rentables.',
-  },
-];
-
-function Features() {
-  return (
-    <section id="features" className="py-24 px-4 sm:px-6 bg-white">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
-            Todo lo que tu restaurante necesita
-          </h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            Un sistema completo, sin módulos de pago, sin configuraciones complejas.
-          </p>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
-          {FEATURES.map((f, i) => (
-            <div
-              key={i}
-              className="group p-7 rounded-2xl border border-gray-100 hover:border-[#1D9E75]/40 hover:shadow-lg hover:shadow-[#1D9E75]/5 transition-all duration-200"
-            >
-              <div className="w-11 h-11 rounded-xl bg-[#1D9E75]/10 flex items-center justify-center mb-4 group-hover:bg-[#1D9E75]/20 transition">
-                <Icon path={f.icon} className="w-5 h-5 text-[#1D9E75]" />
+            <article className="tcard">
+              <div className="tcard-metric">Costo recuperado en 1 semana</div>
+              {STARS}
+              <p className="tcard-quote">El control de stock es lo que más nos cambió el negocio. Ya no compramos de más, los alertas por email llegan antes de quedarnos sin ingredientes. Recuperamos el costo en una semana.</p>
+              <div className="tcard-author">
+                <div className="tcard-avatar">VR</div>
+                <div>
+                  <div className="tcard-restaurant">Cocina 34</div>
+                  <div className="tcard-name">Valentina Rojas · Gerente · Valparaíso</div>
+                  <div className="tcard-verified">{VERIFIED_ICON} Cliente activo</div>
+                </div>
               </div>
-              <h3 className="font-bold text-gray-900 text-base mb-2">{f.title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
-            </div>
+            </article>
+
+            <article className="tcard">
+              <div className="tcard-metric">Equipo listo en un turno</div>
+              {STARS}
+              <p className="tcard-quote">Probé tres sistemas antes. Este es el único que no necesita capacitación. Los meseros aprendieron en un turno y ahora no quieren volver al papel. Increíblemente intuitivo.</p>
+              <div className="tcard-author">
+                <div className="tcard-avatar">DM</div>
+                <div>
+                  <div className="tcard-restaurant">La Guagua Feliz</div>
+                  <div className="tcard-name">Diego Morales · Chef-dueño · Concepción</div>
+                  <div className="tcard-verified">{VERIFIED_ICON} Cliente activo</div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section id="features" aria-label="Funcionalidades">
+        <div className="section-hdr container">
+          <p className="section-eyebrow">Todo lo que necesitas</p>
+          <h2 className="section-h2">Un sistema. Cada parte de tu<br />operación, <span className="g">bajo control</span></h2>
+          <p className="section-p">Diseñado para restaurantes reales, no para corporaciones. Cada feature existe porque lo pidieron dueños de restaurantes como el tuyo.</p>
+        </div>
+
+        <div className="features-grid container">
+          {[
+            { n: '01', title: 'Pedidos en tiempo real', desc: 'Mesas activas, estado de cocina y notificaciones al instante. Sin retrasos, sin confusiones. Cada pedido llega donde tiene que llegar.' },
+            { n: '02', title: 'Control de inventario', desc: 'El stock se descuenta automáticamente con cada pedido. Alertas por email antes de quedarte sin ingredientes. Nunca más sorpresas a media noche.' },
+            { n: '03', title: 'Reservas con consumos', desc: 'Calendario de reservas integrado. Crea el pedido directo desde la reserva, registra consumos y cierra la cuenta sin fricciones.' },
+            { n: '04', title: 'Ventas y tickets PDF', desc: 'Historial completo de ventas, tickets en PDF automáticos, exportación a Excel. Toda la información que necesitas para el SII y tu contador.' },
+            { n: '05', title: 'Analytics avanzado', desc: 'Métricas por hora, por producto, comparativas semanales. Descubre cuál es tu plato más rentable y tu hora pico en segundos.' },
+            { n: '06', title: 'Multi-usuario por roles', desc: 'Crea cuentas para admin, meseros, cocina y caja. Cada rol ve solo lo que necesita. Sin accesos indebidos, sin caos en pantalla.' },
+          ].map(f => (
+            <article key={f.n} className="fcard">
+              <div className="fcard-num">{f.n}</div>
+              <h3 className="fcard-title">{f.title}</h3>
+              <p className="fcard-desc">{f.desc}</p>
+            </article>
           ))}
         </div>
+      </section>
+
+      {/* Mid-page CTA */}
+      <div style={{ textAlign: 'center', padding: '0 24px 80px', position: 'relative', zIndex: 1 }}>
+        <a href="/register" className="btn btn-green" style={{ fontSize: '16px', padding: '15px 32px' }}>
+          Empezar gratis ahora — sin tarjeta
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" style={{ width: '18px', height: '18px' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </a>
+        <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--subtle)' }}>Setup en 5 minutos · +200 restaurantes ya lo usan</p>
       </div>
-    </section>
-  );
-}
 
-// ─── Pricing ──────────────────────────────────────────────────────────────────
-function Pricing() {
-  return (
-    <section id="precios" className="py-24 px-4 sm:px-6 bg-gray-50">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
-            Precios simples, sin sorpresas
-          </h2>
-          <p className="text-gray-500 text-lg">Empieza gratis, escala cuando lo necesites.</p>
-        </div>
-        <PricingCards />
-      </div>
-    </section>
-  );
-}
-
-// ─── FAQ ──────────────────────────────────────────────────────────────────────
-const FAQ_ITEMS = [
-  {
-    q: '¿Necesito instalar algo?',
-    a: 'No. MastexoPOS funciona completamente desde el navegador, en cualquier dispositivo. Solo necesitas internet.',
-  },
-  {
-    q: '¿Puedo cambiar de plan?',
-    a: 'Sí, en cualquier momento desde el panel de facturación de tu cuenta. El cambio es inmediato.',
-  },
-  {
-    q: '¿Mis datos están seguros?',
-    a: 'Sí. Usamos PostgreSQL con backups diarios en Railway. Cada restaurante tiene sus datos completamente aislados.',
-  },
-  {
-    q: '¿Funciona en tablet y celular?',
-    a: 'Sí, el diseño es responsive. Ideal para meseros con tablet o para revisar el estado desde tu celular.',
-  },
-  {
-    q: '¿Hay contrato de permanencia?',
-    a: 'No. Los planes son mes a mes. Puedes cancelar en cualquier momento sin penalidades.',
-  },
-];
-
-function FAQ() {
-  const [open, setOpen] = useState(null);
-
-  return (
-    <section id="faq" className="py-24 px-4 sm:px-6 bg-white">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3">
-            Preguntas frecuentes
-          </h2>
-          <p className="text-gray-500">Lo que todos preguntan antes de empezar.</p>
+      {/* ── PRICING ── */}
+      <section id="pricing" aria-label="Planes y precios">
+        <div className="section-hdr container">
+          <p className="section-eyebrow">Precios</p>
+          <h2 className="section-h2">Transparente desde el primer día.<br /><span className="g">Sin letra chica.</span></h2>
+          <p className="section-p">Empieza gratis, sube cuando lo necesites. Sin contrato anual, sin costos de setup, sin sorpresas en tu tarjeta.</p>
         </div>
 
-        <div className="space-y-3">
-          {FAQ_ITEMS.map((item, i) => (
-            <div
-              key={i}
-              className={`rounded-xl border transition-all ${open === i ? 'border-[#1D9E75]/40 shadow-sm' : 'border-gray-200'}`}
-            >
-              <button
-                onClick={() => setOpen(open === i ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
-              >
-                <span className="font-semibold text-gray-800 text-sm sm:text-base">{item.q}</span>
-                <Icon
-                  path={ICONS.chevron}
-                  className={`w-5 h-5 text-gray-400 shrink-0 transition-transform duration-200 ${open === i ? 'rotate-180 text-[#1D9E75]' : ''}`}
-                />
+        <div className="pricing-cards container">
+          {/* Starter */}
+          <div className="pcard">
+            <div className="pcard-name">Starter</div>
+            <div className="pcard-headline">Tu restaurante online, sin costo.</div>
+            <p className="pcard-desc">Gestiona pedidos y mesas desde el primer día. Sin técnicos, sin configuración, sin sorpresas.</p>
+            <ul className="pcard-features">
+              <li className="on">{CHECK_ICON} 50 pedidos por mes</li>
+              <li className="on">{CHECK_ICON} Hasta 2 usuarios</li>
+              <li className="on">{CHECK_ICON} 1 local</li>
+              <li>{X_ICON} Tiempo real (WebSocket)</li>
+              <li>{X_ICON} Analytics avanzado</li>
+              <li>{X_ICON} Tickets PDF</li>
+            </ul>
+            <hr className="pcard-divider" />
+            <div className="pcard-price-row">
+              <div className="pcard-price">
+                <span className="price-sym">$</span>
+                <span className="price-amount">0</span>
+              </div>
+              <div className="price-period">Para siempre gratis · sin tarjeta</div>
+            </div>
+            <a href="/register" className="btn-pcard secondary">Empezar gratis</a>
+          </div>
+
+          {/* Pro (featured) */}
+          <div className="pcard featured">
+            <div className="pcard-badge">Más popular</div>
+            <div className="pcard-name">Pro</div>
+            <div className="pcard-headline">Operación sin límites, datos en tiempo real.</div>
+            <p className="pcard-desc">Para restaurantes activos. Pedidos ilimitados, analytics completo y alertas automáticas de stock.</p>
+            <ul className="pcard-features">
+              <li className="on">{CHECK_ICON} Pedidos ilimitados</li>
+              <li className="on">{CHECK_ICON} Usuarios ilimitados</li>
+              <li className="on">{CHECK_ICON} Tiempo real (WebSocket)</li>
+              <li className="on">{CHECK_ICON} Analytics avanzado</li>
+              <li className="on">{CHECK_ICON} Tickets PDF + alertas email</li>
+              <li>{X_ICON} Multi-local (hasta 5)</li>
+            </ul>
+            <hr className="pcard-divider" />
+            <div className="pcard-price-row">
+              <div className="pcard-price">
+                <span className="price-sym">$</span>
+                <span className="price-amount">29</span>
+              </div>
+              <div className="price-period">USD / mes · sin contrato</div>
+            </div>
+            <a href="/register?plan=pro" className="btn-pcard primary">Empezar con Pro</a>
+            <p className="pcard-trust">✓ 14 días de prueba gratis · Cancela cuando quieras</p>
+          </div>
+
+          {/* Business */}
+          <div className="pcard">
+            <div className="pcard-name">Business</div>
+            <div className="pcard-headline">Multi-local. Control total desde un panel.</div>
+            <p className="pcard-desc">Para cadenas y grupos gastronómicos que operan múltiples locales con un solo sistema.</p>
+            <ul className="pcard-features">
+              <li className="on">{CHECK_ICON} Todo lo de Pro</li>
+              <li className="on">{CHECK_ICON} Hasta 5 locales</li>
+              <li className="on">{CHECK_ICON} API Keys para integraciones</li>
+              <li className="on">{CHECK_ICON} Soporte prioritario</li>
+              <li className="on">{CHECK_ICON} Reportes consolidados</li>
+              <li className="on">{CHECK_ICON} Onboarding personalizado</li>
+            </ul>
+            <hr className="pcard-divider" />
+            <div className="pcard-price-row">
+              <div className="pcard-price">
+                <span className="price-sym">$</span>
+                <span className="price-amount">79</span>
+              </div>
+              <div className="price-period">USD / mes · sin contrato</div>
+            </div>
+            <a href="/register?plan=business" className="btn-pcard secondary">Hablar con ventas</a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section id="faq" aria-label="Preguntas frecuentes">
+        <div className="section-hdr container">
+          <p className="section-eyebrow">FAQ</p>
+          <h2 className="section-h2">Preguntas frecuentes</h2>
+          <p className="section-p">Todo lo que necesitas saber antes de empezar.</p>
+        </div>
+
+        <div className="faq-wrap container">
+          {[
+            {
+              id: 'faq1',
+              q: '¿Necesito instalar algún software?',
+              a: 'No. MastexoPOS funciona 100% en el navegador. No hay que instalar nada, actualizar versiones ni gestionar servidores. Accedes desde cualquier dispositivo — computador, tablet o celular — con tu email y contraseña. Siempre actualizado automáticamente.',
+            },
+            {
+              id: 'faq2',
+              q: '¿Puedo empezar gratis sin ingresar mi tarjeta?',
+              a: 'Sí. El plan Starter es gratis para siempre y no requiere tarjeta de crédito. Puedes crear tu restaurante, invitar a tu equipo y empezar a tomar pedidos en menos de 5 minutos. Cuando estés listo para más, el upgrade a Pro es con un clic.',
+            },
+            {
+              id: 'faq3',
+              q: '¿Qué incluye exactamente el plan Pro?',
+              a: 'Pro incluye pedidos y usuarios ilimitados, tiempo real vía WebSocket (los pedidos llegan a cocina al instante), analytics avanzado con métricas por producto y hora, tickets en PDF automáticos para el cliente, y alertas de stock por email cuando el inventario baja del mínimo que tú configures.',
+            },
+            {
+              id: 'faq4',
+              q: '¿Puedo cancelar en cualquier momento?',
+              a: 'Sí, sin preguntas ni trámites. Puedes cancelar desde tu panel de facturación con un clic. No hay contratos anuales ni penalizaciones. Al cancelar, tu cuenta pasa automáticamente al plan Starter y conservas todos tus datos.',
+            },
+            {
+              id: 'faq5',
+              q: '¿Tienen soporte técnico en español?',
+              a: 'Sí. Nuestro equipo de soporte responde en español por chat y email, generalmente en menos de 2 horas en días hábiles. Los clientes Business tienen soporte prioritario con tiempo de respuesta garantizado. También tenemos documentación completa y tutoriales en video.',
+            },
+          ].map(({ id, q, a }) => (
+            <div key={id} className={`faq-item${openFaq === id ? ' open' : ''}`}>
+              <button className="faq-btn" onClick={() => toggleFaq(id)} aria-expanded={openFaq === id}>
+                <span className="faq-q">{q}</span>
+                <span className="faq-ico" aria-hidden="true">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </span>
               </button>
-              {open === i && (
-                <div className="px-5 pb-5">
-                  <p className="text-gray-500 text-sm leading-relaxed">{item.a}</p>
-                </div>
-              )}
+              <div className="faq-ans">
+                <div className="faq-ans-inner">{a}</div>
+              </div>
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// ─── Footer CTA ───────────────────────────────────────────────────────────────
-function FooterCTA() {
-  const navigate = useNavigate();
-  return (
-    <section className="py-20 px-4 sm:px-6 bg-gradient-to-br from-[#1D9E75] to-[#14876200]" style={{ background: 'linear-gradient(135deg, #1D9E75 0%, #0f7a5a 100%)' }}>
-      <div className="max-w-2xl mx-auto text-center">
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3">
-          Empieza hoy, sin tarjeta de crédito
-        </h2>
-        <p className="text-white/70 text-lg mb-8">
-          Configura tu restaurante en menos de 5 minutos.
-        </p>
-        <button
-          onClick={() => navigate('/register')}
-          className="px-8 py-4 rounded-xl bg-white text-[#1D9E75] font-extrabold text-base hover:bg-gray-50 transition shadow-xl"
-        >
-          Crear cuenta gratis
-        </button>
-      </div>
-    </section>
-  );
-}
-
-// ─── Footer ───────────────────────────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer className="bg-gray-900 text-gray-400 py-8 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
-        <span className="font-bold text-base">
-          <span className="text-[#1D9E75]">Mastexo</span>
-          <span className="text-white">POS</span>
-        </span>
-        <div className="flex items-center gap-5">
-          <a href="/terminos" className="hover:text-white transition">Términos</a>
-          <a href="/privacidad" className="hover:text-white transition">Privacidad</a>
-          <a href="mailto:hola@mastexopos.com" className="hover:text-white transition">Contacto</a>
+      {/* ── FOOTER CTA ── */}
+      <section id="footer-cta" aria-label="Llamada a la acción final">
+        <div className="fcta-box container">
+          <p className="section-eyebrow" style={{ justifyContent: 'center' }}>Empieza hoy</p>
+          <h2 className="section-h2">Tu restaurante merece un sistema<br /><span className="g">que trabaje tan duro como tú</span></h2>
+          <p className="section-p">Únete a más de 200 restaurantes que ya operan con MastexoPOS. Empieza gratis en 5 minutos.</p>
+          <div className="fcta-btns">
+            <a href="/register" className="btn btn-green">
+              Empezar gratis ahora
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
+            <a href="/login" className="btn btn-outline">Iniciar sesión</a>
+          </div>
+          <p className="fcta-note">Sin tarjeta de crédito · Sin contratos · Cancela cuando quieras</p>
         </div>
-        <span className="text-xs text-gray-600">© {new Date().getFullYear()} MastexoPOS. Todos los derechos reservados.</span>
-      </div>
-    </footer>
-  );
-}
+      </section>
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default function Landing() {
-  const [videoOpen, setVideoOpen] = useState(false);
-
-  return (
-    <div className="min-h-screen font-sans antialiased">
-      <VideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
-      <Navbar onDemoOpen={() => setVideoOpen(true)} />
-      <main>
-        <HeroSplit onDemoOpen={() => setVideoOpen(true)} />
-        <LogosBiMarquee />
-        <FeaturesStagger />
-        <Pricing />
-        <FAQ />
-        <FooterCTA />
-      </main>
-      <Footer />
-    </div>
+      {/* ── FOOTER BAR ── */}
+      <footer className="footer-bar" role="contentinfo">
+        <a href="/" className="footer-logo"><span className="g">Mastexo</span>POS</a>
+        <ul className="footer-links">
+          <li><a href="#features">Funciones</a></li>
+          <li><a href="#pricing">Precios</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="/login">Iniciar sesión</a></li>
+          <li><a href="/register">Registro</a></li>
+          <li><a href="mailto:hola@mastexopos.com">Contacto</a></li>
+          <li><a href="/privacidad">Privacidad</a></li>
+          <li><a href="/terminos">Términos</a></li>
+        </ul>
+        <p className="footer-copy">© 2026 MastexoPOS · Todos los derechos reservados</p>
+      </footer>
+    </>
   );
 }

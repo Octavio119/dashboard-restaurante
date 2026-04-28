@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Utensils, Mail, Lock, Eye, EyeOff, AlertCircle, ChefHat } from 'lucide-react';
+import { Utensils, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
 export default function LoginScreen() {
@@ -22,11 +22,6 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillDemo = (email, password) => {
-    setForm({ email, password });
-    setError('');
   };
 
   return (
@@ -125,51 +120,6 @@ export default function LoginScreen() {
           </p>
         </div>
 
-        {/* Credenciales de acceso rápido */}
-        <div className="mt-4 bg-zinc-900/70 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-1.5 mb-3">
-            <ChefHat size={11} className="text-zinc-500" />
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Acceso rápido</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => fillDemo('admin@restaurante.com', 'admin2024')}
-              className="flex items-center justify-between text-left px-3 py-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 transition-colors group"
-            >
-              <span className="text-xs text-zinc-300 font-mono group-hover:text-white transition-colors">
-                admin@restaurante.com
-              </span>
-              <span className="text-[9px] bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded font-bold uppercase">
-                admin
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('ocdeliciagoumetcl@gmail.com', 'admin2024')}
-              className="flex items-center justify-between text-left px-3 py-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 transition-colors group"
-            >
-              <span className="text-xs text-zinc-300 font-mono group-hover:text-white transition-colors">
-                ocdeliciagoumetcl@gmail.com
-              </span>
-              <span className="text-[9px] bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded font-bold uppercase">
-                admin
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('mario@restaurante.com', 'staff123')}
-              className="flex items-center justify-between text-left px-3 py-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 transition-colors group"
-            >
-              <span className="text-xs text-zinc-300 font-mono group-hover:text-white transition-colors">
-                mario@restaurante.com
-              </span>
-              <span className="text-[9px] bg-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded font-bold uppercase">
-                chef
-              </span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
