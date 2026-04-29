@@ -179,47 +179,120 @@ button{cursor:pointer;border:none;background:none;font:inherit}
 .card-desc{font-size:var(--sm);color:var(--text-muted);line-height:1.65}
 
 /* ═══════════════════════════════════════════
-   COMPONENT: PLAN CARD
+   COMPONENT: PLAN CARD — Premium SaaS
 ═══════════════════════════════════════════ */
 .plan-card{
-  position:relative;background:var(--surface);border:1.5px solid var(--border);
-  border-radius:var(--r-2xl);padding:var(--sp10) var(--sp8);
-  display:flex;flex-direction:column;gap:var(--sp8);
-  transition:border-color var(--t-base),box-shadow var(--t-base),transform var(--t-base);
+  position:relative;background:#fff;border:1.5px solid #e2e8f0;
+  border-radius:20px;padding:2rem 1.75rem;
+  display:flex;flex-direction:column;gap:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+  transition:box-shadow .22s ease,transform .22s ease;
 }
-.plan-card:hover{box-shadow:var(--sh-lg);transform:translateY(-3px)}
-.plan-card--featured{border-color:var(--brand);
-  box-shadow:0 0 0 1px var(--brand),var(--sh-xl)}
-.plan-card--featured:hover{transform:translateY(-4px);box-shadow:0 0 0 1px var(--brand),0 24px 48px rgba(29,158,117,.18)}
+.plan-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.08);transform:translateY(-4px)}
+
+/* Pro — borde azul luminoso */
+.plan-card--featured{
+  border-color:rgba(0,102,204,.55);
+  background:linear-gradient(180deg,rgba(0,102,204,.035) 0%,#fff 60%);
+  box-shadow:0 0 0 1px rgba(0,102,204,.15),0 8px 40px rgba(0,102,204,.12);
+}
+.plan-card--featured:hover{
+  box-shadow:0 0 0 1px rgba(0,102,204,.35),0 20px 56px rgba(0,102,204,.22);
+  transform:translateY(-5px);
+}
+
+/* Business — borde púrpura luminoso */
+.plan-card--business{
+  border-color:rgba(124,58,237,.45);
+  background:linear-gradient(180deg,rgba(124,58,237,.03) 0%,#fff 60%);
+  box-shadow:0 0 0 1px rgba(124,58,237,.12),0 8px 40px rgba(124,58,237,.10);
+}
+.plan-card--business:hover{
+  box-shadow:0 0 0 1px rgba(124,58,237,.30),0 20px 56px rgba(124,58,237,.18);
+  transform:translateY(-5px);
+}
+
+/* Badge "Más popular" y "Multi-local" */
 .plan-badge{
   position:absolute;top:-.875rem;left:50%;transform:translateX(-50%);
-  background:var(--brand);color:#fff;font-size:var(--xs);font-weight:700;
-  letter-spacing:.06em;text-transform:uppercase;padding:var(--sp1) var(--sp4);
-  border-radius:var(--r-full);white-space:nowrap;box-shadow:var(--sh-brand);
+  color:#fff;font-size:11px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;padding:4px 14px;
+  border-radius:99px;white-space:nowrap;
 }
-.plan-name{font-size:var(--xs);font-weight:600;text-transform:uppercase;
-  letter-spacing:.1em;color:var(--text-muted);margin-bottom:var(--sp1)}
-.plan-card--featured .plan-name{color:var(--brand)}
-.plan-price{display:flex;align-items:flex-end;gap:var(--sp1);margin-top:var(--sp3)}
-.plan-amount{font-size:var(--4xl);font-weight:800;color:var(--text);line-height:1}
-.plan-period{font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--sp1)}
-.plan-tagline{font-size:var(--sm);color:var(--text-muted);margin-top:var(--sp2)}
-.plan-features{display:flex;flex-direction:column;gap:var(--sp4);flex:1}
+.plan-card--featured .plan-badge{
+  background:#0066CC;
+  box-shadow:0 2px 12px rgba(0,102,204,.40);
+}
+.plan-card--business .plan-badge{
+  background:#7c3aed;
+  box-shadow:0 2px 12px rgba(124,58,237,.40);
+}
+
+/* Nombre del plan */
+.plan-name{
+  font-size:11px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.1em;color:#94a3b8;margin-bottom:6px;
+}
+.plan-card--featured .plan-name{color:#0066CC}
+.plan-card--business .plan-name{color:#7c3aed}
+
+/* Precio */
+.plan-price{display:flex;align-items:flex-end;gap:4px;margin-top:8px}
+.plan-amount{font-size:2.5rem;font-weight:800;color:#0f172a;line-height:1}
+.plan-period{font-size:13px;color:#94a3b8;margin-bottom:6px}
+.plan-tagline{font-size:13px;color:#64748b;margin-top:8px;margin-bottom:1.25rem}
+
+/* Separador */
+.plan-divider{height:1px;background:#f1f5f9;margin:0 0 1.25rem}
+
+/* Features */
+.plan-features{
+  display:flex;flex-direction:column;gap:.65rem;flex:1;
+  margin-bottom:1.75rem;padding:0;list-style:none;
+}
 .plan-feature{
-  display:flex;align-items:center;gap:var(--sp3);
-  font-size:var(--sm);color:var(--text-muted);
+  display:flex;align-items:flex-start;gap:.55rem;
+  font-size:13.5px;color:#374151;line-height:1.4;
 }
 .plan-feature::before{
-  content:'';flex-shrink:0;width:1.1rem;height:1.1rem;border-radius:50%;
-  background:var(--brand-muted);
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231D9E75' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
-  background-size:65%;background-repeat:no-repeat;background-position:center;
+  content:'';flex-shrink:0;width:14px;height:14px;margin-top:2px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+  background-size:contain;background-repeat:no-repeat;
 }
-.plan-feature.no{color:var(--text-subtle);text-decoration:line-through}
+.plan-card--featured .plan-feature::before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230066CC' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+}
+.plan-card--business .plan-feature::before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+}
+.plan-feature.no{color:#cbd5e1}
 .plan-feature.no::before{
-  background-color:transparent;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M18 6L6 18M6 6l12 12'/%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M18 6L6 18M6 6l12 12'/%3E%3C/svg%3E");
 }
+
+/* Botones dentro de cards */
+.btn-pcard{
+  display:block;width:100%;text-align:center;
+  padding:11px 20px;border-radius:10px;
+  font-size:13.5px;font-weight:600;letter-spacing:-.01em;
+  text-decoration:none;transition:background .15s,transform .1s,box-shadow .15s;
+  box-sizing:border-box;
+}
+.btn-pcard:hover{transform:translateY(-1px)}
+.btn-pcard.neutral{
+  background:transparent;border:1.5px solid #e2e8f0;color:#374151;
+}
+.btn-pcard.neutral:hover{background:#f8fafc;border-color:#cbd5e1}
+.btn-pcard.primary{
+  background:#0066CC;border:1.5px solid #0066CC;color:#fff;
+  box-shadow:0 2px 12px rgba(0,102,204,.25);
+}
+.btn-pcard.primary:hover{background:#0052a3;box-shadow:0 4px 20px rgba(0,102,204,.35)}
+.btn-pcard.secondary{
+  background:#7c3aed;border:1.5px solid #7c3aed;color:#fff;
+  box-shadow:0 2px 12px rgba(124,58,237,.25);
+}
+.btn-pcard.secondary:hover{background:#6d28d9;box-shadow:0 4px 20px rgba(124,58,237,.35)}
 
 /* ═══════════════════════════════════════════
    SECTION HEADER
@@ -431,7 +504,7 @@ button{cursor:pointer;border:none;background:none;font:inherit}
 ═══════════════════════════════════════════ */
 .cta-final{
   padding:var(--sp24) var(--sp4);
-  background:linear-gradient(135deg,#1D9E75 0%,#0f7a5a 100%);
+  background:linear-gradient(155deg,#071525 0%,#0D1B3E 55%,#0a2050 100%);
   text-align:center;
 }
 .cta-inner{max-width:36rem;margin-inline:auto}
@@ -699,16 +772,15 @@ button{cursor:pointer;border:none;background:none;font:inherit}
       </div>
     </div>
     <ul class="plans" role="list">
+
+      <!-- Starter -->
       <li class="plan-card reveal">
-        <div>
-          <div class="plan-name">Free</div>
-          <div class="plan-price">
-            <span class="plan-amount">$0</span>
-            <span class="plan-period">/ mes</span>
-          </div>
-          <p class="plan-tagline">Para probar sin comprometerte</p>
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">
+          <span class="plan-amount">Gratis</span>
         </div>
-        <a href="/register" class="btn btn-outline btn-full">Empezar gratis</a>
+        <p class="plan-tagline">Para probar sin comprometerte</p>
+        <hr class="plan-divider">
         <ul class="plan-features" role="list">
           <li class="plan-feature">50 órdenes / mes</li>
           <li class="plan-feature">2 usuarios</li>
@@ -719,18 +791,19 @@ button{cursor:pointer;border:none;background:none;font:inherit}
           <li class="plan-feature no">Analytics avanzado</li>
           <li class="plan-feature no">PDF de tickets</li>
         </ul>
+        <a href="/register" class="btn-pcard neutral">Empezar gratis</a>
       </li>
+
+      <!-- Pro -->
       <li class="plan-card plan-card--featured reveal d1">
         <div class="plan-badge">Más popular</div>
-        <div>
-          <div class="plan-name">Pro</div>
-          <div class="plan-price">
-            <span class="plan-amount" id="pro-price">$29</span>
-            <span class="plan-period">/ mes</span>
-          </div>
-          <p class="plan-tagline">Para restaurantes en operación</p>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">
+          <span class="plan-amount" id="pro-price">$29</span>
+          <span class="plan-period">/ mes</span>
         </div>
-        <a href="/register?plan=pro" class="btn btn-primary btn-full">Empezar Pro — 14 días gratis</a>
+        <p class="plan-tagline">Para restaurantes en operación</p>
+        <hr class="plan-divider">
         <ul class="plan-features" role="list">
           <li class="plan-feature">Órdenes ilimitadas</li>
           <li class="plan-feature">Usuarios ilimitados</li>
@@ -741,17 +814,19 @@ button{cursor:pointer;border:none;background:none;font:inherit}
           <li class="plan-feature no">API Keys</li>
           <li class="plan-feature no">Multi-local</li>
         </ul>
+        <a href="/register?plan=pro" class="btn-pcard primary">Empezar Pro — 14 días gratis</a>
       </li>
-      <li class="plan-card reveal d2">
-        <div>
-          <div class="plan-name">Business</div>
-          <div class="plan-price">
-            <span class="plan-amount" id="biz-price">$79</span>
-            <span class="plan-period">/ mes</span>
-          </div>
-          <p class="plan-tagline">Para cadenas y grupos gastronómicos</p>
+
+      <!-- Business -->
+      <li class="plan-card plan-card--business reveal d2">
+        <div class="plan-badge">Multi-local</div>
+        <div class="plan-name">Business</div>
+        <div class="plan-price">
+          <span class="plan-amount" id="biz-price">$79</span>
+          <span class="plan-period">/ mes</span>
         </div>
-        <a href="/register?plan=business" class="btn btn-outline btn-full">Contactar ventas</a>
+        <p class="plan-tagline">Para cadenas y grupos gastronómicos</p>
+        <hr class="plan-divider">
         <ul class="plan-features" role="list">
           <li class="plan-feature">Todo lo de Pro</li>
           <li class="plan-feature">Hasta 5 locales</li>
@@ -759,7 +834,9 @@ button{cursor:pointer;border:none;background:none;font:inherit}
           <li class="plan-feature">Soporte prioritario</li>
           <li class="plan-feature">Onboarding personalizado</li>
         </ul>
+        <a href="/register?plan=business" class="btn-pcard secondary">Contactar ventas</a>
       </li>
+
     </ul>
     <p class="guarantee">🔒 Garantía de devolución 14 días — sin preguntas.</p>
   </div>
