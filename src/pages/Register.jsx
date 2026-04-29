@@ -17,11 +17,11 @@ function useFont() {
 const PLANS = {
   free: {
     badge:     'Plan Starter',
-    badgeBg:   'rgba(29,158,117,0.18)',
-    badgeColor:'#1D9E75',
+    badgeBg:   'rgba(0,102,204,0.12)',
+    badgeColor:'#0066CC',
     headline:  'Empieza hoy,',
     sub:       'sin gastar nada',
-    emColor:   '#1D9E75',
+    emColor:   '#5ba8f5',
     price:     '$0',
     priceSub:  'Para siempre gratis',
     features: [
@@ -31,12 +31,12 @@ const PLANS = {
       'Acceso desde cualquier dispositivo',
     ],
     guarantee: { icon: '✦', text: 'Sin compromisos · Cambia de plan cuando quieras' },
-    bg:        'linear-gradient(160deg, #0a1628 0%, #0D1B3E 55%, #0a2050 100%)',
-    accent:    '#1D9E75',
+    bg:        'linear-gradient(160deg, #071525 0%, #0D1B3E 55%, #003060 100%)',
+    accent:    '#0066CC',
     btnLabel:  'Crear cuenta gratis',
-    btnBg:     '#1D9E75',
-    btnHover:  '#178a64',
-    btnShadow: '0 4px 16px rgba(29,158,117,0.35)',
+    btnBg:     '#0066CC',
+    btnHover:  '#0052a3',
+    btnShadow: '0 4px 16px rgba(0,102,204,0.40)',
     payNote:   null,
   },
   pro: {
@@ -444,8 +444,8 @@ export default function Register() {
           {/* Social proof */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            background: planKey === 'business' ? '#faf5ff' : planKey === 'pro' ? '#eff6ff' : '#f0fdf4',
-            border: `1px solid ${planKey === 'business' ? '#e9d5ff' : planKey === 'pro' ? '#bfdbfe' : '#bbf7d0'}`,
+            background: '#fff',
+            border: '1px solid #e2e8f0',
             borderRadius: '10px', padding: '10px 14px', marginBottom: '28px',
           }}>
             <div style={{ display: 'flex', marginRight: '2px' }}>
@@ -461,7 +461,7 @@ export default function Register() {
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: '12.5px', color: planKey === 'business' ? '#6b21a8' : planKey === 'pro' ? '#1e40af' : '#166534', fontWeight: 500, margin: 0 }}>
+            <p style={{ fontSize: '12.5px', color: '#475569', fontWeight: 500, margin: 0 }}>
               {planKey === 'free'     && '200+ restaurantes ya en el plan gratuito'}
               {planKey === 'pro'      && 'El plan preferido por restaurantes en crecimiento'}
               {planKey === 'business' && 'Cadenas con 3+ locales eligen Business'}
