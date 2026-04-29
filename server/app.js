@@ -36,7 +36,8 @@ const authLimiter = rateLimit({
 });
 
 app.use('/api/', apiLimiter);
-app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/login',    authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -68,10 +69,14 @@ const allowedOrigins = [
 
 app.use(cors({ origin: allowedOrigins }));
 
-// Raw body para webhook de Stripe — DEBE ir antes de express.json()
-app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
+// Raw body para webhook de PayPal — DEBE ir antes de express.json()
+app.use(
+  '/api/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  (req, _res, next) => { req.body = JSON.parse(req.body); next(); }
+);
 
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 app.use((req, _res, next) => { req.prisma = prisma; next(); });
 
 // ── HTTP request logging — debe ir ANTES de las rutas para capturar todas las peticiones ──

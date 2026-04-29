@@ -21,10 +21,13 @@ const OPTIONAL = [
   { key: 'SMTP_USER',              hint: 'Usuario SMTP' },
   { key: 'SMTP_PASS',              hint: 'Contraseña / app-password SMTP' },
   { key: 'ALERT_EMAIL',            hint: 'Email destino para alertas de stock' },
-  { key: 'STRIPE_SECRET_KEY',      hint: 'sk_live_... o sk_test_... — Stripe billing' },
-  { key: 'STRIPE_WEBHOOK_SECRET',  hint: 'whsec_... — firma de webhooks Stripe' },
-  { key: 'STRIPE_PRICE_PRO',       hint: 'price_... — ID del precio Pro en Stripe' },
-  { key: 'STRIPE_PRICE_BUSINESS',  hint: 'price_... — ID del precio Business en Stripe' },
+  { key: 'PAYPAL_CLIENT_ID',        hint: 'App client ID — developer.paypal.com' },
+  { key: 'PAYPAL_CLIENT_SECRET',    hint: 'App client secret — developer.paypal.com' },
+  { key: 'PAYPAL_MODE',             hint: '"sandbox" para pruebas, "live" para producción' },
+  { key: 'PAYPAL_PLAN_ID_PRO',      hint: 'ID del plan de suscripción Pro en PayPal (opcional si usas Orders API)' },
+  { key: 'PAYPAL_PLAN_ID_BUSINESS', hint: 'ID del plan de suscripción Business en PayPal (opcional si usas Orders API)' },
+  { key: 'PAYPAL_WEBHOOK_ID',       hint: 'ID del webhook en developer.paypal.com → Webhooks' },
+  { key: 'BACKEND_URL',             hint: 'URL pública del backend, ej: https://tu-app.railway.app — necesaria para redirect de PayPal' },
 ];
 
 function validateEnv() {

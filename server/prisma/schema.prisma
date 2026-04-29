@@ -18,6 +18,7 @@ model Restaurante {
   billing_ciclo_inicio    DateTime @default(now())
   stripe_customer_id      String?  @unique
   stripe_subscription_id  String?
+  paypal_subscription_id  String?
   locales_count           Int      @default(1)
 
   usuarios               Usuario[]

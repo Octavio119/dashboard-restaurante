@@ -20,21 +20,8 @@ import { io as socketIO } from 'socket.io-client';
 import * as XLSX from 'xlsx';
 import { useAuth } from './AuthContext';
 import { api } from './api';
-import LoginScreen from './LoginScreen';
 
-// ─── Static chart data ───────────────────────────────────────────────────────
-const salesData     = [{ day:'Lun',sales:1200},{ day:'Mar',sales:1900},{ day:'Mié',sales:1500},{ day:'Jue',sales:2100},{ day:'Vie',sales:3200},{ day:'Sáb',sales:4500},{ day:'Dom',sales:3800}];
-const salesByWeek   = [{ label:'Sem 1',sales:8400},{ label:'Sem 2',sales:11200},{ label:'Sem 3',sales:9800},{ label:'Sem 4',sales:13500}];
-const salesByMonth  = [{ label:'Ene',sales:32000},{ label:'Feb',sales:28500},{ label:'Mar',sales:41000},{ label:'Abr',sales:18500}];
-const topProductsData=[{ name:'Ribeye Steak',sales:84},{ name:'Hamburguesa Premium',sales:72},{ name:'Pasta Carbonara',sales:65},{ name:'Salmón Grillé',sales:58},{ name:'Risotto Funghi',sales:41}];
-const peakHoursData =[{ hour:'12h',orders:24},{ hour:'13h',orders:42},{ hour:'14h',orders:38},{ hour:'19h',orders:31},{ hour:'20h',orders:47},{ hour:'21h',orders:52},{ hour:'22h',orders:35}];
-const PIE_COLORS    = ['#fbbf24','#f59e0b','#d97706','#b45309','#92400e'];
-
-const NOTIFICATIONS = [
-  { id:1, text:'3 reservas pendientes de confirmar', type:'warn', time:'hace 5m' },
-  { id:2, text:'Ribeye Steak: stock bajo (3 uds)', type:'alert', time:'hace 18m' },
-  { id:3, text:'Pedido #ORD-7281 listo para entregar', type:'info', time:'hace 32m' },
-];
+const PIE_COLORS = ['#fbbf24','#f59e0b','#d97706','#b45309','#92400e'];
 
 import ToastContainer from './components/notifications/ToastContainer';
 import SidebarItem from './components/layout/SidebarItem';
@@ -52,6 +39,10 @@ import VentasPage from './pages/VentasPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import Landing from './pages/Landing';
 import Register from './pages/Register';
+import Login from './pages/Login';
+import Billing from './pages/Billing';
+import ProtectedRoute from './components/ProtectedRoute';
+import UsageBanner from './components/UsageBanner';
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 const App = () => {
@@ -197,6 +188,7 @@ const App = () => {
 
   // Analytics
   const [analytics, setAnalytics] = useState(null);
+  const [salesData,  setSalesData]  = useState([]);
 
   // Ventas (caja)
   const [ventasDia,      setVentasDia]      = useState([]);
@@ -341,7 +333,24 @@ const App = () => {
     } catch(e) { console.error(e); }
   }, []);
 
-  useEffect(() => { if (user) loadConfig(); }, [user, loadConfig]); // carga logo para sidebar al iniciar
+  useEffect(() => { if (user) loadConfig(); }, [user, loadConfig]);
+
+  // Manejar redirects de PayPal post-pago
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgraded') === 'true') {
+      addToast('¡Plan actualizado con éxito! Bienvenido al nuevo plan.', 'success', { icon: '🎉', title: 'Pago exitoso' });
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('cancelled') === 'true') {
+      addToast('El pago fue cancelado. Puedes intentarlo de nuevo desde Facturación.', 'warning', { icon: '⚠️', title: 'Pago cancelado' });
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('error')) {
+      addToast('Hubo un problema con el pago. Contacta soporte si el problema persiste.', 'error', { icon: '❌', title: 'Error en el pago' });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   useEffect(() => { if (user) { loadPedidos(); loadVentas(); loadVentasDia(); } }, [user, loadPedidos, loadVentas, loadVentasDia]);
   useEffect(() => { if (user) loadReservas(); }, [user, loadReservas]);
   useEffect(() => { if (user && activeTab === 'Reservas') { loadPedidos(); loadProductos(); } }, [user, activeTab, loadPedidos, loadProductos]);
@@ -1343,7 +1352,12 @@ const App = () => {
     const path = window.location.pathname;
     if (path === '/' || path === '') return <Landing />;
     if (path === '/register') return <Register />;
-    return <LoginScreen />;
+    return <Login />;
+  }
+
+  // Ruta /billing independiente del tab system (post-pago PayPal)
+  if (window.location.pathname === '/billing') {
+    return <Billing />;
   }
 
   // ─── Derived ─────────────────────────────────────────────────────────────────
@@ -1429,6 +1443,7 @@ const App = () => {
             <LogOut size={18} />
             <span className="font-semibold text-sm">Cerrar sesión</span>
           </div>
+          <UsageBanner />
         </div>
       </aside>
 
@@ -1467,14 +1482,11 @@ const App = () => {
                   >
                     <div className="px-4 py-3 border-b border-zinc-800 flex justify-between items-center">
                       <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Notificaciones</span>
-                      <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded font-bold">{NOTIFICATIONS.length}</span>
+                      <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded font-bold">0</span>
                     </div>
-                    {NOTIFICATIONS.map(n => (
-                      <div key={n.id} className="px-4 py-3 border-b border-zinc-800/60 hover:bg-zinc-800/50 transition-colors">
-                        <p className="text-sm text-zinc-200">{n.text}</p>
-                        <p className="text-[10px] text-zinc-500 mt-1">{n.time}</p>
-                      </div>
-                    ))}
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-xs text-zinc-500">Sin notificaciones nuevas</p>
+                    </div>
                     <button className="w-full py-3 text-center text-xs text-zinc-500 hover:text-amber-400 transition-colors font-medium" onClick={() => setBellOpen(false)}>
                       Marcar todo como leído
                     </button>
