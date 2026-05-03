@@ -18,7 +18,7 @@ export default function InventarioPage({
   deleteProveedor
 }) {
   return (
-    <motion.div key="inventario" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
+    <motion.div key="inventario" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h2 className="text-3xl font-black tracking-tight">Gestión de <span className="text-amber-500">Inventario</span></h2>
@@ -51,7 +51,7 @@ export default function InventarioPage({
       {inventarioTab === 'stock' && (
         <div className="flex flex-col gap-6">
           {/* Alertas */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="card p-5 border-l-4 border-l-red-500">
               <div className="flex items-center gap-3 text-red-500 mb-1">
                 <AlertTriangle size={18}/>
@@ -76,7 +76,8 @@ export default function InventarioPage({
           </div>
 
           <div className="card overflow-hidden">
-            <table className="w-full text-left">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/50">
                   {['Producto','Categoría','Stock Actual','Mínimo','Unidad','Estado'].map(h=>(
@@ -111,7 +112,8 @@ export default function InventarioPage({
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -119,7 +121,7 @@ export default function InventarioPage({
       {inventarioTab === 'movimientos' && (
         <div className="flex flex-col gap-4">
           {/* Stats resumen */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
               { tipo: 'entrada', label: 'Entradas', color: 'green', sign: '+' },
               { tipo: 'salida',  label: 'Salidas',  color: 'red',   sign: '-' },

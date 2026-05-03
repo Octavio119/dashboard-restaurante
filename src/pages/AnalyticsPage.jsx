@@ -14,19 +14,19 @@ export default function AnalyticsPage({
   loadAnalytics, analytics
 }) {
   return (
-    <motion.div key="analytics" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-8 flex flex-col gap-8 max-w-[1400px] w-full mx-auto">
-      <div className="flex justify-between items-end">
+    <motion.div key="analytics" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 sm:gap-8 max-w-[1400px] w-full mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Centro de <span className="text-amber-500">Analytics</span></h2>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Centro de <span className="text-amber-500">Analytics</span></h2>
           <p className="text-zinc-500 text-sm mt-1">Métricas y tendencias operativas</p>
         </div>
-        <button onClick={loadAnalytics} className="btn-ghost flex items-center gap-2 text-xs">
+        <button onClick={loadAnalytics} className="btn-ghost flex items-center gap-2 text-xs w-fit">
           <Activity size={14}/> Actualizar
         </button>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-5 flex flex-col gap-3">
           <div className="flex justify-between items-start">
             <div className="p-2.5 rounded-lg bg-zinc-800 text-amber-500 border border-zinc-700"><DollarSign size={18}/></div>
@@ -87,7 +87,7 @@ export default function AnalyticsPage({
       </div>
 
       {/* Horas pico + Top Productos */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-6">
           <h3 className="font-bold text-zinc-300 mb-4 flex items-center gap-2"><Activity size={16} className="text-amber-400"/>Horas Pico — Hoy</h3>
           {analytics?.ventas_por_hora?.length > 0 ? (

@@ -139,15 +139,43 @@ export default function Billing() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div className="billing-page" style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .billing-header { 
+          background: #fff; 
+          border-bottom: 1px solid #e2e8f0; 
+          padding: 16px 32px; 
+          display: flex; 
+          align-items: center; 
+          gap: 16px; 
+        }
+        .billing-container {
+          max-width: 900px;
+          margin: 0 auto;
+          padding: 32px 24px;
+        }
+        @media (max-width: 640px) {
+          .billing-header {
+            padding: 12px 16px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          .billing-header-sep { display: none; }
+          .billing-container {
+            padding: 24px 16px;
+          }
+          .billing-title { font-size: 20px !important; }
+        }
+      `}</style>
 
       {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '16px 32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="billing-header">
         <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', textDecoration: 'none', fontSize: '13px', fontWeight: 500 }}>
           <ArrowLeft size={15} /> Volver al dashboard
         </a>
-        <div style={{ width: '1px', height: '20px', background: '#e2e8f0' }} />
+        <div className="billing-header-sep" style={{ width: '1px', height: '20px', background: '#e2e8f0' }} />
         <div>
           <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}>Planes y facturación</h1>
           <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
@@ -156,7 +184,7 @@ export default function Billing() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 24px' }}>
+      <div className="billing-container">
 
         {/* Banner de estado */}
         {banner && (() => {

@@ -3,7 +3,7 @@ import { updateItemQty } from './lib/pedidoQtyUtils';
 import {
   LayoutDashboard, Utensils, Calendar, Users, BarChart3, Settings, LogOut,
   TrendingUp, ShoppingBag, Clock, DollarSign, ChevronRight, Search, Bell,
-  MoreVertical, Check, X, MessageCircle, Zap,
+  MoreVertical, Check, X, MessageCircle, Zap, Menu,
   UserCheck, Save, CreditCard, Banknote,
   Smartphone, QrCode, AlertTriangle, Flame, Activity, Trash2, Download,
   Package, Plus, Minus, Shield, Building2, FileText, Receipt, Wallet, Printer, ShieldAlert,
@@ -63,6 +63,7 @@ const App = () => {
   const [activeTab, setActiveTab]   = useState('Dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [bellOpen, setBellOpen]     = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Pedidos — modal nuevo pedido (POS)
   const [pedidoModal,     setPedidoModal]     = useState(false);
@@ -210,8 +211,9 @@ const App = () => {
   // ─── Cargar datos ────────────────────────────────────────────────────────────
   const loadPedidos = useCallback(async () => {
     try {
-      const rows = await api.getPedidos(dateFilter);
-      setPedidos(rows);
+      const data = await api.getPedidos(dateFilter);
+      // El backend devuelve { rows, total, page, pages }
+      setPedidos(Array.isArray(data) ? data : (data?.rows || []));
     } catch(e) { console.error(e); }
   }, [dateFilter]);
 
@@ -224,15 +226,17 @@ const App = () => {
 
   const loadReservas = useCallback(async () => {
     try {
-      let rows;
+      let data;
       if (reservasPeriodo === 'dia') {
-        rows = await api.getReservas(selectedDate);
+        data = await api.getReservas(selectedDate);
       } else {
-        rows = await api.getReservasPeriodo(reservasPeriodo);
+        data = await api.getReservasPeriodo(reservasPeriodo);
       }
-      setReservas(rows);
-      const { total } = await api.getTotalesReservas(reservasPeriodo);
-      setTotalReservas(total);
+      // El backend devuelve { rows, total, page, pages }
+      setReservas(Array.isArray(data) ? data : (data?.rows || []));
+      
+      const resTotales = await api.getTotalesReservas(reservasPeriodo);
+      setTotalReservas(resTotales?.total || 0);
     } catch(e) { console.error(e); }
   }, [selectedDate, reservasPeriodo]);
 
@@ -1361,13 +1365,17 @@ const App = () => {
   }
 
   // ─── Derived ─────────────────────────────────────────────────────────────────
-  const todayReservations  = reservas.filter(r => r.fecha === new Date().toISOString().split('T')[0]);
-  const dailyReservations  = reservas.filter(r => reservasPeriodo === 'dia' ? r.fecha === selectedDate : true);
-  const filteredOrders     = pedidos.filter(o =>
+  const safeReservas = Array.isArray(reservas) ? reservas : [];
+  const safePedidos  = Array.isArray(pedidos)  ? pedidos  : [];
+  const safeClientes = Array.isArray(clientes) ? clientes : [];
+
+  const todayReservations  = safeReservas.filter(r => r.fecha === new Date().toISOString().split('T')[0]);
+  const dailyReservations  = safeReservas.filter(r => reservasPeriodo === 'dia' ? r.fecha === selectedDate : true);
+  const filteredOrders     = safePedidos.filter(o =>
     o.cliente_nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     o.numero?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredClientes = clientes.filter(c =>
+  const filteredClientes = safeClientes.filter(c =>
     c.nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.rut?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -1398,7 +1406,24 @@ const App = () => {
     <div className="flex min-h-screen bg-[#09090b] text-white font-inter">
 
       {/* Sidebar */}
-      <aside className="w-64 border-r border-zinc-800 p-6 flex flex-col gap-8 sticky top-0 h-screen bg-[#09090b] z-[100]">
+      {/* Sidebar Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:sticky top-0 h-screen w-64 bg-[#09090b] border-r border-zinc-800 p-6 flex flex-col gap-8 z-[100] transition-transform duration-300
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
         <div className="flex items-center gap-3 px-2 cursor-pointer select-none" onClick={() => setActiveTab('Dashboard')}>
           {config.logoUrl ? (
             <img
@@ -1415,7 +1440,15 @@ const App = () => {
             <span className="font-black tracking-tight brand text-lg leading-none">
               {config.restaurantName || 'master'}
             </span>
-            <span className="text-xs font-bold tracking-widest text-amber-500 block -mt-0.5 uppercase">Growth</span>
+            <span className="text-xs font-bold tracking-widest text-amber-500 block -mt-0.5 uppercase">
+              {(() => {
+                const p = user?.restaurante?.plan?.toLowerCase();
+                if (p === 'free') return 'Starter';
+                if (p === 'pro') return 'Pro';
+                if (p === 'business') return 'Business';
+                return p || 'Starter';
+              })()}
+            </span>
           </div>
         </div>
 
@@ -1430,12 +1463,30 @@ const App = () => {
             { icon:BarChart3,      label:'Analytics',   roles: ['admin','gerente','super_admin'] },
           ].filter(({ roles }) => !roles || roles.includes(user?.rol))
            .map(({ icon, label }) => (
-            <SidebarItem key={label} icon={icon} label={label} active={activeTab===label} onClick={() => setActiveTab(label)} />
+             <SidebarItem 
+              key={label} 
+              icon={icon} 
+              label={label} 
+              active={activeTab===label} 
+              onClick={() => {
+                setActiveTab(label);
+                setSidebarOpen(false);
+              }} 
+            />
+
           ))}
         </nav>
 
         <div className="border-t border-zinc-800 pt-4 flex flex-col gap-1">
-          <SidebarItem icon={Settings} label="Configuración" active={activeTab==='Configuración'} onClick={() => setActiveTab('Configuración')} />
+          <SidebarItem 
+            icon={Settings} 
+            label="Configuración" 
+            active={activeTab==='Configuración'} 
+            onClick={() => {
+              setActiveTab('Configuración');
+              setSidebarOpen(false);
+            }} 
+          />
           <div
             onClick={logout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/5 cursor-pointer transition-all"
@@ -1450,16 +1501,26 @@ const App = () => {
       {/* Main */}
       <main className="flex-grow flex flex-col">
         {/* Header */}
-        <header className="h-16 px-8 flex items-center justify-between border-b border-zinc-800 bg-[#09090b] sticky top-0 z-50">
-          <div className="relative w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-2 w-full text-sm placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
-            />
+        {/* Header */}
+        <header className="h-16 px-4 lg:px-8 flex items-center justify-between border-b border-zinc-800 bg-[#09090b] sticky top-0 z-50">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden w-10 h-10 rounded-lg flex items-center justify-center bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
+            >
+              <Menu size={20} />
+            </button>
+            
+            <div className="relative w-40 sm:w-64 lg:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-2 w-full text-sm placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -1498,11 +1559,11 @@ const App = () => {
             <div className="w-px h-8 bg-zinc-800" />
 
             {/* User */}
-            <div className="flex items-center gap-2.5 cursor-default">
+            <div className="flex items-center gap-2.5 cursor-default group">
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 font-black text-sm">
                 {user.nombre?.charAt(0).toUpperCase()}
               </div>
-              <div className="flex flex-col gap-0.5">
+              <div className="hidden sm:flex flex-col gap-0.5">
                 <span className="text-sm font-bold text-white leading-none">{user.nombre}</span>
                 <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider w-fit ${rolColor[user.rol] || rolColor.staff}`}>
                   {rolLabel[user.rol] || user.rol}

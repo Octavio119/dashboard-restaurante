@@ -98,7 +98,11 @@ router.get('/me', requireAuth, async (req, res) => {
   try {
     const user = await req.prisma.usuario.findUnique({
       where: { id: req.user.id },
-      select: { id: true, nombre: true, email: true, rol: true, restaurante_id: true },
+      include: {
+        restaurante: {
+          select: { id: true, nombre: true, plan: true }
+        }
+      }
     });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json(user);
@@ -170,9 +174,12 @@ router.post('/signup', async (req, res) => {
       user: payload,
     });
   } catch (e) {
-    if (e.code === 'P2002') return res.status(409).json({ error: 'Email o restaurante ya registrado' });
-    logger.error({ err: e }, 'signup error');
-    res.status(500).json({ error: 'Error interno' });
+    // Prisma v5: en transacciones el código P2002 puede venir en e.code o anidado
+    const errCode = e.code ?? e.cause?.code ?? e.meta?.cause;
+    logger.error({ err: e, errCode, meta: e.meta }, 'signup error');
+    if (errCode === 'P2002' || String(e.message).includes('Unique constraint'))
+      return res.status(409).json({ error: 'Email o restaurante ya registrado' });
+    res.status(500).json({ error: e.message || 'Error interno' });
   }
 });
 

@@ -11,21 +11,21 @@ export default function ClientesPage({
   deleteCliente
 }) {
   return (
-    <motion.div key="clientes" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-8 flex flex-col gap-6 max-w-[1400px] w-full mx-auto">
-      <div className="flex justify-between items-end">
+    <motion.div key="clientes" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1400px] w-full mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Módulo de <span className="text-amber-500">Clientes</span></h2>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Módulo de <span className="text-amber-500">Clientes</span></h2>
           <p className="text-zinc-500 text-sm mt-1">Gestión de relaciones y fidelización</p>
         </div>
         <button
           onClick={() => { setClienteForm({ nombre:'', email:'', telefono:'', rut:'', tipo_cliente:'persona', razon_social:'', estado:'Nuevo' }); setClienteFormOpen(true); }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center gap-2 w-fit"
         >
           <Plus size={15}/> Nuevo Cliente
         </button>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-zinc-800 bg-zinc-900/50">

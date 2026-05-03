@@ -28,7 +28,10 @@
 
 @layer components {
   .card {
-    @apply bg-zinc-900 border border-zinc-800 rounded-xl;
+    @apply bg-zinc-900 border border-zinc-800 rounded-xl transition-colors duration-200;
+  }
+  .card-hover {
+    @apply hover:border-zinc-700;
   }
 
   .brand {

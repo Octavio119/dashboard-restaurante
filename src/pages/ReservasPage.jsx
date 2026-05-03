@@ -25,17 +25,17 @@ export default function ReservasPage({
   handleCrearPedidoDesdeReserva
 }) {
   return (
-    <motion.div key="reservas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-8 flex flex-col gap-6 max-w-[1400px] w-full mx-auto">
-      <div className="flex justify-between items-end">
+    <motion.div key="reservas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1400px] w-full mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Módulo de <span className="text-amber-500">Reservas</span></h2>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Módulo de <span className="text-amber-500">Reservas</span></h2>
           <p className="text-zinc-500 text-sm mt-1">Calendario y gestión de disponibilidad</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6">
         {/* Calendario */}
-        <div className="col-span-4 flex flex-col gap-4">
+        <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="card p-5 flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
@@ -90,7 +90,7 @@ export default function ReservasPage({
         </div>
 
         {/* Lista reservas */}
-        <div className="col-span-8 flex flex-col gap-4">
+        <div className="lg:col-span-8 flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-zinc-300">
               {reservasPeriodo==='dia'

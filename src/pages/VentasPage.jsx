@@ -15,7 +15,7 @@ export default function VentasPage({
   ventaItems, ventaProductos, ventaMetodo, config, ventaLoading, ventaTicket, ventaModal
 }) {
   return (
-    <motion.div key="ventas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
+    <motion.div key="ventas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
 
       {/* Header */}
       <div className="flex justify-between items-end flex-wrap gap-4">
@@ -139,10 +139,11 @@ export default function VentasPage({
       </div>
 
       {/* Tabla de ventas */}
-      <div className="card overflow-hidden">
+      <div className="card">
         <div className="px-6 py-4 border-b border-zinc-800">
           <h3 className="font-bold text-white">Ventas del {ventasFecha}</h3>
         </div>
+        <div className="overflow-x-auto">
         {ventasDia.length > 0 ? (
           <table className="w-full text-sm">
             <thead>
@@ -211,6 +212,7 @@ export default function VentasPage({
           </div>
         )}
       </div>
+    </div>
 
       {/* ── Modal Caja ── */}
       {cajaModal && (

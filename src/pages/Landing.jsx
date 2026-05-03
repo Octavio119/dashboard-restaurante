@@ -493,7 +493,7 @@ export default function Landing() {
               </div>
               <div className="price-period">USD / mes · sin contrato</div>
             </div>
-            <a href="/register?plan=business" className="btn-pcard secondary">Hablar con ventas</a>
+            <a href="/register?plan=business" className="btn-pcard secondary">Activar Plan Business</a>
           </div>
         </div>
       </section>

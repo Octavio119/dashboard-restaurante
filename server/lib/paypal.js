@@ -10,6 +10,9 @@ function getBaseUrl() {
 }
 
 async function getPayPalToken() {
+  if (process.env.PAYPAL_MOCK === 'true') {
+    return 'mock_paypal_token';
+  }
   const base = getBaseUrl();
   const auth = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
@@ -134,6 +137,12 @@ const PLAN_PRICES = {
 };
 
 async function crearOrden({ plan, restauranteId, returnUrl, cancelUrl }) {
+  if (process.env.PAYPAL_MOCK === 'true') {
+    const mockOrderId = `MOCK-ORD-${restauranteId}-${Date.now()}`;
+    // Construimos la URL de retorno incluyendo el token (orderId) que espera el éxito
+    const approvalUrl = `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}token=${mockOrderId}`;
+    return { orderId: mockOrderId, approvalUrl };
+  }
   const base  = getBaseUrl();
   const token = await getPayPalToken();
   const price = PLAN_PRICES[plan];
@@ -179,6 +188,17 @@ async function crearOrden({ plan, restauranteId, returnUrl, cancelUrl }) {
 }
 
 async function capturarOrden(orderId) {
+  if (process.env.PAYPAL_MOCK === 'true' && orderId.startsWith('MOCK-')) {
+    const parts = orderId.split('-');
+    const rid = parts[2]; // MOCK-ORD-{rid}-{ts}
+    return {
+      status: 'COMPLETED',
+      id: orderId,
+      purchase_units: [{
+        custom_id: rid
+      }]
+    };
+  }
   const base  = getBaseUrl();
   const token = await getPayPalToken();
 

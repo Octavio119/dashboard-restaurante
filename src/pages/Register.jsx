@@ -14,6 +14,7 @@ function useFont() {
 }
 
 // ─── Plan config ──────────────────────────────────────────────────────────────
+// formColor: contraste ≥ 4.5:1 sobre blanco (WCAG AA) — distinto de accent del panel izquierdo
 const PLANS = {
   free: {
     badge:     'Plan Starter',
@@ -38,9 +39,12 @@ const PLANS = {
     btnHover:  '#0052a3',
     btnShadow: '0 4px 16px rgba(0,102,204,0.40)',
     payNote:   null,
+    // Panel derecho — color que pasa AA sobre blanco
+    formColor: '#0066CC',
+    formRgba:  'rgba(0,102,204,0.12)',
   },
   pro: {
-    badge:     '⭐  Más popular',
+    badge:     'Más popular',
     badgeBg:   'rgba(91,168,245,0.15)',
     badgeColor:'#5ba8f5',
     headline:  'El sistema que',
@@ -63,9 +67,12 @@ const PLANS = {
     btnHover:  '#0052a3',
     btnShadow: '0 4px 16px rgba(0,102,204,0.40)',
     payNote:   'Serás redirigido a PayPal de forma segura',
+    // Panel derecho — azul oscuro para contraste AA (5.0:1 sobre blanco)
+    formColor: '#2563eb',
+    formRgba:  'rgba(37,99,235,0.12)',
   },
   business: {
-    badge:     '🏢  Plan Business',
+    badge:     'Plan Business',
     badgeBg:   'rgba(192,132,252,0.15)',
     badgeColor:'#c084fc',
     headline:  'Escala tu cadena',
@@ -88,6 +95,9 @@ const PLANS = {
     btnHover:  '#6d28d9',
     btnShadow: '0 4px 16px rgba(124,58,237,0.45)',
     payNote:   'Serás redirigido a PayPal de forma segura',
+    // Panel derecho — púrpura oscuro para contraste AA (4.7:1 sobre blanco)
+    formColor: '#7c3aed',
+    formRgba:  'rgba(124,58,237,0.12)',
   },
 };
 
@@ -126,12 +136,39 @@ function CheckIcon({ color }) {
   );
 }
 
+function LockIcon() {
+  return (
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  );
+}
+
+function StarIcon({ color }) {
+  return (
+    <svg width="11" height="11" fill={color} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
+
+function BuildingIcon({ color }) {
+  return (
+    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={2} style={{ flexShrink: 0 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  );
+}
+
 // ─── Field component ──────────────────────────────────────────────────────────
-function Field({ label, optional, type = 'text', value, onChange, placeholder, error, autoComplete, suffix }) {
+// accentColor/accentRgba son el color del plan activo (contraste AA garantizado)
+function Field({ label, optional, type = 'text', value, onChange, placeholder, error, autoComplete, suffix, accentColor = '#0066CC', accentRgba = 'rgba(0,102,204,0.12)' }) {
   const [focused, setFocused] = useState(false);
 
-  const borderColor = error ? '#ef4444' : focused ? '#0066CC' : '#E2EAF4';
-  const shadowStyle = focused && !error ? '0 0 0 3px rgba(0,102,204,0.12)' : error ? '0 0 0 3px rgba(239,68,68,0.10)' : 'none';
+  const borderColor = error ? '#ef4444' : focused ? accentColor : '#E2EAF4';
+  const shadowStyle = focused && !error
+    ? `0 0 0 3px ${accentRgba}`
+    : error ? '0 0 0 3px rgba(239,68,68,0.10)' : 'none';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -148,7 +185,6 @@ function Field({ label, optional, type = 'text', value, onChange, placeholder, e
           type={type}
           value={value}
           onChange={onChange}
-          onInput={onChange}
           placeholder={placeholder}
           autoComplete={autoComplete}
           onFocus={() => setFocused(true)}
@@ -191,7 +227,6 @@ export default function Register() {
   const planKey = getPlan();
   const plan    = PLANS[planKey];
 
-  // Individual useState por campo (no objeto compuesto)
   const [restaurante, setRestaurante] = useState('');
   const [email,       setEmail]       = useState('');
   const [nombre,      setNombre]      = useState('');
@@ -257,7 +292,9 @@ export default function Register() {
     ? [{ n: 1, label: 'Cuenta' }, { n: 2, label: 'Dashboard' }]
     : [{ n: 1, label: 'Cuenta' }, { n: 2, label: 'Pago' }, { n: 3, label: 'Dashboard' }];
 
-  const font = "'Plus Jakarta Sans', -apple-system, sans-serif";
+  const font   = "'Plus Jakarta Sans', -apple-system, sans-serif";
+  const fColor = plan.formColor;  // color primario del plan en panel derecho
+  const fRgba  = plan.formRgba;   // versión rgba para focus rings
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', fontFamily: font }}>
@@ -276,19 +313,21 @@ export default function Register() {
       }}
         className="lg-panel"
       >
-        {/* Orb decorativo */}
-        <div style={{
+        {/* Orbs decorativos flotantes */}
+        <div className="lp-orb-a" style={{
           position: 'absolute', top: '-80px', right: '-80px',
           width: '300px', height: '300px', borderRadius: '50%',
-          background: `radial-gradient(circle, ${plan.accent}22 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${plan.accent}28 0%, transparent 70%)`,
           pointerEvents: 'none',
         }} />
-        <div style={{
+        <div className="lp-orb-b" style={{
           position: 'absolute', bottom: '-60px', left: '-60px',
           width: '250px', height: '250px', borderRadius: '50%',
-          background: `radial-gradient(circle, ${plan.accent}15 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${plan.accent}18 0%, transparent 70%)`,
           pointerEvents: 'none',
         }} />
+        {/* Barrido de luz */}
+        <div className="lp-shimmer" />
 
         {/* Logo */}
         <div style={{ position: 'relative', zIndex: 1, marginBottom: 'auto' }}>
@@ -304,8 +343,12 @@ export default function Register() {
             <div style={{
               width: '32px', height: '32px', borderRadius: '8px',
               background: 'rgba(255,255,255,0.12)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', fontSize: '16px',
-            }}>🍽</div>
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.85)" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h18M3 17h18M9 9V5m6 4V5M5 9h14a1 1 0 011 1v1H4v-1a1 1 0 011-1z" />
+              </svg>
+            </div>
             <span style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>
               Mastexo<span style={{ color: plan.accent }}>POS</span>
             </span>
@@ -316,26 +359,28 @@ export default function Register() {
         <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 0' }}>
 
           {/* Badge */}
-          <div style={{
+          <div className="lp-badge" style={{
             display: 'inline-flex', alignItems: 'center', gap: '6px',
             background: plan.badgeBg, border: `1px solid ${plan.accent}33`,
             borderRadius: '20px', padding: '4px 12px', marginBottom: '20px',
             width: 'fit-content',
           }}>
+            {planKey === 'pro'      && <StarIcon color={plan.accent} />}
+            {planKey === 'business' && <BuildingIcon color={plan.accent} />}
             <span style={{ color: plan.accent, fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em' }}>
               {plan.badge}
             </span>
           </div>
 
           {/* Headline */}
-          <h1 style={{
+          <h1 className="lp-h1a" style={{
             fontFamily: 'Instrument Serif, Georgia, serif',
             fontSize: '36px', fontWeight: 700, lineHeight: 1.15,
             color: '#fff', marginBottom: '6px',
           }}>
             {plan.headline}
           </h1>
-          <h1 style={{
+          <h1 className="lp-h1b" style={{
             fontFamily: 'Instrument Serif, Georgia, serif',
             fontSize: '36px', fontWeight: 700, lineHeight: 1.15,
             color: plan.emColor, fontStyle: 'italic', marginBottom: '28px',
@@ -344,8 +389,8 @@ export default function Register() {
           </h1>
 
           {/* Precio */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '28px' }}>
-            <span style={{ fontSize: '52px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+          <div className="lp-price" style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '28px' }}>
+            <span className="lp-price-num" style={{ fontSize: '52px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
               {plan.price}
             </span>
             <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.50)', maxWidth: '120px', lineHeight: 1.3 }}>
@@ -354,7 +399,7 @@ export default function Register() {
           </div>
 
           {/* Features */}
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px', padding: 0, listStyle: 'none' }}>
+          <ul className="lp-features" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px', padding: 0, listStyle: 'none' }}>
             {plan.features.map((f) => (
               <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'rgba(255,255,255,0.78)', fontSize: '13.5px' }}>
                 <CheckIcon color={plan.accent} />
@@ -364,7 +409,7 @@ export default function Register() {
           </ul>
 
           {/* Guarantee */}
-          <div style={{
+          <div className="lp-guarantee" style={{
             background: 'rgba(255,255,255,0.06)',
             border: '1px solid rgba(255,255,255,0.10)',
             borderRadius: '10px',
@@ -383,10 +428,70 @@ export default function Register() {
         </p>
       </div>
 
-      {/* ── Inline styles para responsividad ── */}
+      {/* ── Estilos globales + animaciones ── */}
       <style>{`
-        @media (min-width: 1024px) {
-          .lg-panel { display: flex !important; }
+        @media (min-width: 1024px) { .lg-panel { display: flex !important; } }
+        @media (min-width: 1024px) { .mobile-logo { display: none !important; } }
+
+        /* Spinner del botón */
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Panel izquierdo — orbs flotantes */
+        @keyframes floatA {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33%      { transform: translate(-14px,-20px) scale(1.06); }
+          66%      { transform: translate(8px,-10px) scale(0.97); }
+        }
+        @keyframes floatB {
+          0%,100% { transform: translate(0,0) scale(1); }
+          40%      { transform: translate(12px,16px) scale(0.94); }
+          75%      { transform: translate(-8px,8px) scale(1.04); }
+        }
+
+        /* Entrada de contenido del panel izquierdo */
+        @keyframes fadeUp {
+          from { opacity:0; transform:translateY(20px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Pulso suave del precio */
+        @keyframes pricePulse {
+          0%,100% { opacity:1; }
+          50%      { opacity:0.82; }
+        }
+
+        /* Barrido de luz sobre el panel */
+        @keyframes shimmerPanel {
+          0%   { transform: translateX(-120%) skewX(-20deg); }
+          100% { transform: translateX(250%) skewX(-20deg); }
+        }
+
+        /* Aplica animaciones al panel izquierdo */
+        .lp-orb-a { animation: floatA 9s ease-in-out infinite; }
+        .lp-orb-b { animation: floatB 11s ease-in-out infinite; }
+        .lp-badge  { animation: fadeUp 0.55s ease 0.05s both; }
+        .lp-h1a    { animation: fadeUp 0.55s ease 0.15s both; }
+        .lp-h1b    { animation: fadeUp 0.55s ease 0.25s both; }
+        .lp-price  { animation: fadeUp 0.55s ease 0.35s both; }
+        .lp-price-num { animation: pricePulse 4s ease-in-out infinite; }
+        .lp-features { animation: fadeUp 0.55s ease 0.45s both; }
+        .lp-guarantee { animation: fadeUp 0.55s ease 0.55s both; }
+        .lp-shimmer {
+          position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2;
+        }
+        .lp-shimmer::after {
+          content: '';
+          position: absolute; top: 0; left: 0;
+          width: 40%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+          animation: shimmerPanel 6s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          @keyframes spin         { to { transform: rotate(0deg); } }
+          .lp-orb-a, .lp-orb-b   { animation: none; }
+          .lp-badge, .lp-h1a, .lp-h1b, .lp-price, .lp-features, .lp-guarantee { animation: none; opacity: 1; }
+          .lp-shimmer::after      { animation: none; }
         }
       `}</style>
 
@@ -409,28 +514,30 @@ export default function Register() {
               }}
             />
             <span style={{ display: 'none', fontWeight: 700, fontSize: '17px', color: '#0D1B3E' }}>
-              Mastexo<span style={{ color: '#0066CC' }}>POS</span>
+              Mastexo<span style={{ color: fColor }}>POS</span>
             </span>
           </div>
-          <style>{`
-            @media (min-width: 1024px) { .mobile-logo { display: none !important; } }
-          `}</style>
 
           {/* Steps indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '28px' }}>
             {steps.map((s, i) => (
               <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <div style={{
                     width: '22px', height: '22px', borderRadius: '50%',
-                    background: s.n === 1 ? '#0066CC' : '#f1f5f9',
+                    background: s.n === 1 ? fColor : '#f1f5f9',
                     color: s.n === 1 ? '#fff' : '#94a3b8',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '11px', fontWeight: 700, flexShrink: 0,
                   }}>
                     {s.n}
                   </div>
-                  <span style={{ fontSize: '12px', fontWeight: s.n === 1 ? 600 : 400, color: s.n === 1 ? '#0066CC' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: s.n === 1 ? 600 : 400,
+                    color: s.n === 1 ? fColor : '#94a3b8',
+                    whiteSpace: 'nowrap',
+                  }}>
                     {s.label}
                   </span>
                 </div>
@@ -444,20 +551,24 @@ export default function Register() {
           {/* Social proof */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            background: '#fff',
-            border: '1px solid #e2e8f0',
+            background: '#fff', border: '1px solid #e2e8f0',
             borderRadius: '10px', padding: '10px 14px', marginBottom: '28px',
           }}>
             <div style={{ display: 'flex', marginRight: '2px' }}>
-              {['🧑‍🍳', '👩‍💼', '👨‍🍽️'].map((em, i) => (
+              {[
+                { bg: '#0066CC', letter: 'J' },
+                { bg: '#059669', letter: 'A' },
+                { bg: '#7c3aed', letter: 'C' },
+              ].map((av, i) => (
                 <div key={i} style={{
                   width: '28px', height: '28px', borderRadius: '50%',
-                  background: '#fff', border: '2px solid #fff',
+                  background: av.bg, border: '2px solid #fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '13px', marginLeft: i > 0 ? '-8px' : 0,
+                  fontSize: '10px', fontWeight: 700, color: '#fff',
+                  marginLeft: i > 0 ? '-8px' : 0,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 }}>
-                  {em}
+                  {av.letter}
                 </div>
               ))}
             </div>
@@ -469,13 +580,13 @@ export default function Register() {
           </div>
 
           {/* Encabezado */}
-          <p style={{ fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.08em', color: '#0066CC', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <p style={{ fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.08em', color: fColor, textTransform: 'uppercase', marginBottom: '6px' }}>
             Crear cuenta
           </p>
           <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: '26px', fontWeight: 700, color: '#0D1B3E', marginBottom: '4px', lineHeight: 1.2 }}>
-            {planKey === 'free'     ? 'Empieza gratis hoy'        : ''}
-            {planKey === 'pro'      ? 'Activa el Plan Pro'         : ''}
-            {planKey === 'business' ? 'Activa el Plan Business'    : ''}
+            {planKey === 'free'     ? 'Empieza gratis hoy'     : ''}
+            {planKey === 'pro'      ? 'Activa el Plan Pro'      : ''}
+            {planKey === 'business' ? 'Activa el Plan Business' : ''}
           </h2>
           <p style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '24px' }}>
             {planKey === 'free' ? 'Sin tarjeta de crédito, sin compromisos.' : 'Completa el registro y configura el pago.'}
@@ -492,6 +603,8 @@ export default function Register() {
               placeholder="Ej: La Trattoria"
               autoComplete="organization"
               error={errors.restaurante}
+              accentColor={fColor}
+              accentRgba={fRgba}
             />
 
             {/* 2. Email */}
@@ -503,9 +616,11 @@ export default function Register() {
               placeholder="tu@correo.com"
               autoComplete="email"
               error={errors.email}
+              accentColor={fColor}
+              accentRgba={fRgba}
             />
 
-            {/* 3. Tu nombre (opcional — después del email según signup-cro) */}
+            {/* 3. Tu nombre — opcional, después del email para reducir fricción */}
             <Field
               label="Tu nombre"
               optional
@@ -514,6 +629,8 @@ export default function Register() {
               placeholder="Ej: Carlos González"
               autoComplete="name"
               error={errors.nombre}
+              accentColor={fColor}
+              accentRgba={fRgba}
             />
 
             {/* 4. Contraseña */}
@@ -525,6 +642,8 @@ export default function Register() {
               placeholder="Mínimo 8 caracteres"
               autoComplete="new-password"
               error={errors.password}
+              accentColor={fColor}
+              accentRgba={fRgba}
               suffix={
                 <button
                   type="button"
@@ -544,13 +663,13 @@ export default function Register() {
                   type="checkbox"
                   checked={terms}
                   onChange={(e) => { setTerms(e.target.checked); clearFieldErr('terms'); }}
-                  style={{ width: '16px', height: '16px', marginTop: '2px', cursor: 'pointer', accentColor: '#0066CC', flexShrink: 0 }}
+                  style={{ width: '16px', height: '16px', marginTop: '2px', cursor: 'pointer', accentColor: fColor, flexShrink: 0 }}
                 />
                 <span style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
                   Acepto los{' '}
-                  <a href="/terminos" target="_blank" style={{ color: '#0066CC', textDecoration: 'underline', fontWeight: 600 }}>Términos de servicio</a>
+                  <a href="/terminos" target="_blank" style={{ color: fColor, textDecoration: 'underline', fontWeight: 600 }}>Términos de servicio</a>
                   {' '}y la{' '}
-                  <a href="/privacidad" target="_blank" style={{ color: '#0066CC', textDecoration: 'underline', fontWeight: 600 }}>Política de privacidad</a>
+                  <a href="/privacidad" target="_blank" style={{ color: fColor, textDecoration: 'underline', fontWeight: 600 }}>Política de privacidad</a>
                 </span>
               </label>
               {errors.terms && (
@@ -618,12 +737,11 @@ export default function Register() {
                 </>
               ) : plan.btnLabel}
             </button>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
             {/* Nota de seguridad */}
             {plan.payNote && !loading && (
-              <p style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', margin: 0 }}>
-                🔒 {plan.payNote}
+              <p style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                <LockIcon /> {plan.payNote}
               </p>
             )}
           </form>
@@ -631,7 +749,9 @@ export default function Register() {
           {/* Footer */}
           <p style={{ textAlign: 'center', fontSize: '13.5px', color: '#64748b', marginTop: '24px' }}>
             ¿Ya tienes cuenta?{' '}
-            <a href="/login" style={{ color: '#0066CC', fontWeight: 700, textDecoration: 'none' }}
+            <a
+              href="/login"
+              style={{ color: fColor, fontWeight: 700, textDecoration: 'none' }}
               onMouseOver={(e) => (e.target.style.textDecoration = 'underline')}
               onMouseOut={(e)  => (e.target.style.textDecoration = 'none')}
             >

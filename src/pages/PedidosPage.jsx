@@ -67,7 +67,7 @@ export default function PedidosPage({
   };
 
   return (
-    <motion.div key="pedidos" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
+    <motion.div key="pedidos" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
       {/* Header */}
       <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
@@ -273,13 +273,14 @@ export default function PedidosPage({
       )}
 
       {/* ── Tabla de pedidos ── */}
-      <div className={`card overflow-hidden ${pedidoMesaView ? 'hidden' : ''}`}>
+      <div className={`card ${pedidoMesaView ? 'hidden' : ''}`}>
         <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
           <h3 className="font-bold text-white">
             Pedidos — {salesFilter==='dia' ? dateFilter : salesFilter==='semana' ? 'esta semana' : 'este mes'}
           </h3>
           <span className="text-zinc-500 text-xs">{filteredOrders.length} pedidos</span>
         </div>
+        <div className="overflow-x-auto">
         {filteredOrders.length > 0 ? (
           <table className="w-full text-sm">
             <thead>
@@ -368,6 +369,7 @@ export default function PedidosPage({
           </div>
         )}
       </div>
+    </div>
 
       {/* Modal nuevo pedido */}
       {pedidoModal && (
