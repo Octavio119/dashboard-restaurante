@@ -1,9 +1,127 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  FileText, Download, Plus, Wallet, X, Receipt, 
-  Banknote, CreditCard, Smartphone, QrCode, Trash2, Printer, Check 
+import {
+  FileText, Download, Plus, Wallet, X, Receipt,
+  Banknote, CreditCard, Smartphone, QrCode, Trash2, Printer, Check
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+
+// ─── Generate receipt-style PDF ticket (80mm) ────────────────────────────────
+function generateTicketPDF(venta, config) {
+  const taxAmount = venta.subtotal != null ? (venta.total - venta.subtotal) : 0;
+  const showTax   = config.impuestoActivo && taxAmount > 0;
+  const currency  = config.currency ?? '$';
+
+  // Dynamic height based on content
+  const baseH = 92;
+  const itemH = (venta.items ?? venta.venta_items ?? []).length * 6;
+  const taxH  = showTax ? 10 : 0;
+  const rutH  = config.rut       ? 4 : 0;
+  const dirH  = config.direccion ? 4 : 0;
+  const cajH  = venta.cajero     ? 4 : 0;
+  const totalH = baseH + itemH + taxH + rutH + dirH + cajH;
+
+  const W  = 80;
+  const LM = 6;
+  const RM = W - LM;
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [W, totalH] });
+
+  let y = 8;
+
+  // Helpers
+  const center = (txt, sz = 9) => {
+    doc.setFontSize(sz);
+    doc.text(String(txt), W / 2, y, { align: 'center' });
+  };
+  const row = (leftTxt, rightTxt, sz = 9) => {
+    doc.setFontSize(sz);
+    doc.text(String(leftTxt),  LM, y);
+    doc.text(String(rightTxt), RM, y, { align: 'right' });
+  };
+  const dashed = () => {
+    doc.setLineDashPattern([1, 1], 0);
+    doc.setDrawColor(160, 160, 160);
+    doc.line(LM, y, RM, y);
+    doc.setLineDashPattern([], 0);
+    doc.setDrawColor(0);
+  };
+
+  // Header
+  const businessName = config.nombre ?? config.restaurantName ?? 'Mi Restaurante';
+  doc.setFont('courier', 'bold');
+  center(businessName.toUpperCase(), 11);
+  y += 5;
+
+  doc.setFont('courier', 'normal');
+  doc.setTextColor(90);
+  if (config.rut)       { center(`RUT: ${config.rut}`, 8); y += 4; }
+  if (config.direccion) { center(config.direccion, 8);      y += 4; }
+  doc.setTextColor(0);
+
+  y += 2; dashed(); y += 5;
+
+  // Ticket info
+  doc.setTextColor(100);
+  center(`# ${venta.ticket_id}`, 8);
+  y += 4;
+
+  const fecha = venta.fecha ?? new Date().toLocaleDateString('es-CL');
+  const hora  = venta.hora  ?? '';
+  doc.setFontSize(8);
+  doc.text(fecha, LM, y);
+  if (hora) doc.text(hora, RM, y, { align: 'right' });
+  y += 4;
+
+  if (venta.metodo_pago) {
+    doc.text(`Método: ${venta.metodo_pago}`, LM, y);
+    y += 4;
+  }
+  if (venta.cajero) {
+    doc.text(`Cajero: ${venta.cajero}`, LM, y);
+    y += 4;
+  }
+  doc.setTextColor(0);
+
+  dashed(); y += 5;
+
+  // Items
+  const items = venta.items ?? venta.venta_items ?? [];
+  doc.setFont('courier', 'normal');
+  for (const it of items) {
+    const qty      = it.qty ?? it.cantidad ?? 1;
+    const precio   = it.precio_unit ?? it.precio_unitario ?? 0;
+    const subtotal = precio * qty;
+    row(`${it.nombre} ×${qty}`, `${currency}${subtotal.toFixed(2)}`, 8.5);
+    y += 5.5;
+  }
+
+  y += 1; dashed(); y += 4;
+
+  // Totals
+  if (showTax) {
+    doc.setTextColor(110);
+    const tax_rate = config.tax_rate ?? config.taxRate ?? 0;
+    row('Subtotal', `${currency}${Number(venta.subtotal).toFixed(2)}`, 8);
+    y += 4.5;
+    row(`IVA (${tax_rate}%)`, `${currency}${taxAmount.toFixed(2)}`, 8);
+    y += 4.5;
+    doc.setTextColor(0);
+  }
+
+  doc.setFont('courier', 'bold');
+  row('TOTAL', `${currency}${Number(venta.total).toFixed(2)}`, 11);
+  y += 7;
+
+  dashed(); y += 5;
+
+  // Footer
+  doc.setFont('courier', 'normal');
+  doc.setTextColor(110);
+  center('¡Gracias por su visita!', 8);
+
+  doc.save(`ticket-${venta.ticket_id}.pdf`);
+}
 
 export default function VentasPage({
   ventasFecha, setVentasFecha,
@@ -12,8 +130,12 @@ export default function VentasPage({
   api, cajaHoy, setCajaMonto, setCajaModal, cajaModal, cajaLoading, setCajaLoading, setCajaHoy,
   ventasResumen, downloadPDF, printTicket, isAdmin, deleteVenta,
   loadVentasDia, loadVentas,
-  ventaItems, ventaProductos, ventaMetodo, config, ventaLoading, ventaTicket, ventaModal
+  ventaItems, ventaProductos, ventaMetodo, config, ventaLoading, ventaTicket, ventaModal,
+  user
 }) {
+  const plan    = user?.restaurante?.plan?.toLowerCase() ?? 'free';
+  const isPro   = plan === 'pro' || plan === 'business';
+
   return (
     <motion.div key="ventas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
 
@@ -176,13 +298,15 @@ export default function VentasPage({
                   <td className="px-6 py-4 text-right font-black text-white">${v.total.toFixed(2)}</td>
                   <td className="px-4 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => downloadPDF(v)}
-                        className="text-zinc-500 hover:text-amber-400 transition-colors"
-                        title="Descargar PDF"
-                      >
-                        <Download size={14}/>
-                      </button>
+                      {isPro && (
+                        <button
+                          onClick={() => generateTicketPDF(v, config)}
+                          className="text-zinc-500 hover:text-amber-400 transition-colors"
+                          title="Descargar PDF del ticket"
+                        >
+                          <Download size={14}/>
+                        </button>
+                      )}
                       <button
                         onClick={() => printTicket(v)}
                         className="text-zinc-500 hover:text-amber-400 transition-colors"

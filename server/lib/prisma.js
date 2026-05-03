@@ -20,7 +20,7 @@ const prisma = basePrisma.$extends({
           // SET LOCAL solo dura mientras dure la transacción actual.
           // rid es siempre entero (parseInt en runWithContext), Number.isFinite protege contra NaN.
           const [_, result] = await basePrisma.$transaction([
-            basePrisma.$executeRawUnsafe(`SET LOCAL "app.current_restaurant_id" = '${rid}'`),
+            basePrisma.$executeRaw`SELECT set_config('app.current_restaurant_id', ${String(rid)}, true)`,
             query(args)
           ]);
           return result;

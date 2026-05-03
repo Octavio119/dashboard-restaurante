@@ -110,7 +110,7 @@ router.get('/movimientos', async (req, res) => {
 });
 
 // POST /api/inventario/movimientos
-router.post('/movimientos', async (req, res) => {
+router.post('/movimientos', verifyRole('admin', 'gerente'), async (req, res) => {
   try {
     const { producto_id, tipo, cantidad, motivo, proveedor_id } = req.body;
     const rid = RID(req);

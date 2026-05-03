@@ -236,6 +236,11 @@ export const api = {
   signup: (nombre_restaurante, email, password, nombre_admin) =>
     request('/auth/signup', { method: 'POST', body: JSON.stringify({ nombre_restaurante, email, password, nombre_admin }) }),
 
+  // API Keys (plan business)
+  getApiKeys: () => request('/apikeys'),
+  createApiKey: (nombre) => request('/apikeys', { method: 'POST', body: JSON.stringify({ nombre }) }),
+  revokeApiKey: (id) => request(`/apikeys/${id}`, { method: 'DELETE' }),
+
   // Inventario
   getProveedores: () => request('/inventario/proveedores'),
   createProveedor: (data) => request('/inventario/proveedores', { method: 'POST', body: JSON.stringify(data) }),

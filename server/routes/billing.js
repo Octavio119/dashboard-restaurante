@@ -1,6 +1,7 @@
 const router      = require('express').Router();
 const logger      = require('../lib/logger');
 const requireAuth = require('../middleware/auth');
+const { audit }   = require('../lib/audit');
 const { PLAN_LIMITS } = require('../lib/planLimits');
 const {
   PLAN_IDS,
@@ -68,6 +69,10 @@ router.get('/success', async (req, res) => {
       where: { id: rid },
       data:  { plan },
     });
+
+    // Fake req-like object for audit since this is a redirect callback (no req.user)
+    const fakeReq = { prisma: req.prisma, user: { restaurante_id: rid, id: null }, ip: req.ip, headers: req.headers };
+    await audit(fakeReq, 'PLAN_UPGRADE', 'Restaurante', rid, { plan, token });
 
     logger.info({ rid, plan, token }, 'PayPal order captured — plan actualizado');
     res.redirect(`${frontendUrl}/dashboard?upgraded=true`);
