@@ -35,9 +35,23 @@ const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos de login. Intenta en 15 minutos.' },
 });
 
+// Limiter específico para endpoints de escritura — evita spam/DOS en creación de recursos
+const writeLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas solicitudes de creación. Intenta en un minuto.' },
+});
+
 app.use('/api/', apiLimiter);
-app.use('/api/auth/login',    authLimiter);
-app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/login',      authLimiter);
+app.use('/api/auth/register',   authLimiter);
+app.use('/api/auth/signup',     authLimiter);
+// Rate limiting granular para endpoints de creación de recursos
+['/api/pedidos', '/api/ventas', '/api/clientes', '/api/reservas', '/api/usuarios'].forEach(path => {
+  app.post(path, writeLimiter);
+});
 
 app.use(helmet({
   contentSecurityPolicy: {
@@ -60,11 +74,11 @@ app.use(helmet({
 
 app.use('/uploads', express.static(uploadsDir));
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:4173',
-  process.env.FRONTEND_URL
+  // localhost only in development — never in production
+  ...(process.env.NODE_ENV !== 'production'
+    ? ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:4173']
+    : []),
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(cors({ origin: allowedOrigins }));
@@ -104,6 +118,7 @@ app.use('/api/caja',       require('./routes/caja'));
 app.use('/api/config',     require('./routes/config'));
 app.use('/api/inventario', require('./routes/inventario'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/apikeys',   require('./routes/apikeys'));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 app.get('/health',     (_req, res) => res.status(200).json({ status: 'ok' }));

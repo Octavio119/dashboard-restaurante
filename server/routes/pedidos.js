@@ -3,6 +3,7 @@ const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
 const verifyAdminCode = require('../middleware/verifyAdminCode');
+const { audit }       = require('../lib/audit');
 const { getIO, emit: socketEmit } = require('../lib/socket');
 const { sendStockAlert } = require('../lib/mailer');
 const { createVentaConTicket } = require('../lib/ventaHelper');
@@ -383,6 +384,7 @@ router.delete('/:id', verifyRole('admin'), verifyAdminCode, async (req, res) => 
     const exists = await req.prisma.pedido.findFirst({ where: { id, restaurante_id: RID(req) } });
     if (!exists) return res.status(404).json({ error: 'Pedido no encontrado' });
     await req.prisma.pedido.delete({ where: { id } });
+    await audit(req, 'DELETE_PEDIDO', 'Pedido', id, { numero: exists.numero, cliente: exists.cliente_nombre, total: exists.total });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: 'Error interno' }); }
 });

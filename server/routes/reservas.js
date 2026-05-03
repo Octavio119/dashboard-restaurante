@@ -3,6 +3,7 @@ const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
 const verifyAdminCode = require('../middleware/verifyAdminCode');
+const { audit }       = require('../lib/audit');
 const { toDate, fromFilter }   = require('../lib/dateUtils');
 
 router.use(requireAuth);
@@ -178,6 +179,7 @@ router.delete('/:id', verifyRole('admin', 'gerente'), verifyAdminCode, async (re
     const exists = await req.prisma.reserva.findFirst({ where: { id, restaurante_id: RID(req) } });
     if (!exists) return res.status(404).json({ error: 'Reserva no encontrada' });
     await req.prisma.reserva.delete({ where: { id } });
+    await audit(req, 'DELETE_RESERVA', 'Reserva', id, { nombre: exists.nombre, fecha: exists.fecha });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: 'Error interno' }); }
 });

@@ -43,6 +43,8 @@ import Login from './pages/Login';
 import Billing from './pages/Billing';
 import ProtectedRoute from './components/ProtectedRoute';
 import UsageBanner from './components/UsageBanner';
+import OnboardingWizard from './components/OnboardingWizard';
+import ApiKeysPage from './pages/ApiKeysPage';
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 const App = () => {
@@ -148,6 +150,9 @@ const App = () => {
   // Nuevo usuario (config)
   const [newUser, setNewUser] = useState({ nombre:'', email:'', password:'', rol:'staff' });
   const [userFormOpen, setUserFormOpen] = useState(false);
+
+  // Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Inventario
   const [inventarioTab, setInventarioTab] = useState('stock'); // stock | movimientos | proveedores
@@ -364,6 +369,18 @@ const App = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
   useEffect(() => { if (user && activeTab === 'Clientes') loadClientes(); }, [user, activeTab, loadClientes]);
+
+  // Onboarding: show wizard to new admin restaurants with no products/categories yet
+  useEffect(() => {
+    if (!user || user.rol !== 'admin') return;
+    const dismissed = localStorage.getItem(`onboarding_dismissed_${user.restaurante_id}`);
+    if (dismissed) return;
+    Promise.all([api.getProductos(), api.getCategorias()]).then(([prods, cats]) => {
+      if (prods.length === 0 && cats.length === 0) setShowOnboarding(true);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   useEffect(() => { if (user && (activeTab === 'Configuración' || activeTab === 'Analytics')) { loadProductos(); loadCategorias(); } }, [user, activeTab, loadProductos, loadCategorias]);
   useEffect(() => { if (user && activeTab === 'Configuración') loadConfig(); }, [user, activeTab, loadConfig]);
   useEffect(() => { if (user && activeTab === 'Analytics') loadAnalytics(); }, [user, activeTab, loadAnalytics]);
@@ -1359,9 +1376,12 @@ const App = () => {
     return <Login />;
   }
 
-  // Ruta /billing independiente del tab system (post-pago PayPal)
+  // Rutas independientes del tab system
   if (window.location.pathname === '/billing') {
     return <Billing />;
+  }
+  if (window.location.pathname === '/apikeys') {
+    return <ApiKeysPage user={user} />;
   }
 
   // ─── Derived ─────────────────────────────────────────────────────────────────
@@ -1494,7 +1514,6 @@ const App = () => {
             <LogOut size={18} />
             <span className="font-semibold text-sm">Cerrar sesión</span>
           </div>
-          <UsageBanner />
         </div>
       </aside>
 
@@ -1572,6 +1591,8 @@ const App = () => {
             </div>
           </div>
         </header>
+
+        <UsageBanner />
 
         {/* Content */}
         <AnimatePresence mode="wait">
@@ -1706,6 +1727,7 @@ const App = () => {
               ventaLoading={ventaLoading}
               ventaTicket={ventaTicket}
               ventaModal={ventaModal}
+              user={user}
             />
           )}
 
@@ -2946,6 +2968,14 @@ const App = () => {
       />
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {showOnboarding && (
+        <OnboardingWizard
+          user={user}
+          onComplete={() => { setShowOnboarding(false); loadProductos(); loadCategorias(); }}
+          onDismiss={() => setShowOnboarding(false)}
+        />
+      )}
     </div>
   );
 };

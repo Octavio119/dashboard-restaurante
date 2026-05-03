@@ -3,6 +3,7 @@ const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
 const verifyAdminCode = require('../middleware/verifyAdminCode');
+const { audit }       = require('../lib/audit');
 const { createVentaConTicket } = require('../lib/ventaHelper');
 const { toDate, fromFilter }   = require('../lib/dateUtils');
 const { emit: socketEmit }     = require('../lib/socket');
@@ -229,6 +230,7 @@ router.delete('/:id', verifyRole('admin'), verifyAdminCode, async (req, res) => 
     const venta = await req.prisma.venta.findFirst({ where: { id: parseInt(req.params.id), restaurante_id: RID(req) } });
     if (!venta) return res.status(404).json({ error: 'Venta no encontrada' });
     await req.prisma.venta.delete({ where: { id: venta.id } });
+    await audit(req, 'DELETE_VENTA', 'Venta', venta.id, { ticket_id: venta.ticket_id, total: venta.total });
     res.json({ ok: true });
   } catch (err) { logger.error({ err }, 'route error'); res.status(500).json({ error: 'Error al eliminar venta' }); }
 });

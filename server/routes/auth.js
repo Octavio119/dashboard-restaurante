@@ -23,12 +23,14 @@ function signRefresh(payload) {
   return jwt.sign({ id: payload.id }, JWT_SECRET + '_refresh', { expiresIn: JWT_REFRESH_EXPIRES });
 }
 async function storeRefreshToken(prisma, userId, token) {
-  const key = `refresh:${userId}`;
-  await prisma.metadata.upsert({ where: { key }, update: { value: token }, create: { key, value: token } });
+  const key  = `refresh:${userId}`;
+  const hash = bcrypt.hashSync(token, 10);
+  await prisma.metadata.upsert({ where: { key }, update: { value: hash }, create: { key, value: hash } });
 }
-async function getStoredRefresh(prisma, userId) {
+async function verifyRefreshToken(prisma, userId, token) {
   const row = await prisma.metadata.findUnique({ where: { key: `refresh:${userId}` } });
-  return row?.value ?? null;
+  if (!row) return false;
+  return bcrypt.compareSync(token, row.value);
 }
 async function clearRefreshToken(prisma, userId) {
   await prisma.metadata.deleteMany({ where: { key: `refresh:${userId}` } });
@@ -70,8 +72,8 @@ router.post('/refresh', async (req, res) => {
     try { decoded = jwt.verify(refresh_token, JWT_SECRET + '_refresh'); }
     catch { return res.status(401).json({ error: 'Refresh token inválido o expirado' }); }
 
-    const stored = await getStoredRefresh(req.prisma, decoded.id);
-    if (stored !== refresh_token) return res.status(401).json({ error: 'Refresh token revocado' });
+    const valid = await verifyRefreshToken(req.prisma, decoded.id, refresh_token);
+    if (!valid) return res.status(401).json({ error: 'Refresh token revocado' });
 
     const user = await req.prisma.usuario.findFirst({ where: { id: decoded.id, activo: true } });
     if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });

@@ -324,3 +324,18 @@ model Metadata {
   key   String @id
   value String
 }
+
+model AuditLog {
+  id             Int      @id @default(autoincrement())
+  restaurante_id Int
+  usuario_id     Int?
+  accion         String
+  entidad        String
+  entidad_id     String?
+  detalle        Json?
+  ip             String?
+  created_at     DateTime @default(now())
+
+  @@index([restaurante_id])
+  @@index([restaurante_id, created_at])
+}
