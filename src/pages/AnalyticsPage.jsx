@@ -1,165 +1,233 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Activity, DollarSign, TrendingUp, Receipt, ShoppingBag, Flame 
+import {
+  Activity, DollarSign, TrendingUp, Receipt, ShoppingBag, Flame, BarChart2,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie
+  PieChart, Pie,
 } from 'recharts';
 
-const PIE_COLORS = ['#fbbf24','#f59e0b','#d97706','#b45309','#92400e'];
+const PIE_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#14B8A6', '#0EA5E9'];
 
-export default function AnalyticsPage({
-  loadAnalytics, analytics
-}) {
+const NUM_STYLE = { fontVariantNumeric: 'tabular-nums' };
+
+export default function AnalyticsPage({ loadAnalytics, analytics }) {
+  const pct = analytics?.comparacion_pct;
+
+  const deltaColor  = pct == null ? '#64748B' : pct >= 0 ? '#10B981' : '#EF4444';
+  const deltaBorder = pct == null ? 'rgba(100,116,139,.12)' : pct >= 0 ? 'rgba(16,185,129,.18)' : 'rgba(239,68,68,.18)';
+  const deltaDivider = pct == null ? 'rgba(100,116,139,.12)' : pct >= 0 ? 'rgba(16,185,129,.18)' : 'rgba(239,68,68,.18)';
+
   return (
-    <motion.div key="analytics" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 sm:gap-8 max-w-[1400px] w-full mx-auto">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+    <motion.div
+      key="analytics"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="p-5 sm:p-8 flex flex-col gap-7 max-w-[1400px] w-full mx-auto"
+    >
+
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Centro de <span style={{ color: 'var(--primary)' }}>Analytics</span></h2>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Métricas y tendencias operativas</p>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(59,130,246,.1)', color: '#3B82F6', border: '1px solid rgba(59,130,246,.2)' }}>
+              <BarChart2 size={9} className="inline" /> Análisis
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-none">
+            Centro de{' '}
+            <span style={{ color: '#3B82F6' }}>Analytics</span>
+          </h2>
+          <p className="text-[#8892A4] text-sm mt-2">
+            Datos históricos · comparativas por período
+          </p>
         </div>
         <button onClick={loadAnalytics} className="btn-ghost flex items-center gap-2 text-xs w-fit">
-          <Activity size={14}/> Actualizar
+          <Activity size={14} /> Actualizar datos
         </button>
       </div>
 
-      {/* KPI Cards */}
+      {/* ── KPI Cards — flat, data-dense, tabular numbers ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         {/* Ventas hoy */}
-        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
-          style={{ borderTop: '2px solid #8B5CF6', background: 'linear-gradient(135deg, #8B5CF60D 0%, var(--bg-card-2) 60%)' }}>
-          <div className="flex justify-between items-start">
-            <div className="metric-icon" style={{ background: 'var(--purple-dim)' }}>
-              <DollarSign size={17} style={{ color: '#8B5CF6' }} />
-            </div>
-            {analytics?.comparacion_pct != null && (
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${analytics.comparacion_pct >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                <TrendingUp size={10} className={analytics.comparacion_pct < 0 ? 'rotate-180' : ''} />
-                {Math.abs(analytics.comparacion_pct)}%
+        <div className="card p-5 flex flex-col gap-3" style={{ border: '1px solid rgba(59,130,246,.14)' }}>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Ventas hoy</span>
+            {pct != null && (
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${pct >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                <TrendingUp size={9} className={pct < 0 ? 'rotate-180' : ''} />
+                {Math.abs(pct)}%
               </span>
             )}
           </div>
-          <div>
-            <p className="metric-label">Ventas hoy</p>
-            <h3 className="metric-value">${(analytics?.total_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}</h3>
-            {analytics?.total_ayer != null && (
-              <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Ayer: ${analytics.total_ayer.toLocaleString('es-CL')}</p>
-            )}
-          </div>
+          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
+            ${(analytics?.total_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}
+          </p>
+          {analytics?.total_ayer != null && (
+            <p className="text-xs" style={{ color: '#475569' }}>
+              vs ayer{' '}
+              <span style={{ color: '#94A3B8', ...NUM_STYLE }}>
+                ${analytics.total_ayer.toLocaleString('es-CL')}
+              </span>
+            </p>
+          )}
+          <div className="h-px mt-auto" style={{ background: 'rgba(59,130,246,.15)' }} />
+          <DollarSign size={13} style={{ color: '#3B82F6', opacity: 0.55 }} />
         </div>
 
-        {/* Ticket promedio hoy */}
-        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
-          style={{ borderTop: '2px solid #06B6D4', background: 'linear-gradient(135deg, #06B6D40D 0%, var(--bg-card-2) 60%)' }}>
-          <div className="metric-icon" style={{ background: 'rgba(6,182,212,0.12)' }}>
-            <Receipt size={17} style={{ color: '#06B6D4' }} />
-          </div>
-          <div>
-            <p className="metric-label">Ticket promedio hoy</p>
-            <h3 className="metric-value" style={{ color: '#06B6D4' }}>${(analytics?.ticket_promedio_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}</h3>
-            {analytics?.ticket_promedio_ayer != null && (
-              <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Ayer: ${analytics.ticket_promedio_ayer.toLocaleString('es-CL')}</p>
-            )}
-          </div>
+        {/* Ticket promedio */}
+        <div className="card p-5 flex flex-col gap-3" style={{ border: '1px solid rgba(99,102,241,.14)' }}>
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Ticket promedio</span>
+          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
+            ${(analytics?.ticket_promedio_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}
+          </p>
+          {analytics?.ticket_promedio_ayer != null && (
+            <p className="text-xs" style={{ color: '#475569' }}>
+              vs ayer{' '}
+              <span style={{ color: '#94A3B8', ...NUM_STYLE }}>
+                ${analytics.ticket_promedio_ayer.toLocaleString('es-CL')}
+              </span>
+            </p>
+          )}
+          <div className="h-px mt-auto" style={{ background: 'rgba(99,102,241,.15)' }} />
+          <Receipt size={13} style={{ color: '#6366F1', opacity: 0.55 }} />
         </div>
 
-        {/* Transacciones hoy */}
-        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
-          style={{ borderTop: '2px solid #F59E0B', background: 'linear-gradient(135deg, #F59E0B0D 0%, var(--bg-card-2) 60%)' }}>
-          <div className="metric-icon" style={{ background: 'var(--yellow-dim)' }}>
-            <ShoppingBag size={17} style={{ color: '#F59E0B' }} />
-          </div>
-          <div>
-            <p className="metric-label">Transacciones hoy</p>
-            <h3 className="metric-value" style={{ color: '#F59E0B' }}>{analytics?.cantidad_hoy ?? 0}</h3>
-            {analytics?.cantidad_ayer != null && (
-              <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Ayer: {analytics.cantidad_ayer}</p>
-            )}
-          </div>
+        {/* Transacciones */}
+        <div className="card p-5 flex flex-col gap-3" style={{ border: '1px solid rgba(20,184,166,.14)' }}>
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Transacciones</span>
+          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
+            {analytics?.cantidad_hoy ?? 0}
+          </p>
+          {analytics?.cantidad_ayer != null && (
+            <p className="text-xs" style={{ color: '#475569' }}>
+              vs ayer{' '}
+              <span style={{ color: '#94A3B8', ...NUM_STYLE }}>
+                {analytics.cantidad_ayer}
+              </span>
+            </p>
+          )}
+          <div className="h-px mt-auto" style={{ background: 'rgba(20,184,166,.15)' }} />
+          <ShoppingBag size={13} style={{ color: '#14B8A6', opacity: 0.55 }} />
         </div>
 
-        {/* Hoy vs ayer */}
-        {(() => {
-          const pct = analytics?.comparacion_pct;
-          const color = pct == null ? '#8B5CF6' : pct >= 0 ? '#10B981' : '#EF4444';
-          const dimColor = pct == null ? 'var(--purple-dim)' : pct >= 0 ? 'var(--teal-dim)' : 'var(--red-dim)';
-          return (
-            <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
-              style={{ borderTop: `2px solid ${color}`, background: `linear-gradient(135deg, ${color}0D 0%, var(--bg-card-2) 60%)` }}>
-              <div className="metric-icon" style={{ background: dimColor }}>
-                <TrendingUp size={17} style={{ color, transform: pct != null && pct < 0 ? 'rotate(180deg)' : undefined }} />
-              </div>
-              <div>
-                <p className="metric-label">Hoy vs ayer</p>
-                <h3 className="metric-value" style={{ color }}>
-                  {pct == null ? 'Sin datos' : `${pct > 0 ? '+' : ''}${pct}%`}
-                </h3>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>en ventas totales</p>
-              </div>
-            </div>
-          );
-        })()}
+        {/* Delta card — hoy vs ayer */}
+        <div className="card p-5 flex flex-col gap-3" style={{ border: `1px solid ${deltaBorder}` }}>
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Hoy vs ayer</span>
+          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: deltaColor, ...NUM_STYLE }}>
+            {pct == null ? '—' : `${pct > 0 ? '+' : ''}${pct}%`}
+          </p>
+          <p className="text-xs" style={{ color: '#475569' }}>en ventas totales</p>
+          <div className="h-px mt-auto" style={{ background: deltaDivider }} />
+          <TrendingUp size={13} style={{ color: deltaColor, opacity: 0.55, transform: pct != null && pct < 0 ? 'rotate(180deg)' : undefined }} />
+        </div>
 
       </div>
 
-      {/* Horas pico + Top Productos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-6">
-          <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-1)', fontSize: '14px' }}><Activity size={16} style={{ color: 'var(--purple)' }}/>Horas Pico — Hoy</h3>
+      {/* ── Charts — 3 + 2 col split ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+        {/* Bar chart — horas pico */}
+        <div className="lg:col-span-3 card p-5 sm:p-6 flex flex-col gap-4"
+          style={{ border: '1px solid rgba(59,130,246,.1)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Distribución horaria</p>
+              <h3 className="text-sm font-bold mt-0.5" style={{ color: '#F8FAFC' }}>Horas pico — hoy</h3>
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded"
+              style={{ background: 'rgba(59,130,246,.08)', color: '#3B82F6', border: '1px solid rgba(59,130,246,.15)' }}>
+              24 h
+            </span>
+          </div>
           {analytics?.ventas_por_hora?.length > 0 ? (
-            <div className="h-[220px]">
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.ventas_por_hora} barSize={14}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a"/>
-                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill:'#52525b', fontSize:11 }}/>
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill:'#52525b', fontSize:11 }} allowDecimals={false}/>
-                  <Tooltip contentStyle={{ background:'#18181b', border:'1px solid #3f3f46', borderRadius:'10px', color:'#fff' }} formatter={v => [v + ' ventas']}/>
-                  <Bar dataKey="orders" radius={[4,4,0,0]}>
-                    {analytics.ventas_por_hora.map((e,i) => {
-                      const max = Math.max(...analytics.ventas_por_hora.map(h=>h.orders));
-                      return <Cell key={i} fill={e.orders === max ? '#fbbf24' : 'rgba(251,191,36,0.2)'}/>;
+                <BarChart data={analytics.ventas_por_hora} barSize={16} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 11 }} dy={6} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ background: '#0a0a0f', border: '1px solid rgba(59,130,246,.2)', borderRadius: '10px', color: '#F8FAFC', fontSize: '12px', padding: '8px 14px' }}
+                    cursor={{ fill: 'rgba(59,130,246,.06)' }}
+                    formatter={v => [v + ' pedidos', 'Ventas']}
+                  />
+                  <Bar dataKey="orders" radius={[4, 4, 0, 0]}>
+                    {analytics.ventas_por_hora.map((e, i) => {
+                      const max = Math.max(...analytics.ventas_por_hora.map(h => h.orders));
+                      return <Cell key={i} fill={e.orders === max ? '#3B82F6' : 'rgba(59,130,246,0.18)'} />;
                     })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-zinc-600 text-sm">Sin ventas registradas hoy</div>
+            <div className="h-[300px] flex items-center justify-center text-sm" style={{ color: '#475569' }}>
+              Sin ventas registradas hoy
+            </div>
           )}
         </div>
 
-        <div className="card p-6">
-          <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-1)', fontSize: '14px' }}><Flame size={16} style={{ color: 'var(--purple)' }}/>Top Productos — 30 días</h3>
+        {/* Donut — top productos */}
+        <div className="lg:col-span-2 card p-5 sm:p-6 flex flex-col gap-4"
+          style={{ border: '1px solid rgba(99,102,241,.1)' }}>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Ranking</p>
+            <h3 className="text-sm font-bold mt-0.5" style={{ color: '#F8FAFC' }}>Top productos — 30 días</h3>
+          </div>
+
           {analytics?.top_productos?.length > 0 ? (
-            <div className="flex gap-6 items-center">
-              <div className="w-36 h-36 flex-shrink-0">
+            <div className="flex flex-col gap-4 flex-1">
+              <div className="h-[190px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={analytics.top_productos} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="sales" paddingAngle={3}>
-                      {analytics.top_productos.map((_,i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]}/>)}
+                    <Pie
+                      data={analytics.top_productos}
+                      cx="50%" cy="50%"
+                      innerRadius={54} outerRadius={82}
+                      dataKey="sales"
+                      paddingAngle={3}
+                    >
+                      {analytics.top_productos.map((_, i) => (
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                      ))}
                     </Pie>
-                    <Tooltip formatter={(v,_n,p) => [v+' uds', p.payload.name]} contentStyle={{ background:'#18181b', border:'1px solid #3f3f46', borderRadius:'10px', color:'#fff', fontSize:'11px' }}/>
+                    <Tooltip
+                      formatter={(v, _n, p) => [v + ' uds', p.payload.name]}
+                      contentStyle={{ background: '#0a0a0f', border: '1px solid rgba(99,102,241,.2)', borderRadius: '10px', color: '#F8FAFC', fontSize: '11px', padding: '8px 14px' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex flex-col gap-2.5 flex-grow">
-                {analytics.top_productos.map((p,i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-[10px] text-zinc-600 w-3">{i+1}</span>
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background:PIE_COLORS[i % PIE_COLORS.length] }}/>
-                    <span className="text-xs text-zinc-300 flex-grow truncate">{p.name}</span>
-                    <span className="text-xs font-black">{p.sales} uds</span>
+
+              <div className="flex flex-col gap-2 flex-1">
+                {analytics.top_productos.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2.5">
+                    <span className="text-[11px] font-black w-4 text-right flex-shrink-0" style={{ color: '#475569', ...NUM_STYLE }}>
+                      {i + 1}
+                    </span>
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                    <span className="text-xs flex-grow truncate" style={{ color: '#CBD5E1' }}>{p.name}</span>
+                    <span className="text-xs font-black flex-shrink-0" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
+                      {p.sales} uds
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="h-[160px] flex items-center justify-center text-zinc-600 text-sm">Sin datos de ventas en los últimos 30 días</div>
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 py-8">
+              <Flame size={22} style={{ color: '#8892A4', opacity: 0.25 }} />
+              <p className="text-sm" style={{ color: '#475569' }}>Sin datos en 30 días</p>
+            </div>
           )}
         </div>
+
       </div>
     </motion.div>
   );
