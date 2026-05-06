@@ -137,14 +137,27 @@ export default function VentasPage({
   const plan    = user?.restaurante?.plan?.toLowerCase() ?? 'free';
   const isPro   = plan === 'pro' || plan === 'business';
 
+  const cajaAbierta = cajaHoy?.estado === 'abierta';
+
   return (
-    <motion.div key="ventas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
+    <motion.div key="ventas" initial={{ opacity:0, y: 6 }} animate={{ opacity:1, y: 0 }} exit={{ opacity:0 }} transition={{ duration: 0.2 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
 
       {/* Header */}
       <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Caja & <span style={{ color: 'var(--primary)' }}>Ventas</span></h2>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Registro de ventas del día</p>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+              style={{
+                background: cajaAbierta ? 'rgba(16,185,129,.1)' : 'rgba(100,116,139,.1)',
+                color: cajaAbierta ? '#10B981' : '#64748B',
+                border: cajaAbierta ? '1px solid rgba(16,185,129,.2)' : '1px solid rgba(100,116,139,.2)',
+              }}>
+              {cajaAbierta && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />}
+              {cajaAbierta ? 'Caja abierta' : 'Caja cerrada'}
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-none">Caja & <span style={{ color: '#10B981' }}>Ventas</span></h2>
+          <p className="text-sm mt-2" style={{ color: '#8892A4' }}>Operación financiera del día</p>
         </div>
         <div className="flex items-center gap-3">
           <input
@@ -244,48 +257,66 @@ export default function VentasPage({
         </div>
       )}
 
-      {/* Métricas del día */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
-          style={{ borderTop: '2px solid #8B5CF6', background: 'linear-gradient(135deg, #8B5CF60D 0%, var(--bg-card-2) 60%)' }}>
-          <div className="metric-icon" style={{ background: 'var(--purple-dim)' }}>
-            <Receipt size={17} style={{ color: '#8B5CF6' }} />
-          </div>
+      {/* ── Métricas POS — total hero + desglose por método ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        {/* Hero — total del día */}
+        <div className="sm:col-span-1 card p-5 flex flex-col justify-between gap-3"
+          style={{ border: '1px solid rgba(16,185,129,.18)', background: 'rgba(16,185,129,0.04)' }}>
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#334155' }}>
+            Total del día
+          </span>
           <div>
-            <p className="metric-label">Ventas hoy</p>
-            <h3 className="metric-value" style={{ color: '#8B5CF6' }}>{ventasResumen.cantidad}</h3>
+            <p className="text-[42px] font-black tracking-tight leading-none"
+              style={{ color: '#10B981', fontVariantNumeric: 'tabular-nums' }}>
+              ${ventasResumen.total.toLocaleString('es-CL', { minimumFractionDigits: 0 })}
+            </p>
+            <p className="text-xs mt-1.5" style={{ color: '#475569' }}>
+              en <span style={{ color: '#94A3B8' }}>{ventasResumen.cantidad}</span> ventas
+            </p>
           </div>
+          <div className="h-px" style={{ background: 'rgba(16,185,129,.15)' }} />
+          <Wallet size={13} style={{ color: '#10B981', opacity: 0.5 }} />
         </div>
-        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
-          style={{ borderTop: '2px solid #10B981', background: 'linear-gradient(135deg, #10B9810D 0%, var(--bg-card-2) 60%)' }}>
-          <div className="metric-icon" style={{ background: 'var(--teal-dim)' }}>
-            <Wallet size={17} style={{ color: '#10B981' }} />
+
+        {/* Desglose por método de pago */}
+        <div className="sm:col-span-2 card p-5 flex flex-col gap-3"
+          style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#334155' }}>
+            Por método de pago
+          </span>
+          <div className="flex flex-col gap-2.5 flex-1 justify-center">
+            {Object.keys(ventasResumen.por_metodo || {}).length === 0 ? (
+              <p className="text-xs" style={{ color: '#475569' }}>Sin ventas registradas hoy</p>
+            ) : (
+              Object.entries(ventasResumen.por_metodo || {}).map(([m, v]) => {
+                const cfg = {
+                  efectivo:      { Icon: Banknote,   color: '#10B981' },
+                  tarjeta:       { Icon: CreditCard,  color: '#3B82F6' },
+                  transferencia: { Icon: Smartphone,  color: '#6366F1' },
+                  qr:            { Icon: QrCode,      color: '#F59E0B' },
+                }[m] || { Icon: Wallet, color: '#64748B' };
+                const pct = ventasResumen.total > 0 ? (Number(v) / ventasResumen.total) * 100 : 0;
+                return (
+                  <div key={m} className="flex items-center gap-3">
+                    <cfg.Icon size={13} style={{ color: cfg.color, flexShrink: 0 }} />
+                    <span className="text-xs capitalize flex-shrink-0 w-24" style={{ color: '#94A3B8' }}>{m}</span>
+                    <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: cfg.color, opacity: 0.7 }} />
+                    </div>
+                    <span className="text-xs font-bold flex-shrink-0 text-right w-20"
+                      style={{ color: '#E2E8F0', fontVariantNumeric: 'tabular-nums' }}>
+                      ${Number(v).toLocaleString('es-CL', { minimumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
-          <div>
-            <p className="metric-label">Total hoy</p>
-            <h3 className="metric-value" style={{ color: '#10B981' }}>${ventasResumen.total.toFixed(2)}</h3>
-          </div>
+          <div className="h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
+          <Receipt size={13} style={{ color: '#475569', opacity: 0.5 }} />
         </div>
-        {Object.entries(ventasResumen.por_metodo || {}).map(([m, v]) => {
-          const cfg = {
-            efectivo:      { Icon: Banknote,   color: '#10B981', dimColor: 'var(--teal-dim)' },
-            tarjeta:       { Icon: CreditCard,  color: '#3B82F6', dimColor: 'var(--blue-dim)' },
-            transferencia: { Icon: Smartphone,  color: '#8B5CF6', dimColor: 'var(--purple-dim)' },
-            qr:            { Icon: QrCode,      color: '#F59E0B', dimColor: 'var(--yellow-dim)' },
-          }[m] || { Icon: Wallet, color: '#8B5CF6', dimColor: 'var(--purple-dim)' };
-          return (
-            <div key={m} className="dash-card metric-card flex flex-col gap-4 cursor-default"
-              style={{ borderTop: `2px solid ${cfg.color}`, background: `linear-gradient(135deg, ${cfg.color}0D 0%, var(--bg-card-2) 60%)` }}>
-              <div className="metric-icon" style={{ background: cfg.dimColor }}>
-                <cfg.Icon size={17} style={{ color: cfg.color }} />
-              </div>
-              <div>
-                <p className="metric-label capitalize">{m}</p>
-                <h3 className="metric-value" style={{ color: cfg.color }}>${Number(v).toFixed(2)}</h3>
-              </div>
-            </div>
-          );
-        })}
+
       </div>
 
       {/* Tabla de ventas */}
