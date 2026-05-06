@@ -199,56 +199,75 @@ export default function PedidosPage({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {mesasPedidos.map(({ mesa, pedidos: mp }) => {
+              {mesasPedidos.map(({ mesa, pedidos: mp }, cardIdx) => {
                 const total = mp.reduce((s, p) => s + parseFloat(p.total||0), 0);
                 const allEstados = mp.map(p => p.estado);
                 const dominante = allEstados.includes('entregado') ? 'entregado'
                   : allEstados.includes('en preparación') ? 'en preparación' : 'pendiente';
-                const mesaColor = dominante === 'entregado'
-                  ? 'border-green-500 shadow-green-500/10'
-                  : dominante === 'en preparación'
-                  ? 'border-blue-500 shadow-blue-500/10'
-                  : 'border-yellow-500 shadow-yellow-500/10';
-                const mesaHeaderBg = dominante === 'entregado'
-                  ? 'bg-green-500/10'
-                  : dominante === 'en preparación'
-                  ? 'bg-blue-500/10'
-                  : 'bg-yellow-500/10';
-                const mesaIconColor = dominante === 'entregado' ? 'text-green-400'
-                  : dominante === 'en preparación' ? 'text-blue-400' : 'text-yellow-400';
+                const accentColor = dominante === 'entregado' ? '#10B981'
+                  : dominante === 'en preparación' ? '#3B82F6' : '#F59E0B';
 
                 return (
-                  <div key={mesa} className={`bg-zinc-900 border-2 rounded-2xl flex flex-col overflow-hidden shadow-xl transition-all hover:shadow-2xl ${mesaColor}`}>
-                    <div className={`${mesaHeaderBg} px-5 py-4 flex items-center justify-between border-b border-zinc-800`}>
+                  <motion.div
+                    key={mesa}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: cardIdx * 0.05, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative flex flex-col overflow-hidden rounded-2xl"
+                    style={{
+                      background: '#0F172A',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    {/* Status accent strip */}
+                    <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: accentColor }} />
+
+                    {/* Card header */}
+                    <div className="px-5 pt-5 pb-4 flex items-center justify-between"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div className="flex items-center gap-3">
-                        <div className={`w-11 h-11 rounded-xl border-2 ${mesaColor} flex items-center justify-center ${mesaIconColor} font-black text-lg`}>
-                          {mesa.replace(/[^0-9]/g,'') || <Utensils size={18}/>}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base font-black"
+                          style={{ background: 'rgba(255,255,255,0.06)', color: '#F8FAFC' }}>
+                          {mesa.replace(/[^0-9]/g,'') || <Utensils size={16}/>}
                         </div>
                         <div>
-                          <p className="font-black text-white text-base leading-tight">{mesa}</p>
-                          <p className={`text-xs font-semibold ${mesaIconColor}`}>
+                          <p className="font-bold text-sm" style={{ color: '#F8FAFC' }}>{mesa}</p>
+                          <p className="text-xs mt-0.5" style={{ color: '#475569' }}>
                             {mp.length} pedido{mp.length!==1?'s':''} · {mp.reduce((s,p)=>(p.items||[]).reduce((a,i)=>a+i.cantidad,0)+s,0)} ítems
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] text-zinc-500 font-semibold uppercase">Total</p>
-                        <p className="text-xl font-black text-white">${total.toLocaleString('es-CL', { minimumFractionDigits:0, maximumFractionDigits:0 })}</p>
+                        <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#334155' }}>Total</p>
+                        <p className="text-xl font-black" style={{ color: '#F8FAFC', fontVariantNumeric: 'tabular-nums' }}>
+                          ${total.toLocaleString('es-CL', { minimumFractionDigits:0, maximumFractionDigits:0 })}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-0 flex-1 divide-y divide-zinc-800">
+                    {/* Orders */}
+                    <div className="flex flex-col flex-1 divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
                       {mp.map(pedido => (
                         <div key={pedido.id} className="px-5 py-4 flex flex-col gap-3">
+
+                          {/* Order header */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-amber-400 text-[11px] font-bold">{pedido.numero}</span>
-                                {pedido.reserva_id && <span className="text-[9px] text-indigo-400 border border-indigo-500/40 px-1.5 py-0.5 rounded font-bold">RESERVA</span>}
+                                <span className="text-[11px] font-bold" style={{ color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
+                                  {pedido.numero}
+                                </span>
+                                {pedido.reserva_id && (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded font-bold"
+                                    style={{ background: 'rgba(99,102,241,0.12)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.2)' }}>
+                                    RESERVA
+                                  </span>
+                                )}
                               </div>
-                              <p className="text-sm font-bold text-white mt-0.5">{pedido.cliente_nombre}</p>
+                              <p className="text-sm font-semibold mt-0.5" style={{ color: '#E2E8F0' }}>{pedido.cliente_nombre}</p>
                               {pedido.personas > 0 && (
-                                <p className="text-[11px] text-zinc-500 flex items-center gap-1 mt-0.5">
+                                <p className="text-[11px] mt-0.5 flex items-center gap-1" style={{ color: '#475569' }}>
                                   <Users size={10}/> {pedido.personas} personas
                                 </p>
                               )}
@@ -256,45 +275,74 @@ export default function PedidosPage({
                             <StatusBadge status={pedido.estado}/>
                           </div>
 
+                          {/* Items — clean rows, no nested box */}
                           {pedido.items && pedido.items.length > 0 ? (
-                            <div className="bg-zinc-800/60 rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
+                            <div className="flex flex-col gap-1.5">
                               {pedido.items.map(it => (
                                 <div key={it.id} className="flex justify-between items-center text-xs">
-                                  <span className="text-zinc-300">{it.nombre} <span className="text-zinc-500">×{it.cantidad}</span></span>
-                                  <span className="text-amber-400 font-bold">${(it.cantidad*it.precio_unitario).toLocaleString('es-CL',{minimumFractionDigits:0})}</span>
+                                  <span style={{ color: '#94A3B8' }}>
+                                    {it.nombre}
+                                    <span className="ml-1.5" style={{ color: '#475569' }}>×{it.cantidad}</span>
+                                  </span>
+                                  <span className="font-semibold" style={{ color: '#CBD5E1', fontVariantNumeric: 'tabular-nums' }}>
+                                    ${(it.cantidad*it.precio_unitario).toLocaleString('es-CL',{minimumFractionDigits:0})}
+                                  </span>
                                 </div>
                               ))}
-                              <div className="border-t border-zinc-700 pt-1.5 mt-0.5 flex justify-between text-xs font-bold">
-                                <span className="text-zinc-400">Subtotal</span>
-                                <span className="text-white">${parseFloat(pedido.total||0).toLocaleString('es-CL',{minimumFractionDigits:0})}</span>
+                              <div className="flex justify-between text-xs font-semibold pt-1.5 mt-0.5"
+                                style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                <span style={{ color: '#475569' }}>Subtotal</span>
+                                <span style={{ color: '#F8FAFC', fontVariantNumeric: 'tabular-nums' }}>
+                                  ${parseFloat(pedido.total||0).toLocaleString('es-CL',{minimumFractionDigits:0})}
+                                </span>
                               </div>
                             </div>
                           ) : (
-                            <div className="bg-zinc-800/40 rounded-xl px-3 py-2 text-center text-xs text-zinc-600">
-                              Sin productos aún
-                            </div>
+                            <div className="py-1 text-xs" style={{ color: '#334155' }}>Sin productos aún</div>
                           )}
 
+                          {/* Actions */}
                           <div className="grid grid-cols-2 gap-2">
-                            <button onClick={() => { loadProductos(); openPedidoDetalle(pedido); }}
-                              className="py-2 text-[11px] font-bold rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => { loadProductos(); openPedidoDetalle(pedido); }}
+                              className="py-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                              style={{ background: 'rgba(255,255,255,0.04)', color: '#64748B', border: '1px solid rgba(255,255,255,0.06)' }}
+                              onMouseEnter={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                            >
                               <Plus size={12}/> Productos
                             </button>
+
                             {pedido.estado === 'pendiente' && (
-                              <button onClick={() => updatePedidoEstado(pedido.id, 'en preparación').then(loadMesasPedidos)}
-                                className="py-2 text-[11px] font-bold rounded-xl bg-blue-500/20 hover:bg-blue-500 text-blue-400 hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => updatePedidoEstado(pedido.id, 'en preparación').then(loadMesasPedidos)}
+                                className="py-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                style={{ background: 'rgba(59,130,246,0.1)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.15)' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)'; }}
+                              >
                                 <ChefHat size={12}/> Preparar
                               </button>
                             )}
                             {pedido.estado === 'en preparación' && (
-                              <button onClick={() => updatePedidoEstado(pedido.id, 'entregado').then(loadMesasPedidos)}
-                                className="py-2 text-[11px] font-bold rounded-xl bg-purple-500/20 hover:bg-purple-500 text-purple-400 hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => updatePedidoEstado(pedido.id, 'entregado').then(loadMesasPedidos)}
+                                className="py-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                style={{ background: 'rgba(139,92,246,0.1)', color: '#A78BFA', border: '1px solid rgba(139,92,246,0.15)' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.2)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; }}
+                              >
                                 <Check size={12}/> Entregar
                               </button>
                             )}
                             {pedido.estado === 'entregado' && (
-                              <button onClick={() => confirmarConversionVenta(pedido)}
-                                className="py-2 text-[11px] font-bold rounded-xl bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => confirmarConversionVenta(pedido)}
+                                className="py-2 text-[11px] font-black rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                style={{ background: '#10B981', color: '#fff' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#059669'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#10B981'; }}
+                              >
                                 <Receipt size={12}/> Cobrar
                               </button>
                             )}
@@ -303,13 +351,17 @@ export default function PedidosPage({
                       ))}
                     </div>
 
+                    {/* Multi-order mesa total footer */}
                     {mp.length > 1 && (
-                      <div className="px-5 py-3 bg-zinc-800/40 border-t border-zinc-800 flex items-center justify-between">
-                        <span className="text-xs text-zinc-500 font-semibold">Total mesa</span>
-                        <span className="text-amber-400 font-black">${total.toLocaleString('es-CL', { minimumFractionDigits:2 })}</span>
+                      <div className="px-5 py-3 flex items-center justify-between"
+                        style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
+                        <span className="text-xs font-semibold" style={{ color: '#475569' }}>Total mesa</span>
+                        <span className="font-black" style={{ color: '#10B981', fontVariantNumeric: 'tabular-nums' }}>
+                          ${total.toLocaleString('es-CL', { minimumFractionDigits:2 })}
+                        </span>
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
