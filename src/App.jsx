@@ -2823,68 +2823,133 @@ const App = () => {
         {/* ── Modal global: conversión pedido → venta ── */}
         {pedidoConvertModal && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !convertLoading && setPedidoConvertModal(null)} />
-            <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
-              className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6]"><ShoppingBag size={20}/></div>
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => !convertLoading && setPedidoConvertModal(null)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-full max-w-sm flex flex-col"
+              style={{
+                background: '#0F172A',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '20px',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+              }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 pt-5 pb-4"
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div>
-                  <h3 className="font-black text-white text-base">Registrar como venta</h3>
-                  <p className="text-zinc-500 text-xs mt-0.5">{pedidoConvertModal.numero} · {pedidoConvertModal.cliente_nombre}</p>
+                  <h3 className="text-base font-bold" style={{ color: '#F8FAFC', letterSpacing: '-0.01em' }}>
+                    Registrar venta
+                  </h3>
+                  <p className="text-xs mt-0.5" style={{ color: '#475569' }}>
+                    {pedidoConvertModal.numero} · {pedidoConvertModal.cliente_nombre}
+                  </p>
                 </div>
+                <button
+                  onClick={() => !convertLoading && setPedidoConvertModal(null)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+                  style={{ color: '#475569', background: 'rgba(255,255,255,0.04)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#94A3B8'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#475569'; }}
+                >
+                  <X size={14} />
+                </button>
               </div>
 
-              <div className="bg-zinc-800 rounded-xl p-4 flex flex-col gap-2 text-sm">
+              {/* Items */}
+              <div className="px-6 py-4 flex flex-col gap-2.5">
                 {(pedidoConvertModal.items||[]).length > 0 ? (
                   pedidoConvertModal.items.map(it => (
-                    <div key={it.id} className="flex justify-between text-zinc-400">
-                      <span>{it.nombre} ×{it.cantidad}</span>
-                      <span className="text-white font-semibold">${(it.cantidad*it.precio_unitario).toLocaleString('es-CL',{minimumFractionDigits:2})}</span>
+                    <div key={it.id} className="flex items-center justify-between">
+                      <span className="text-sm" style={{ color: '#94A3B8' }}>
+                        {it.nombre}
+                        <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', color: '#64748B' }}>×{it.cantidad}</span>
+                      </span>
+                      <span className="text-sm font-semibold" style={{ color: '#E2E8F0', fontVariantNumeric: 'tabular-nums' }}>
+                        ${(it.cantidad * it.precio_unitario).toLocaleString('es-CL', { minimumFractionDigits: 0 })}
+                      </span>
                     </div>
                   ))
                 ) : (
-                  <div className="flex justify-between text-zinc-400">
-                    <span>Ítem</span>
-                    <span className="text-white font-semibold">{pedidoConvertModal.item}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: '#94A3B8' }}>{pedidoConvertModal.item}</span>
+                    <span className="text-sm font-semibold" style={{ color: '#E2E8F0' }}>—</span>
                   </div>
                 )}
-                <div className="flex justify-between text-zinc-400 border-t border-zinc-700 pt-2 mt-1">
-                  <span>Total</span>
-                  <span className="text-amber-400 font-black">${Number(pedidoConvertModal.total).toLocaleString('es-CL', { minimumFractionDigits:2 })}</span>
-                </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Método de pago</label>
-                <div className="grid grid-cols-3 gap-2">
+              {/* Total */}
+              <div className="mx-6 mb-5 flex items-center justify-between rounded-xl px-4 py-4"
+                style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                <span className="text-sm font-semibold" style={{ color: '#94A3B8' }}>Total a cobrar</span>
+                <span className="text-2xl font-black" style={{ color: '#10B981', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+                  ${Number(pedidoConvertModal.total).toLocaleString('es-CL', { minimumFractionDigits: 0 })}
+                </span>
+              </div>
+
+              {/* Payment method */}
+              <div className="px-6 pb-4 flex flex-col gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#334155' }}>
+                  Método de pago
+                </span>
+                <div className="flex gap-2">
                   {[
-                    { id:'efectivo', label:'Efectivo', icon: Banknote },
-                    { id:'tarjeta',  label:'Tarjeta',  icon: CreditCard },
-                    { id:'transferencia', label:'Transferencia', icon: Smartphone },
-                  ].map(m => (
-                    <button key={m.id} onClick={() => setConvertMetodo(m.id)}
-                      className={`py-2.5 rounded-xl text-xs font-bold border transition-colors flex flex-col items-center gap-1 ${convertMetodo===m.id ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}>
-                      <m.icon size={14}/>
-                      {m.label}
-                    </button>
-                  ))}
+                    { id: 'efectivo',      label: 'Efectivo',       icon: Banknote },
+                    { id: 'tarjeta',       label: 'Tarjeta',        icon: CreditCard },
+                    { id: 'transferencia', label: 'Transferencia',  icon: Smartphone },
+                  ].map(m => {
+                    const active = convertMetodo === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => setConvertMetodo(m.id)}
+                        className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold transition-all"
+                        style={{
+                          background: active ? 'rgba(248,250,252,0.09)' : 'rgba(255,255,255,0.03)',
+                          border: active ? '1px solid rgba(248,250,252,0.18)' : '1px solid rgba(255,255,255,0.05)',
+                          color: active ? '#F8FAFC' : '#475569',
+                        }}
+                      >
+                        <m.icon size={15} />
+                        {m.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
+              {/* Warning caja cerrada */}
               {cajaHoy?.estado !== 'abierta' && (
-                <div className="flex items-center gap-2 text-yellow-400 text-xs bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-                  <AlertTriangle size={13}/> La caja no está abierta. La venta se registrará igual.
+                <div className="mx-6 mb-3 flex items-center gap-2 text-xs rounded-lg px-3 py-2.5"
+                  style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.18)', color: '#CA8A04' }}>
+                  <AlertTriangle size={12} className="flex-shrink-0" />
+                  La caja no está abierta. La venta se registrará igual.
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <button disabled={convertLoading} onClick={() => setPedidoConvertModal(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white transition-colors text-sm font-semibold disabled:opacity-50">
+              {/* Actions */}
+              <div className="flex gap-2.5 px-6 pb-5">
+                <button
+                  disabled={convertLoading}
+                  onClick={() => setPedidoConvertModal(null)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#64748B' }}
+                  onMouseEnter={e => { if (!convertLoading) { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; } }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+                >
                   Cancelar
                 </button>
-                <button disabled={convertLoading} onClick={ejecutarConversionVenta}
-                  className="flex-1 py-2.5 rounded-xl text-white font-black text-sm transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2" style={{ background:'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}>
-                  <Receipt size={15}/>
+                <button
+                  disabled={convertLoading}
+                  onClick={ejecutarConversionVenta}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  style={{ background: '#10B981', color: '#fff' }}
+                  onMouseEnter={e => { if (!convertLoading) e.currentTarget.style.background = '#059669'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#10B981'; }}
+                >
+                  <Receipt size={14} />
                   {convertLoading ? 'Registrando...' : 'Confirmar venta'}
                 </button>
               </div>
