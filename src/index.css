@@ -1,63 +1,50 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --card-bg: #111113;
-  --card-border: #27272a;
-  --primary: #fbbf24;
-  --text-main: #fafafa;
-  --text-secondary: #a1a1aa;
+  /* ── Variables are defined in dashboard-theme.css — only kept here for Tailwind compat ── */
+  --background:  #0A0A12;
+  --card-bg:     #12121E;
+  --card-border: rgba(255,255,255,.06);
+  --text-main:   #F0F0FF;
 }
 
 @theme {
-  --font-inter: "Inter", sans-serif;
-  --font-outfit: "Outfit", sans-serif;
-  --color-amber-500: #fbbf24;
-  --color-amber-400: #fcd34d;
-  --color-zinc-950: #09090b;
-  --color-zinc-900: #18181b;
-  --color-zinc-800: #27272a;
-  --color-zinc-700: #3f3f46;
+  --font-jakarta: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-inter:   "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-outfit:  "Plus Jakarta Sans", "Inter", sans-serif;
+
+  --color-brand-app:     #0A0A12;
+  --color-brand-sidebar: #0D0D18;
+  --color-brand-card:    #12121E;
+  --color-brand-primary: #8B5CF6;
+  --color-brand-accent:  #1D9E75;
+
+  /* zinc → new dark palette */
+  --color-zinc-950: #0A0A12;
+  --color-zinc-900: #12121E;
+  --color-zinc-800: #16162A;
+  --color-zinc-700: #1A1A2E;
+  --color-zinc-600: #50506A;
+  --color-zinc-500: #9090B0;
+  --color-zinc-400: #C0C0D8;
+  --color-zinc-300: #E0E0F0;
+  --color-zinc-200: #F0F0FF;
+
+  /* amber stays yellow — semantic warning color */
+  --color-amber-500: #F59E0B;
+  --color-amber-400: #FBBF24;
 }
 
 @layer base {
   body {
-    @apply font-inter bg-[#09090b] text-white antialiased selection:bg-amber-500/20;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    @apply bg-[#0A0A12] text-[#F0F0FF] antialiased selection:bg-[#8B5CF6]/20;
   }
 }
 
 @layer components {
-  .card {
-    @apply bg-zinc-900 border border-zinc-800 rounded-xl transition-colors duration-200;
-  }
-  .card-hover {
-    @apply hover:border-zinc-700;
-  }
-
-  .brand {
-    @apply font-outfit font-bold;
-  }
-
-  .input {
-    @apply bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500/60 transition-colors text-white placeholder:text-zinc-600;
-  }
-
-  .btn-primary {
-    @apply px-5 py-2.5 rounded-lg bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition-colors active:scale-[0.98];
-  }
-
-  .btn-ghost {
-    @apply px-5 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium text-sm hover:bg-zinc-700 hover:text-white transition-colors;
-  }
+  .brand { @apply font-bold; }
 }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { @apply bg-[#09090b]; }
-::-webkit-scrollbar-thumb { @apply bg-zinc-800 rounded-full hover:bg-zinc-700 transition-colors; }
-
-.scrollbar-none::-webkit-scrollbar { display: none; }
-.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* Print */
 @media print {
@@ -71,6 +58,11 @@
 
 /* Recharts */
 .recharts-default-tooltip {
-  @apply !bg-zinc-900 !border-zinc-700 !rounded-lg !shadow-xl !px-4 !py-3 !border;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  @apply !rounded-[10px] !shadow-xl !px-4 !py-3;
 }
-.recharts-tooltip-item-list { @apply !text-amber-400 !font-bold; }
+.recharts-tooltip-item-list {
+  color: var(--purple) !important;
+  @apply !font-bold;
+}

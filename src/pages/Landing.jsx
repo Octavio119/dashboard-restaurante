@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import logo from '../../assets/logo.png';
 import './landing.css';
+import PayPalButton from '../components/PayPalButton';
+import { api } from '../api';
 
 const STAR = (
   <svg className="star-svg" viewBox="0 0 20 20">
@@ -28,9 +30,153 @@ const X_ICON = (
   </svg>
 );
 
+// ─── Modal de pago rápido desde la landing ───────────────────────────────────
+const PLAN_PRICES = { pro: '$29', business: '$79' };
+const PLAN_LABELS = { pro: 'Pro', business: 'Business' };
+
+function QuickPayModal({ plan, onClose }) {
+  const [step,       setStep]       = useState('form'); // 'form' | 'paying' | 'success' | 'error'
+  const [nombre,     setNombre]     = useState('');
+  const [email,      setEmail]      = useState('');
+  const [restaurante,setRestaurante]= useState('');
+  const [password,   setPassword]   = useState('');
+  const [err,        setErr]        = useState('');
+  const [loading,    setLoading]    = useState(false);
+
+  async function handleContinue(e) {
+    e.preventDefault();
+    setErr('');
+    if (!restaurante.trim() || restaurante.trim().length < 2) { setErr('Escribe el nombre del restaurante (mínimo 2 caracteres)'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))     { setErr('Email inválido'); return; }
+    if (password.length < 8)                                    { setErr('La contraseña debe tener al menos 8 caracteres'); return; }
+
+    setLoading(true);
+    try {
+      const data = await api.signup(restaurante.trim(), email.trim().toLowerCase(), password, nombre.trim() || restaurante.trim());
+      localStorage.setItem('token',         data.token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('user',          JSON.stringify(data.user));
+      setStep('paying');
+    } catch (e) {
+      const msg = e?.message || '';
+      if (msg.includes('ya registrado') || msg.includes('Email') || msg.includes('existe')) {
+        setErr('Este email ya tiene una cuenta. ¿Deseas iniciar sesión?');
+      } else {
+        setErr(msg || 'Error al crear la cuenta. Intenta de nuevo.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (step === 'success') {
+    return (
+      <div style={{ textAlign: 'center', padding: '32px 0' }}>
+        <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+        <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>
+          ¡Plan {PLAN_LABELS[plan]} activado!
+        </h3>
+        <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
+          Tu cuenta está lista. Entrando al dashboard...
+        </p>
+      </div>
+    );
+  }
+
+  const font = "'Plus Jakarta Sans', -apple-system, sans-serif";
+  const color = plan === 'pro' ? '#0066CC' : '#7c3aed';
+
+  return (
+    <div style={{ fontFamily: font }}>
+      {/* Resumen del plan */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: '16px', color: '#0f172a', margin: 0 }}>Plan {PLAN_LABELS[plan]}</p>
+          <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>Mensual · cancela cuando quieras</p>
+        </div>
+        <p style={{ fontWeight: 800, fontSize: '24px', color: '#0f172a', margin: 0 }}>{PLAN_PRICES[plan]}<span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 400 }}>/mes</span></p>
+      </div>
+
+      {step === 'form' && (
+        <form onSubmit={handleContinue} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <input
+            placeholder="Nombre del restaurante *"
+            value={restaurante} onChange={e => setRestaurante(e.target.value)}
+            style={inputStyle(color)}
+          />
+          <input
+            type="email" placeholder="Tu email *"
+            value={email} onChange={e => setEmail(e.target.value)}
+            style={inputStyle(color)}
+          />
+          <input
+            placeholder="Tu nombre (opcional)"
+            value={nombre} onChange={e => setNombre(e.target.value)}
+            style={inputStyle(color)}
+          />
+          <input
+            type="password" placeholder="Contraseña (mín. 8 caracteres) *"
+            value={password} onChange={e => setPassword(e.target.value)}
+            style={inputStyle(color)}
+          />
+          {err && (
+            <p style={{ color: '#dc2626', fontSize: '12px', margin: 0, background: '#fef2f2', padding: '8px 12px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+              {err}
+            </p>
+          )}
+          <button type="submit" disabled={loading} style={{
+            height: '48px', borderRadius: '10px', background: loading ? '#94a3b8' : color,
+            color: '#fff', fontWeight: 700, fontSize: '15px', border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer', fontFamily: font,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          }}>
+            {loading ? 'Creando cuenta...' : 'Continuar al pago →'}
+          </button>
+          <p style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', margin: 0 }}>
+            ¿Ya tienes cuenta? <a href="/login" style={{ color, fontWeight: 600 }}>Inicia sesión</a>
+          </p>
+        </form>
+      )}
+
+      {step === 'paying' && (
+        <div>
+          <p style={{ fontSize: '13px', color: '#475569', marginBottom: '16px', textAlign: 'center' }}>
+            Cuenta creada para <strong>{email}</strong>. Completa el pago:
+          </p>
+          {err && (
+            <p style={{ color: '#dc2626', fontSize: '12px', margin: '0 0 12px', background: '#fef2f2', padding: '8px 12px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+              {err}
+            </p>
+          )}
+          <PayPalButton
+            plan={plan}
+            onSuccess={({ plan: activatedPlan }) => {
+              setStep('success');
+              setTimeout(() => { window.location.href = `/dashboard?upgraded=true&plan=${activatedPlan}`; }, 2000);
+            }}
+            onError={(msg) => setErr(msg)}
+          />
+          <p style={{ textAlign: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '10px' }}>
+            🔒 Pago seguro via PayPal
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function inputStyle(accentColor) {
+  return {
+    height: '44px', padding: '0 14px', border: '1.5px solid #e2e8f0',
+    borderRadius: '10px', background: '#fff', color: '#0f172a',
+    fontSize: '14px', fontFamily: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box',
+  };
+}
+
 export default function Landing() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [openFaq, setOpenFaq] = useState(null);
+  const [menuOpen,    setMenuOpen]    = useState(false);
+  const [openFaq,     setOpenFaq]     = useState(null);
+  const [payModal,    setPayModal]    = useState(null); // null | 'pro' | 'business'
 
   // Theme init + Google Fonts + counter animation
   useEffect(() => {
@@ -99,6 +245,45 @@ export default function Landing() {
 
   return (
     <>
+      {/* ── MODAL DE PAGO RÁPIDO ── */}
+      {payModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Pagar Plan ${PLAN_LABELS[payModal]}`}
+          onClick={(e) => { if (e.target === e.currentTarget) setPayModal(null); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div style={{
+            background: '#fff', borderRadius: '16px',
+            padding: '28px 28px 24px', width: '100%', maxWidth: '420px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+            maxHeight: '90vh', overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                Activar Plan {PLAN_LABELS[payModal]}
+              </h2>
+              <button
+                onClick={() => setPayModal(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', lineHeight: 1 }}
+                aria-label="Cerrar"
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <QuickPayModal plan={payModal} onClose={() => setPayModal(null)} />
+          </div>
+        </div>
+      )}
+
       {/* ── NAVBAR ── */}
       <nav id="nav" role="navigation" aria-label="Principal">
         <div className="nav-pill">
@@ -468,7 +653,13 @@ export default function Landing() {
               </div>
               <div className="price-period">USD / mes · sin contrato</div>
             </div>
-            <a href="/register?plan=pro" className="btn-pcard primary">Empezar con Pro</a>
+            <button
+              className="btn-pcard primary"
+              onClick={() => setPayModal('pro')}
+              style={{ width: '100%', cursor: 'pointer' }}
+            >
+              Empezar con Pro
+            </button>
             <p className="pcard-trust">✓ 14 días de prueba gratis · Cancela cuando quieras</p>
           </div>
 
@@ -493,7 +684,13 @@ export default function Landing() {
               </div>
               <div className="price-period">USD / mes · sin contrato</div>
             </div>
-            <a href="/register?plan=business" className="btn-pcard secondary">Activar Plan Business</a>
+            <button
+              className="btn-pcard secondary"
+              onClick={() => setPayModal('business')}
+              style={{ width: '100%', cursor: 'pointer' }}
+            >
+              Activar Plan Business
+            </button>
           </div>
         </div>
       </section>

@@ -127,12 +127,13 @@ export default function VentasPage({
   ventasFecha, setVentasFecha,
   ventasDia, exportReportePDF, exportVentasExcel,
   setVentaItems, setVentaMetodo, setVentaTicket, setVentaProductos, setVentaModal,
-  api, cajaHoy, setCajaMonto, setCajaModal, cajaModal, cajaLoading, setCajaLoading, setCajaHoy,
+  api, cajaHoy, cajaMonto, setCajaMonto, setCajaModal, cajaModal, cajaLoading, setCajaLoading, setCajaHoy,
   ventasResumen, downloadPDF, printTicket, isAdmin, deleteVenta,
   loadVentasDia, loadVentas,
-  ventaItems, ventaProductos, ventaMetodo, config, ventaLoading, ventaTicket, ventaModal,
+  ventaItems, ventaProductos, ventaMetodo, config, ventaLoading, setVentaLoading, ventaTicket, ventaModal,
   user
 }) {
+  const [ventaError, setVentaError] = React.useState(null);
   const plan    = user?.restaurante?.plan?.toLowerCase() ?? 'free';
   const isPro   = plan === 'pro' || plan === 'business';
 
@@ -142,8 +143,8 @@ export default function VentasPage({
       {/* Header */}
       <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Caja & <span className="text-amber-500">Ventas</span></h2>
-          <p className="text-zinc-500 text-sm mt-1">Registro de ventas del día</p>
+          <h2 className="text-3xl font-black tracking-tight">Caja & <span style={{ color: 'var(--primary)' }}>Ventas</span></h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Registro de ventas del día</p>
         </div>
         <div className="flex items-center gap-3">
           <input
@@ -166,6 +167,7 @@ export default function VentasPage({
               setVentaMetodo('efectivo');
               setVentaTicket(null);
               setVentaProductos([]);
+              setVentaError(null);
               try {
                 const prods = await api.getProductos();
                 setVentaProductos(prods);
@@ -244,20 +246,46 @@ export default function VentasPage({
 
       {/* Métricas del día */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card p-5">
-          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-1">Ventas hoy</p>
-          <h3 className="text-2xl font-black text-white">{ventasResumen.cantidad}</h3>
-        </div>
-        <div className="card p-5">
-          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-1">Total hoy</p>
-          <h3 className="text-2xl font-black text-amber-400">${ventasResumen.total.toFixed(2)}</h3>
-        </div>
-        {Object.entries(ventasResumen.por_metodo || {}).map(([m, v]) => (
-          <div key={m} className="card p-5">
-            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-1">{m}</p>
-            <h3 className="text-2xl font-black text-white">${Number(v).toFixed(2)}</h3>
+        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
+          style={{ borderTop: '2px solid #8B5CF6', background: 'linear-gradient(135deg, #8B5CF60D 0%, var(--bg-card-2) 60%)' }}>
+          <div className="metric-icon" style={{ background: 'var(--purple-dim)' }}>
+            <Receipt size={17} style={{ color: '#8B5CF6' }} />
           </div>
-        ))}
+          <div>
+            <p className="metric-label">Ventas hoy</p>
+            <h3 className="metric-value" style={{ color: '#8B5CF6' }}>{ventasResumen.cantidad}</h3>
+          </div>
+        </div>
+        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
+          style={{ borderTop: '2px solid #10B981', background: 'linear-gradient(135deg, #10B9810D 0%, var(--bg-card-2) 60%)' }}>
+          <div className="metric-icon" style={{ background: 'var(--teal-dim)' }}>
+            <Wallet size={17} style={{ color: '#10B981' }} />
+          </div>
+          <div>
+            <p className="metric-label">Total hoy</p>
+            <h3 className="metric-value" style={{ color: '#10B981' }}>${ventasResumen.total.toFixed(2)}</h3>
+          </div>
+        </div>
+        {Object.entries(ventasResumen.por_metodo || {}).map(([m, v]) => {
+          const cfg = {
+            efectivo:      { Icon: Banknote,   color: '#10B981', dimColor: 'var(--teal-dim)' },
+            tarjeta:       { Icon: CreditCard,  color: '#3B82F6', dimColor: 'var(--blue-dim)' },
+            transferencia: { Icon: Smartphone,  color: '#8B5CF6', dimColor: 'var(--purple-dim)' },
+            qr:            { Icon: QrCode,      color: '#F59E0B', dimColor: 'var(--yellow-dim)' },
+          }[m] || { Icon: Wallet, color: '#8B5CF6', dimColor: 'var(--purple-dim)' };
+          return (
+            <div key={m} className="dash-card metric-card flex flex-col gap-4 cursor-default"
+              style={{ borderTop: `2px solid ${cfg.color}`, background: `linear-gradient(135deg, ${cfg.color}0D 0%, var(--bg-card-2) 60%)` }}>
+              <div className="metric-icon" style={{ background: cfg.dimColor }}>
+                <cfg.Icon size={17} style={{ color: cfg.color }} />
+              </div>
+              <div>
+                <p className="metric-label capitalize">{m}</p>
+                <h3 className="metric-value" style={{ color: cfg.color }}>${Number(v).toFixed(2)}</h3>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Tabla de ventas */}
@@ -620,7 +648,7 @@ export default function VentasPage({
                       { value:'qr',           label:'QR',            icon:QrCode },
                     ].map(({ value, label, icon:Icon }) => (
                       <button key={value} onClick={() => setVentaMetodo(value)}
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-colors ${ventaMetodo===value ? 'bg-amber-500/10 border-amber-500/40 text-amber-400' : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:text-white'}`}>
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-colors ${ventaMetodo===value ? 'bg-[#8B5CF6]/10 border-[#8B5CF6]/40 text-[#8B5CF6]' : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:text-white'}`}>
                         <Icon size={18}/>
                         <span className="text-[10px] font-bold">{label}</span>
                       </button>
@@ -651,21 +679,27 @@ export default function VentasPage({
                   );
                 })()}
 
+                {ventaError && (
+                  <div style={{ background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.2)', borderRadius:'8px', padding:'10px 14px', fontSize:'13px', color:'#EF4444', display:'flex', gap:'8px', alignItems:'center' }}>
+                    <span>⚠</span> {ventaError}
+                  </div>
+                )}
                 <button
                   disabled={ventaLoading || ventaItems.every(i => !i.nombre)}
                   onClick={async () => {
                     const validItems = ventaItems.filter(i => i.nombre && parseFloat(i.precio_unit) > 0);
                     if (validItems.length === 0) return;
                     const total = validItems.reduce((s,i) => s + parseFloat(i.precio_unit) * i.qty, 0);
-                    setVentaLoading(true);
+                    setVentaError(null);
                     try {
+                      setVentaLoading(true);
                       const ticket = await api.createVenta({
                         items: validItems.map(i => ({ ...i, precio_unit: parseFloat(i.precio_unit), qty: parseInt(i.qty) })),
                         total,
                         metodo_pago: ventaMetodo,
                       });
                       setVentaTicket(ticket);
-                    } catch(e) { alert(e.message); }
+                    } catch(e) { setVentaError(e.message); }
                     finally { setVentaLoading(false); }
                   }}
                   className="btn-primary w-full flex items-center justify-center gap-2 py-3 disabled:opacity-50"

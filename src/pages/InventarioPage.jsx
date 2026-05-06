@@ -21,19 +21,19 @@ export default function InventarioPage({
     <motion.div key="inventario" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Gestión de <span className="text-amber-500">Inventario</span></h2>
-          <p className="text-zinc-500 text-sm mt-1">Control de suministros, trazabilidad y proveedores</p>
+          <h2 className="text-3xl font-black tracking-tight">Gestión de <span style={{ color: 'var(--primary)' }}>Inventario</span></h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Control de suministros, trazabilidad y proveedores</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+          <div className="tab-group">
             {[
               { id: 'stock', label: 'Stock', icon: Package },
               { id: 'movimientos', label: 'Movimientos', icon: List },
               { id: 'proveedores', label: 'Proveedores', icon: Truck },
             ].map(t => (
               <button key={t.id} onClick={() => setInventarioTab(t.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${inventarioTab===t.id ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-zinc-500 hover:text-white'}`}>
-                <t.icon size={14}/> {t.label}
+                className={`tab-item flex items-center gap-1.5 ${inventarioTab === t.id ? 'active' : ''}`}>
+                <t.icon size={13} /> {t.label}
               </button>
             ))}
           </div>
@@ -52,27 +52,24 @@ export default function InventarioPage({
         <div className="flex flex-col gap-6">
           {/* Alertas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card p-5 border-l-4 border-l-red-500">
-              <div className="flex items-center gap-3 text-red-500 mb-1">
-                <AlertTriangle size={18}/>
-                <span className="text-xs font-black uppercase tracking-wider">Stock Crítico</span>
+            {[
+              { label: 'Stock Crítico', value: productos.filter(p => p.stock <= p.stock_minimo).length, Icon: AlertTriangle, color: '#EF4444', dimColor: 'var(--red-dim)', suffix: 'productos' },
+              { label: 'Agotándose', value: productos.filter(p => p.stock > p.stock_minimo && p.stock <= p.stock_minimo * 1.5).length, Icon: AlertCircle, color: '#F59E0B', dimColor: 'var(--yellow-dim)', suffix: 'productos' },
+              { label: 'Proveedores Activos', value: proveedores.length, Icon: Truck, color: '#3B82F6', dimColor: 'var(--blue-dim)', suffix: 'registrados' },
+            ].map((s, i) => (
+              <div key={i} className="dash-card metric-card flex flex-col gap-4 cursor-default"
+                style={{ borderTop: `2px solid ${s.color}`, background: `linear-gradient(135deg, ${s.color}0D 0%, var(--bg-card-2) 60%)` }}>
+                <div className="metric-icon" style={{ background: s.dimColor }}>
+                  <s.Icon size={17} style={{ color: s.color }} />
+                </div>
+                <div>
+                  <p className="metric-label">{s.label}</p>
+                  <h3 className="metric-value" style={{ color: s.color }}>
+                    {s.value} <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-3)' }}>{s.suffix}</span>
+                  </h3>
+                </div>
               </div>
-              <h3 className="text-2xl font-black text-white">{productos.filter(p => p.stock <= p.stock_minimo).length} <span className="text-sm font-normal text-zinc-500">productos</span></h3>
-            </div>
-            <div className="card p-5 border-l-4 border-l-amber-500">
-              <div className="flex items-center gap-3 text-amber-500 mb-1">
-                <AlertCircle size={18}/>
-                <span className="text-xs font-black uppercase tracking-wider">Agotándose</span>
-              </div>
-              <h3 className="text-2xl font-black text-white">{productos.filter(p => p.stock > p.stock_minimo && p.stock <= p.stock_minimo * 1.5).length} <span className="text-sm font-normal text-zinc-500">productos</span></h3>
-            </div>
-            <div className="card p-5 border-l-4 border-l-blue-500">
-              <div className="flex items-center gap-3 text-blue-500 mb-1">
-                <Truck size={18}/>
-                <span className="text-xs font-black uppercase tracking-wider">Proveedores Activos</span>
-              </div>
-              <h3 className="text-2xl font-black text-white">{proveedores.length} <span className="text-sm font-normal text-zinc-500">registrados</span></h3>
-            </div>
+            ))}
           </div>
 
           <div className="card overflow-hidden">
@@ -123,16 +120,22 @@ export default function InventarioPage({
           {/* Stats resumen */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
-              { tipo: 'entrada', label: 'Entradas', color: 'green', sign: '+' },
-              { tipo: 'salida',  label: 'Salidas',  color: 'red',   sign: '-' },
-              { tipo: 'ajuste',  label: 'Ajustes',  color: 'amber', sign: '±' },
-            ].map(({ tipo, label, color, sign }) => (
-              <div key={tipo} className={`card p-4 border-l-2 ${color === 'green' ? 'border-l-green-500' : color === 'red' ? 'border-l-red-500' : 'border-l-amber-500'}`}>
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{label}</p>
-                <p className={`text-2xl font-black ${color === 'green' ? 'text-green-400' : color === 'red' ? 'text-red-400' : 'text-amber-400'}`}>
-                  {sign}{movStats[tipo]?.total ?? 0}
-                </p>
-                <p className="text-[10px] text-zinc-500 mt-0.5">{movStats[tipo]?.count ?? 0} movimientos</p>
+              { tipo: 'entrada', label: 'Entradas', color: '#10B981', dimColor: 'var(--teal-dim)',    Icon: Plus,      sign: '+' },
+              { tipo: 'salida',  label: 'Salidas',  color: '#EF4444', dimColor: 'var(--red-dim)',     Icon: X,         sign: '-' },
+              { tipo: 'ajuste',  label: 'Ajustes',  color: '#F59E0B', dimColor: 'var(--yellow-dim)', Icon: RefreshCw, sign: '±' },
+            ].map(({ tipo, label, color, dimColor, Icon, sign }) => (
+              <div key={tipo} className="dash-card metric-card flex flex-col gap-4 cursor-default"
+                style={{ borderTop: `2px solid ${color}`, background: `linear-gradient(135deg, ${color}0D 0%, var(--bg-card-2) 60%)` }}>
+                <div className="metric-icon" style={{ background: dimColor }}>
+                  <Icon size={17} style={{ color }} />
+                </div>
+                <div>
+                  <p className="metric-label">{label}</p>
+                  <h3 className="metric-value" style={{ color }}>
+                    {sign}{movStats[tipo]?.total ?? 0}
+                  </h3>
+                  <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>{movStats[tipo]?.count ?? 0} movimientos</p>
+                </div>
               </div>
             ))}
           </div>
@@ -287,9 +290,9 @@ export default function InventarioPage({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {proveedores.map(prov => (
-              <div key={prov.id} className="card p-5 group hover:border-amber-500/30 transition-all">
+              <div key={prov.id} className="card p-5 group hover:border-[#8B5CF6]/30 transition-all">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-amber-500">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#8B5CF6]">
                     <Truck size={20}/>
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

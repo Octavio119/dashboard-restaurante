@@ -45,7 +45,9 @@ async function request(path, options = {}) {
     ...options.headers,
   };
 
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${BASE}${path}`, { ...options, headers }).catch(() => {
+    throw new Error('No se pudo conectar con el servidor. Asegúrate de que el backend esté corriendo (npm run dev:full).');
+  });
 
   if (res.status === 401) {
     // No reintentar si el propio refresh/login falla
@@ -75,9 +77,13 @@ async function request(path, options = {}) {
     }
   }
 
-  const data = await res.json().catch(() => ({}));
+  const ct = res.headers.get('content-type') || '';
+  const data = ct.includes('application/json') ? await res.json().catch(() => ({})) : {};
   if (!res.ok) {
     _handlePlanError(data);
+    if (!data.error && res.status >= 500) {
+      throw new Error('El servidor no respondió correctamente. Asegúrate de correr el backend con npm run dev:full.');
+    }
     throw new Error(data.error || `Error ${res.status}`);
   }
   return data;
@@ -96,9 +102,13 @@ async function _retryRequest(path, options, newToken) {
     ...options.headers,
   };
   const res = await fetch(`${BASE}${path}`, { ...options, headers: retryHeaders });
-  const data = await res.json().catch(() => ({}));
+  const ct = res.headers.get('content-type') || '';
+  const data = ct.includes('application/json') ? await res.json().catch(() => ({})) : {};
   if (!res.ok) {
     _handlePlanError(data);
+    if (!data.error && res.status >= 500) {
+      throw new Error('El servidor no respondió correctamente. Asegúrate de correr el backend con npm run dev:full.');
+    }
     throw new Error(data.error || `Error ${res.status}`);
   }
   return data;
@@ -171,7 +181,8 @@ export const api = {
   // Ventas
   getVentasDia: (fecha) => request(`/ventas${fecha ? `?fecha=${fecha}` : ''}`),
   getResumenVentas: (periodo) => request(`/ventas/resumen?periodo=${periodo}`),
-  getAnalytics: () => request('/ventas/analytics'),
+  getAnalytics:    () => request('/analytics/ventas'),
+  getSalesChart:   (dias = 7) => request(`/ventas/chart?dias=${dias}`),
   createVenta: (data) => request('/ventas', { method: 'POST', body: JSON.stringify(data) }),
   deleteVenta: (id, adminCode) => request(`/ventas/${id}`, { method: 'DELETE', body: JSON.stringify({ admin_code: adminCode }) }),
 
@@ -230,9 +241,10 @@ export const api = {
   deleteUsuario: (id) => request(`/usuarios/${id}`, { method: 'DELETE' }),
 
   // Billing
-  getBillingUsage:   ()     => request('/billing/usage'),
-  createCheckout:    (plan) => request('/billing/checkout', { method: 'POST', body: JSON.stringify({ plan }) }),
-  getBillingPortal:  ()     => request('/billing/portal'),
+  getBillingUsage:   ()          => request('/billing/usage'),
+  createCheckout:    (plan)      => request('/billing/checkout', { method: 'POST', body: JSON.stringify({ plan }) }),
+  captureCheckout:   (orderId)   => request('/billing/capture',  { method: 'POST', body: JSON.stringify({ orderId }) }),
+  getBillingPortal:  ()          => request('/billing/portal'),
   signup: (nombre_restaurante, email, password, nombre_admin) =>
     request('/auth/signup', { method: 'POST', body: JSON.stringify({ nombre_restaurante, email, password, nombre_admin }) }),
 

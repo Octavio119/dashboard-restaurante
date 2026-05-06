@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ChevronRight, Zap, Clock, Users, Utensils, 
+import {
+  ChevronRight, Zap, Clock, Users, Utensils, ChefHat,
   ShoppingBag, Check, UserCheck, X, MessageCircle, Trash2, Calendar, AlertCircle
 } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
@@ -22,15 +22,31 @@ export default function ReservasPage({
   sendWhatsApp,
   deleteReserva,
   crearPedidoLoading,
-  handleCrearPedidoDesdeReserva
+  handleCrearPedidoDesdeReserva,
+  setIsNewResModalOpen,
 }) {
   return (
     <motion.div key="reservas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1400px] w-full mx-auto">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Módulo de <span className="text-amber-500">Reservas</span></h2>
-          <p className="text-zinc-500 text-sm mt-1">Calendario y gestión de disponibilidad</p>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Módulo de <span style={{ color: 'var(--primary)' }}>Reservas</span></h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Calendario y gestión de disponibilidad</p>
         </div>
+        {setIsNewResModalOpen && (
+          <button
+            onClick={() => setIsNewResModalOpen(true)}
+            style={{
+              background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)',
+              color: 'white', border: 'none',
+              padding: '9px 18px', fontSize: '13px', fontWeight: 600,
+              borderRadius: '9px', cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(139,92,246,.3)',
+              display: 'flex', alignItems: 'center', gap: '6px',
+            }}
+          >
+            <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span> Nueva reserva
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6">
@@ -38,27 +54,43 @@ export default function ReservasPage({
         <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="card p-5 flex flex-col gap-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">
-                {new Date(selectedDate+'T12:00:00').toLocaleDateString('es-ES', { month:'long', year:'numeric' })}
+              <h3 className="text-[11px] font-black text-white uppercase tracking-[0.12em]">
+                {new Date(selectedDate+'T12:00:00').toLocaleDateString('es-ES', { month:'long', year:'numeric' }).toUpperCase()}
               </h3>
               <div className="flex gap-1">
-                <button className="p-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white"><ChevronRight className="rotate-180" size={14}/></button>
-                <button className="p-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white"><ChevronRight size={14}/></button>
+                <button className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[rgba(139,92,246,.4)] hover:text-[#8B5CF6]" style={{ background: 'var(--bg-card-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}>
+                  <ChevronRight className="rotate-180" size={13}/>
+                </button>
+                <button className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[rgba(139,92,246,.4)] hover:text-[#8B5CF6]" style={{ background: 'var(--bg-card-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}>
+                  <ChevronRight size={13}/>
+                </button>
               </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-zinc-600 mb-1">
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-zinc-600 mb-1 tracking-wider">
               {['D','L','M','M','J','V','S'].map((d,i) => <div key={`dow-${i}`}>{d}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1">
               {getDaysInMonth().map((day,i) => {
+                const isSelected = selectedDate===day && reservasPeriodo==='dia';
                 const hasRes = day && reservas.some(r => r.fecha===day && r.estado!=='cancelada');
                 return (
                   <div key={i} className="aspect-square flex items-center justify-center">
                     {day ? (
-                      <button onClick={() => { setSelectedDate(day); setReservasPeriodo('dia'); }}
-                        className={`w-full h-full rounded-lg text-xs font-bold transition-colors flex flex-col items-center justify-center gap-0.5 ${selectedDate===day && reservasPeriodo==='dia' ? 'bg-amber-500 text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}>
+                      <button
+                        onClick={() => { setSelectedDate(day); setReservasPeriodo('dia'); }}
+                        className="w-full h-full rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5"
+                        style={isSelected ? {
+                          background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
+                          color: 'white',
+                          boxShadow: '0 4px 14px rgba(139,92,246,0.45)',
+                        } : { color: 'var(--text-2)' }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(139,92,246,.1)'; }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                      >
                         {new Date(day+'T12:00:00').getDate()}
-                        {hasRes && <span className={`w-1 h-1 rounded-full ${selectedDate===day && reservasPeriodo==='dia' ? 'bg-black' : 'bg-amber-500'}`} />}
+                        {hasRes && (
+                          <span className="w-1 h-1 rounded-full" style={{ background: isSelected ? 'white' : '#8B5CF6' }} />
+                        )}
                       </button>
                     ) : <div />}
                   </div>
@@ -134,13 +166,13 @@ export default function ReservasPage({
                     </button>
                   ) : res.estado !== 'cancelada' && (
                     <button onClick={() => { setCrearPedidoRes(res); }}
-                      className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500 hover:text-black transition-colors flex items-center gap-1.5 px-3 text-xs font-bold" title="Crear pedido desde reserva">
+                      className="p-2 rounded-lg bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 hover:bg-[#8B5CF6] hover:text-white transition-colors flex items-center gap-1.5 px-3 text-xs font-bold" title="Crear pedido desde reserva">
                       <ShoppingBag size={13}/> Crear Pedido
                     </button>
                   )}
                   {res.estado==='asistió' && (
                     <button onClick={() => { setSelectedReservaConsumo(res); setReservaConsumoModal(res); loadReservaConsumos(res.id); }}
-                      className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500 hover:text-black transition-colors" title="Gestionar Consumo">
+                      className="p-2 rounded-lg bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 hover:bg-[#8B5CF6] hover:text-white transition-colors" title="Gestionar Consumo">
                       <Utensils size={14}/>
                     </button>
                   )}
@@ -187,52 +219,99 @@ export default function ReservasPage({
       {/* Modal crear pedido desde reserva */}
       {crearPedidoRes && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !crearPedidoLoading && setCrearPedidoRes(null)} />
-          <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
-            className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400"><ShoppingBag size={20}/></div>
-              <div>
-                <h3 className="font-black text-white text-base">Crear Pedido desde Reserva</h3>
-                <p className="text-zinc-500 text-xs mt-0.5">Se vinculará automáticamente</p>
-              </div>
-              <button className="ml-auto text-zinc-500 hover:text-white" onClick={() => setCrearPedidoRes(null)}><X size={18}/></button>
-            </div>
+          <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+            className="absolute inset-0 bg-black/75 backdrop-blur-md"
+            onClick={() => !crearPedidoLoading && setCrearPedidoRes(null)} />
 
-            <div className="bg-zinc-800 rounded-xl p-4 flex flex-col gap-2.5 text-sm">
-              <div className="flex justify-between text-zinc-400">
-                <span>Cliente</span>
-                <span className="text-white font-semibold">{crearPedidoRes.nombre}</span>
-              </div>
-              {crearPedidoRes.mesa && (
-                <div className="flex justify-between text-zinc-400">
-                  <span>Mesa</span>
-                  <span className="text-amber-400 font-bold">{crearPedidoRes.mesa}</span>
+          <motion.div
+            initial={{ opacity:0, scale:0.93, y:16 }}
+            animate={{ opacity:1, scale:1, y:0 }}
+            exit={{ opacity:0, scale:0.93, y:16 }}
+            transition={{ duration:0.25, ease:[0.16,1,0.3,1] }}
+            className="relative w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
+            style={{ background:'#0f0f13', border:'1px solid rgba(139,92,246,.25)', boxShadow:'0 0 0 1px rgba(139,92,246,.1), 0 32px 64px rgba(0,0,0,.6)' }}
+          >
+            {/* Header con gradiente */}
+            <div className="relative px-6 pt-6 pb-5 overflow-hidden"
+              style={{ background:'linear-gradient(135deg,rgba(139,92,246,.18) 0%,rgba(109,40,217,.08) 100%)', borderBottom:'1px solid rgba(139,92,246,.15)' }}>
+              <div className="absolute inset-0 opacity-[0.03]"
+                style={{ backgroundImage:'radial-gradient(circle at 70% 50%, #8B5CF6 0%, transparent 60%)' }} />
+              <div className="relative flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ background:'linear-gradient(135deg,#8B5CF6,#6D28D9)', boxShadow:'0 8px 20px rgba(139,92,246,.4)' }}>
+                    <ShoppingBag size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-base leading-tight">Abrir Pedido</h3>
+                    <p className="text-[11px] font-medium mt-0.5" style={{ color:'rgba(139,92,246,.8)' }}>
+                      desde reserva · vinculado automático
+                    </p>
+                  </div>
                 </div>
-              )}
-              <div className="flex justify-between text-zinc-400">
-                <span>Personas</span>
-                <span className="text-white font-semibold">{crearPedidoRes.personas}</span>
+                <button onClick={() => setCrearPedidoRes(null)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 transition-all">
+                  <X size={15}/>
+                </button>
               </div>
-              <div className="flex justify-between text-zinc-400">
-                <span>Fecha</span>
-                <span className="text-white font-semibold">{crearPedidoRes.fecha} · {crearPedidoRes.hora}</span>
+
+              {/* Avatar cliente */}
+              <div className="relative mt-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white flex-shrink-0"
+                  style={{ background:'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow:'0 4px 12px rgba(245,158,11,.35)' }}>
+                  {crearPedidoRes.nombre?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-white font-black text-sm">{crearPedidoRes.nombre}</p>
+                  <p className="text-[11px] text-zinc-500">{crearPedidoRes.personas} {crearPedidoRes.personas === 1 ? 'persona' : 'personas'}</p>
+                </div>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-500 bg-zinc-800 rounded-lg px-3 py-2 flex items-start gap-2">
-              <AlertCircle size={13} className="text-amber-400 flex-shrink-0 mt-0.5"/>
-              El pedido se crea vacío. Podrás agregar productos desde el panel de Pedidos.
-            </p>
+            {/* Info rows */}
+            <div className="px-6 py-4 flex flex-col gap-1">
+              {[
+                { icon: <Utensils size={13}/>, label:'Mesa', value: crearPedidoRes.mesa || '—', color:'#F59E0B', show: true },
+                { icon: <Users size={13}/>, label:'Comensales', value:`${crearPedidoRes.personas} personas`, color:'#8B5CF6', show: true },
+                { icon: <Clock size={13}/>, label:'Horario', value:`${crearPedidoRes.fecha} · ${crearPedidoRes.hora}`, color:'#3B82F6', show: true },
+              ].filter(r => r.show).map(({ icon, label, value, color }) => (
+                <div key={label} className="flex items-center gap-3 py-2.5 border-b last:border-0"
+                  style={{ borderColor:'rgba(255,255,255,.05)' }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background:`${color}18`, color }}>
+                    {icon}
+                  </div>
+                  <span className="text-zinc-500 text-xs flex-1">{label}</span>
+                  <span className="text-white text-xs font-bold">{value}</span>
+                </div>
+              ))}
+            </div>
 
-            <div className="flex gap-2">
+            {/* Nota */}
+            <div className="mx-6 mb-5 rounded-xl px-3.5 py-2.5 flex items-start gap-2.5"
+              style={{ background:'rgba(245,158,11,.07)', border:'1px solid rgba(245,158,11,.15)' }}>
+              <AlertCircle size={12} className="flex-shrink-0 mt-0.5" style={{ color:'#F59E0B' }}/>
+              <p className="text-[11px] leading-relaxed" style={{ color:'rgba(245,158,11,.85)' }}>
+                El pedido se crea vacío. Agrega productos desde el panel de <strong>Pedidos</strong>.
+              </p>
+            </div>
+
+            {/* Botones */}
+            <div className="px-6 pb-6 flex gap-2.5">
               <button disabled={crearPedidoLoading} onClick={() => setCrearPedidoRes(null)}
-                className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white transition-colors text-sm font-semibold disabled:opacity-50">
+                className="flex-1 py-2.5 rounded-xl text-zinc-400 hover:text-white font-semibold text-sm transition-all disabled:opacity-40"
+                style={{ background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.08)' }}>
                 Cancelar
               </button>
-              <button disabled={crearPedidoLoading} onClick={() => handleCrearPedidoDesdeReserva(crearPedidoRes)}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-sm transition-colors disabled:opacity-50">
-                {crearPedidoLoading ? 'Creando...' : 'Crear Pedido'}
+              <button
+                disabled={crearPedidoLoading}
+                onClick={() => handleCrearPedidoDesdeReserva(crearPedidoRes)}
+                className="flex-1 py-2.5 rounded-xl text-white font-black text-sm transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{ background: crearPedidoLoading ? 'rgba(139,92,246,.5)' : 'linear-gradient(135deg,#8B5CF6,#6D28D9)', boxShadow: crearPedidoLoading ? 'none' : '0 8px 20px rgba(139,92,246,.35)' }}>
+                {crearPedidoLoading
+                  ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Creando...</>
+                  : <><ShoppingBag size={14}/> Abrir Pedido</>
+                }
               </button>
             </div>
           </motion.div>

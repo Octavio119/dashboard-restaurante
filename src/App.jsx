@@ -21,7 +21,7 @@ import * as XLSX from 'xlsx';
 import { useAuth } from './AuthContext';
 import { api } from './api';
 
-const PIE_COLORS = ['#fbbf24','#f59e0b','#d97706','#b45309','#92400e'];
+const PIE_COLORS = ['#8B5CF6','#10B981','#EC4899','#06B6D4','#F59E0B'];
 
 import ToastContainer from './components/notifications/ToastContainer';
 import SidebarItem from './components/layout/SidebarItem';
@@ -45,6 +45,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UsageBanner from './components/UsageBanner';
 import OnboardingWizard from './components/OnboardingWizard';
 import ApiKeysPage from './pages/ApiKeysPage';
+import BillingSuccess from './pages/BillingSuccess';
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 const App = () => {
@@ -87,6 +88,7 @@ const App = () => {
   const [reservas,  setReservas]  = useState([]);
   const [clientes,  setClientes]  = useState([]);
   const [productos,   setProductos]   = useState([]);
+  const [productosLoading, setProductosLoading] = useState(false);
   const [usuarios,    setUsuarios]    = useState([]);
   const [categorias,  setCategorias]  = useState([]);
   const [nuevaCategoria, setNuevaCategoria] = useState('');
@@ -173,7 +175,7 @@ const App = () => {
   const [pedidoDetalle,     setPedidoDetalle]     = useState(null); // pedido | null
   const [pedidoDetalleItems, setPedidoDetalleItems] = useState([]);
   const [addItemSearch,     setAddItemSearch]     = useState('');
-  const [addItemLoading,    setAddItemLoading]    = useState(false);
+  const [addItemLoading,    setAddItemLoading]    = useState(null); // producto_id en carga | null
 
   // Reservas — crear pedido desde reserva
   const [crearPedidoRes,     setCrearPedidoRes]     = useState(null); // reserva | null
@@ -238,7 +240,9 @@ const App = () => {
         data = await api.getReservasPeriodo(reservasPeriodo);
       }
       // El backend devuelve { rows, total, page, pages }
-      setReservas(Array.isArray(data) ? data : (data?.rows || []));
+      // Normaliza fecha a "YYYY-MM-DD" — Prisma devuelve ISO "2026-05-05T00:00:00.000Z"
+      const normFecha = r => ({ ...r, fecha: (r.fecha || '').toString().split('T')[0] });
+      setReservas((Array.isArray(data) ? data : (data?.rows || [])).map(normFecha));
       
       const resTotales = await api.getTotalesReservas(reservasPeriodo);
       setTotalReservas(resTotales?.total || 0);
@@ -267,7 +271,9 @@ const App = () => {
   }, [pedidoForm.cliente_nombre, pedidoModal]);
 
   const loadProductos = useCallback(async () => {
+    setProductosLoading(true);
     try { setProductos(await api.getProductos()); } catch(e) { console.error(e); }
+    finally { setProductosLoading(false); }
   }, []);
 
   const loadCategorias = useCallback(async () => {
@@ -297,6 +303,10 @@ const App = () => {
 
   const loadAnalytics = useCallback(async () => {
     try { setAnalytics(await api.getAnalytics()); } catch(e) { console.error(e); }
+  }, []);
+
+  const loadSalesData = useCallback(async () => {
+    try { setSalesData(await api.getSalesChart(7)); } catch(e) { console.error(e); }
   }, []);
 
   const loadMesasPedidos = useCallback(async () => {
@@ -360,9 +370,10 @@ const App = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-  useEffect(() => { if (user) { loadPedidos(); loadVentas(); loadVentasDia(); } }, [user, loadPedidos, loadVentas, loadVentasDia]);
+  useEffect(() => { if (user) { loadPedidos(); loadVentas(); loadVentasDia(); loadSalesData(); } }, [user, loadPedidos, loadVentas, loadVentasDia, loadSalesData]);
+  useEffect(() => { if (user && activeTab === 'Dashboard') { loadPedidos(); loadVentasDia(); loadVentas(); loadSalesData(); } }, [user, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (user) loadReservas(); }, [user, loadReservas]);
-  useEffect(() => { if (user && activeTab === 'Reservas') { loadPedidos(); loadProductos(); } }, [user, activeTab, loadPedidos, loadProductos]);
+  useEffect(() => { if (user && activeTab === 'Reservas') { loadPedidos(); loadProductos(); loadReservas(); } }, [user, activeTab, loadPedidos, loadProductos]); // eslint-disable-line react-hooks/exhaustive-deps
   // Backfill único: vincula reservas existentes sin cliente al iniciar sesión
   useEffect(() => {
     if (user) api.backfillClientes().catch(() => {}).finally(() => loadClientes());
@@ -414,6 +425,9 @@ const App = () => {
     });
     socket.on('venta:realizada', data => {
       addToast(`Venta $${data.total?.toFixed(0)} · ${data.metodo_pago}`, 'success', { icon: '💵', title: 'Venta registrada' });
+      loadVentasDia();
+      loadVentas();
+      loadSalesData();
     });
     socket.on('stock:alerta', data => {
       addToast(`${data.nombre}: ${data.stock} uds restantes (mín: ${data.minimo})`, 'warning', { icon: '⚠️', title: 'Stock bajo' });
@@ -421,7 +435,7 @@ const App = () => {
     socket.on('connect_error', () => {});
 
     return () => { socket.disconnect(); socketRef.current = null; };
-  }, [user, addToast, loadPedidos]);
+  }, [user, addToast, loadPedidos, loadVentasDia, loadVentas, loadSalesData]);
 
   // ─── Acciones Inventario ─────────────────────────────────────────────────────
   const saveProveedor = async () => {
@@ -535,37 +549,29 @@ const App = () => {
   };
 
   const handleAddPedidoItem = async (producto) => {
-    if (!pedidoDetalle) return;
-    setAddItemLoading(true);
+    if (!pedidoDetalle || addItemLoading === producto.id) return;
+    // Si el producto ya está en el pedido, incrementar cantidad (optimista, sin red)
+    const existing = pedidoDetalleItems.find(i => i.producto_id === producto.id);
+    if (existing) {
+      handleUpdatePedidoItemQty(existing.id, existing.cantidad + 1);
+      return;
+    }
+    setAddItemLoading(producto.id);
     try {
-      // Si el producto ya está en el pedido, incrementar cantidad
-      const existing = pedidoDetalleItems.find(i => i.producto_id === producto.id);
-      if (existing) {
-        setAddItemLoading(false);
-        handleUpdatePedidoItemQty(existing.id, existing.cantidad + 1);
-        return;
-      } else {
-        const nuevo = await api.addPedidoItem(pedidoDetalle.id, {
-          producto_id: producto.id,
-          nombre: producto.nombre,
-          cantidad: 1,
-          precio_unitario: producto.precio,
-        });
-        setPedidoDetalleItems(prev => [...prev, nuevo]);
-        setPedidos(p => p.map(o => {
-          if (o.id !== pedidoDetalle.id) return o;
-          const updItems = [...(o.items||[]), nuevo];
-          const nuevoTotal = updItems.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
-          return { ...o, total: nuevoTotal, items: updItems };
-        }));
-        setPedidoDetalle(prev => {
-          const updItems = [...(pedidoDetalleItems), nuevo];
-          return { ...prev, total: updItems.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0) };
-        });
-      }
+      const nuevo = await api.addPedidoItem(pedidoDetalle.id, {
+        producto_id: producto.id,
+        nombre: producto.nombre,
+        cantidad: 1,
+        precio_unitario: producto.precio,
+      });
+      setPedidoDetalleItems(prev => [...prev, nuevo]);
+      const newTotal = pedidoDetalle.total + producto.precio;
+      setPedidos(p => p.map(o => o.id !== pedidoDetalle.id ? o
+        : { ...o, total: newTotal, items: [...(o.items||[]), nuevo] }));
+      setPedidoDetalle(prev => ({ ...prev, total: newTotal }));
       if (pedidoMesaView) loadMesasPedidos();
     } catch(e) { alert(e.message); }
-    finally { setAddItemLoading(false); }
+    finally { setAddItemLoading(null); }
   };
 
   const handleUpdatePedidoItemQty = (itemId, nuevaCantidad) => {
@@ -781,26 +787,58 @@ const App = () => {
     });
   };
 
+  const [addResLoading, setAddResLoading] = useState(false);
+
   const addReservation = async () => {
-    if (!newResData.name) return;
+    if (!newResData.name || addResLoading) return;
     const basePrice = parseInt(newResData.people) * 25;
+    const savedData = { ...newResData };
+
+    // Optimistic update: close modal immediately and add temp entry
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = {
+      id: tempId,
+      nombre: savedData.name,
+      email: savedData.email,
+      telefono: savedData.phone,
+      hora: savedData.time,
+      personas: parseInt(savedData.people),
+      mesa: savedData.table,
+      fecha: savedData.date,
+      estado: 'pendiente',
+      consumo_base: basePrice,
+      _saving: true,
+    };
+    setIsNewResModalOpen(false);
+    setReservas(r => [...r, optimistic]);
+    setNewResData({ name:'', email:'', phone:'', time:'19:00', people:2, date:new Date().toISOString().split('T')[0], table:'' });
+    setAddResLoading(true);
+
     try {
       const created = await api.createReserva({
-        nombre: newResData.name,
-        email: newResData.email,
-        telefono: newResData.phone,
-        hora: newResData.time,
-        personas: parseInt(newResData.people),
-        mesa: newResData.table,
-        fecha: newResData.date,
+        nombre: savedData.name,
+        email: savedData.email,
+        telefono: savedData.phone,
+        hora: savedData.time,
+        personas: parseInt(savedData.people),
+        mesa: savedData.table,
+        fecha: savedData.date,
         consumo_base: basePrice,
       });
-      setReservas(r => [...r, created]);
-      setLastCreatedRes(created);
-      setIsNewResModalOpen(false);
-      setNewResData({ name:'', email:'', phone:'', time:'19:00', people:2, date:new Date().toISOString().split('T')[0], table:'' });
-      loadClientes(); // sincronizar cliente creado al guardar la reserva
-    } catch(e) { alert(e.message); }
+      const normalized = { ...created, fecha: (created.fecha || '').toString().split('T')[0] };
+      setReservas(r => r.map(x => x.id === tempId ? normalized : x));
+      setLastCreatedRes(normalized);
+      setSelectedDate(normalized.fecha);
+      setReservasPeriodo('dia');
+      loadClientes();
+    } catch(e) {
+      setReservas(r => r.filter(x => x.id !== tempId));
+      setNewResData(savedData);
+      setIsNewResModalOpen(true);
+      alert(e.message);
+    } finally {
+      setAddResLoading(false);
+    }
   };
 
   // ─── Acciones Clientes ───────────────────────────────────────────────────────
@@ -1361,6 +1399,15 @@ const App = () => {
     doc.save(`ticket-${venta.ticket_id}.pdf`);
   };
 
+  // ─── Public billing redirect (PayPal returns here — no auth required) ────────
+  const _billingQs = new URLSearchParams(window.location.search)
+  if (
+    window.location.pathname === '/billing' &&
+    (_billingQs.get('success') === '1' || _billingQs.get('cancel') === '1')
+  ) {
+    return <BillingSuccess />
+  }
+
   // ─── Auth guard ──────────────────────────────────────────────────────────────
   if (authLoading) {
     return (
@@ -1378,6 +1425,8 @@ const App = () => {
 
   // Rutas independientes del tab system
   if (window.location.pathname === '/billing') {
+    const _qs = new URLSearchParams(window.location.search);
+    if (_qs.get('success') === '1') return <BillingSuccess />;
     return <Billing />;
   }
   if (window.location.pathname === '/apikeys') {
@@ -1411,10 +1460,10 @@ const App = () => {
 
   const rolLabel = { admin:'Administrador', chef:'Chef', staff:'Personal', gerente:'Gerente', super_admin:'Super Admin' };
   const rolColor = {
-    admin:       'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    gerente:     'bg-blue-500/15 text-blue-400 border-blue-500/30',
-    chef:        'bg-purple-500/15 text-purple-400 border-purple-500/30',
-    staff:       'bg-zinc-700/50 text-zinc-400 border-zinc-600',
+    admin:       'bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/30',
+    gerente:     'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30',
+    chef:        'bg-[#EC4899]/15 text-[#EC4899] border-[#EC4899]/30',
+    staff:       'bg-white/5 text-[#94A3B8] border-white/10',
     super_admin: 'bg-red-500/15 text-red-400 border-red-500/30',
   };
   const isAdmin    = user?.rol === 'admin' || user?.rol === 'super_admin';
@@ -1423,7 +1472,7 @@ const App = () => {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex min-h-screen bg-[#09090b] text-white font-inter">
+    <div className="flex min-h-screen bg-[#0A0A0F] text-[#F8FAFC] font-jakarta">
 
       {/* Sidebar */}
       {/* Sidebar Overlay */}
@@ -1441,9 +1490,9 @@ const App = () => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:sticky top-0 h-screen w-64 bg-[#09090b] border-r border-zinc-800 p-6 flex flex-col gap-8 z-[100] transition-transform duration-300
+        fixed lg:sticky top-0 h-screen w-[220px] border-r p-6 flex flex-col gap-8 z-[100] transition-transform duration-300
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      `} style={{ background: '#0D0D14', borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-3 px-2 cursor-pointer select-none" onClick={() => setActiveTab('Dashboard')}>
           {config.logoUrl ? (
             <img
@@ -1452,23 +1501,32 @@ const App = () => {
               className="w-10 h-10 rounded-xl object-contain bg-zinc-800 border border-zinc-700 p-0.5"
             />
           ) : (
-            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center">
-              <Utensils size={20} className="text-black" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8B5CF6, #EC4899)' }}>
+              <Utensils size={20} className="text-white" />
             </div>
           )}
-          <div>
-            <span className="font-black tracking-tight brand text-lg leading-none">
-              {config.restaurantName || 'master'}
-            </span>
-            <span className="text-xs font-bold tracking-widest text-amber-500 block -mt-0.5 uppercase">
-              {(() => {
-                const p = user?.restaurante?.plan?.toLowerCase();
-                if (p === 'free') return 'Starter';
-                if (p === 'pro') return 'Pro';
-                if (p === 'business') return 'Business';
-                return p || 'Starter';
-              })()}
-            </span>
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-1.5 leading-none">
+              <span className="font-black tracking-tight text-lg" style={{ color: 'var(--text-primary)' }}>
+                Mastexo
+              </span>
+              <span className="font-black text-lg" style={{ color: 'var(--primary)' }}>POS</span>
+            </div>
+            {(() => {
+              const p = user?.restaurante?.plan?.toLowerCase();
+              const isPro = p === 'pro' || p === 'business';
+              return (
+                <span
+                  className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-1 inline-block"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(139,92,246,.3), rgba(236,72,153,.2))',
+                    color: 'white',
+                  }}
+                >
+                  {p === 'free' ? 'Starter' : p === 'pro' ? 'Pro' : p === 'business' ? 'Business' : 'Starter'}
+                </span>
+              );
+            })()}
           </div>
         </div>
 
@@ -1497,7 +1555,7 @@ const App = () => {
           ))}
         </nav>
 
-        <div className="border-t border-zinc-800 pt-4 flex flex-col gap-1">
+        <div className="border-t pt-4 flex flex-col gap-1" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
           <SidebarItem 
             icon={Settings} 
             label="Configuración" 
@@ -1509,7 +1567,7 @@ const App = () => {
           />
           <div
             onClick={logout}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/5 cursor-pointer transition-all"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#8892A4] hover:text-red-400 hover:bg-red-500/5 cursor-pointer transition-all"
           >
             <LogOut size={18} />
             <span className="font-semibold text-sm">Cerrar sesión</span>
@@ -1518,26 +1576,27 @@ const App = () => {
       </aside>
 
       {/* Main */}
-      <main className="flex-grow flex flex-col">
+      <main className="flex-grow flex flex-col pb-16 lg:pb-0 main-content-area">
         {/* Header */}
         {/* Header */}
-        <header className="h-16 px-4 lg:px-8 flex items-center justify-between border-b border-zinc-800 bg-[#09090b] sticky top-0 z-50">
+        <header className="h-[60px] px-4 lg:px-8 flex items-center justify-between sticky top-0 z-50" style={{ background: 'rgba(10,10,18,0.88)', borderBottom: '1px solid var(--border)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden w-10 h-10 rounded-lg flex items-center justify-center bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
+              className="lg:hidden w-10 h-10 rounded-lg flex items-center justify-center border cursor-pointer transition-colors text-[#94A3B8] hover:text-[#F8FAFC]" style={{ background: 'rgba(255,255,255,.04)', borderColor: 'rgba(255,255,255,0.07)' }}
             >
               <Menu size={20} />
             </button>
             
             <div className="relative w-40 sm:w-64 lg:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" size={15} />
               <input
                 type="text"
                 placeholder="Buscar..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-2 w-full text-sm placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+                className="input pl-10 pr-4 text-sm w-full"
+                style={{ paddingTop: '8px', paddingBottom: '8px' }}
               />
             </div>
           </div>
@@ -1547,10 +1606,10 @@ const App = () => {
             <div className="relative">
               <button
                 onClick={() => setBellOpen(v => !v)}
-                className="w-9 h-9 rounded-lg flex items-center justify-center bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-amber-400 hover:border-zinc-700 transition-colors relative"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border transition-colors relative cursor-pointer text-[#94A3B8] hover:text-[#8B5CF6]" style={{ background: 'rgba(255,255,255,.04)', borderColor: 'rgba(255,255,255,0.07)' }}
               >
                 <Bell size={17} />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-[#09090b]" />
+                <span className="notification-dot absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: '#8B5CF6' }} />
               </button>
               <AnimatePresence>
                 {bellOpen && (
@@ -1558,11 +1617,11 @@ const App = () => {
                     initial={{ opacity:0, y:8, scale:0.96 }}
                     animate={{ opacity:1, y:0, scale:1 }}
                     exit={{ opacity:0, y:8, scale:0.96 }}
-                    className="absolute right-0 mt-2 w-72 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-[200] overflow-hidden"
+                    className="absolute right-0 mt-2 w-72 rounded-xl shadow-2xl z-[200] overflow-hidden" style={{ background: '#111118', border: '1px solid rgba(255,255,255,0.07)' }}
                   >
-                    <div className="px-4 py-3 border-b border-zinc-800 flex justify-between items-center">
-                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Notificaciones</span>
-                      <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded font-bold">0</span>
+                    <div className="px-4 py-3 flex justify-between items-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#8892A4' }}>Notificaciones</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold" style={{ background: 'rgba(139,92,246,0.15)', color: '#8B5CF6' }}>0</span>
                     </div>
                     <div className="px-4 py-6 text-center">
                       <p className="text-xs text-zinc-500">Sin notificaciones nuevas</p>
@@ -1575,16 +1634,16 @@ const App = () => {
               </AnimatePresence>
             </div>
 
-            <div className="w-px h-8 bg-zinc-800" />
+            <div className="w-px h-8" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
             {/* User */}
             <div className="flex items-center gap-2.5 cursor-default group">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 font-black text-sm">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white shrink-0" style={{ background: 'linear-gradient(135deg, #8B5CF6, #EC4899)', fontSize: '14px', boxShadow: '0 0 0 2px rgba(139,92,246,0.35), 0 0 12px rgba(139,92,246,0.2)' }}>
                 {user.nombre?.charAt(0).toUpperCase()}
               </div>
               <div className="hidden sm:flex flex-col gap-0.5">
-                <span className="text-sm font-bold text-white leading-none">{user.nombre}</span>
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider w-fit ${rolColor[user.rol] || rolColor.staff}`}>
+                <span className="font-bold leading-none" style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{user.nombre}</span>
+                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-wider w-fit ${rolColor[user.rol] || rolColor.staff}`} style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                   {rolLabel[user.rol] || user.rol}
                 </span>
               </div>
@@ -1626,7 +1685,7 @@ const App = () => {
               pedidoModal={pedidoModal} setPedidoModal={setPedidoModal}
               openPedidoDetalle={openPedidoDetalle} printPedido={printPedido}
               confirmarConversionVenta={confirmarConversionVenta} updatePedidoEstado={updatePedidoEstado} deletePedido={deletePedido}
-              productos={productos} loadProductos={loadProductos}
+              productos={productos} loadProductos={loadProductos} productosLoading={productosLoading}
               clienteSearchResults={clienteSearchResults} setClienteSearchResults={setClienteSearchResults}
               isSearchingClientes={isSearchingClientes}
               pedidoLoading={pedidoLoading} setPedidoLoading={setPedidoLoading}
@@ -1655,6 +1714,7 @@ const App = () => {
               deleteReserva={deleteReserva}
               crearPedidoLoading={crearPedidoLoading}
               handleCrearPedidoDesdeReserva={handleCrearPedidoDesdeReserva}
+              setIsNewResModalOpen={setIsNewResModalOpen}
             />
           )}
 
@@ -1707,6 +1767,7 @@ const App = () => {
               setVentaModal={setVentaModal}
               api={api}
               cajaHoy={cajaHoy}
+              cajaMonto={cajaMonto}
               setCajaMonto={setCajaMonto}
               setCajaModal={setCajaModal}
               cajaModal={cajaModal}
@@ -1725,6 +1786,7 @@ const App = () => {
               ventaMetodo={ventaMetodo}
               config={config}
               ventaLoading={ventaLoading}
+              setVentaLoading={setVentaLoading}
               ventaTicket={ventaTicket}
               ventaModal={ventaModal}
               user={user}
@@ -1744,7 +1806,7 @@ const App = () => {
             <motion.div key="config" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
               <div className="flex justify-between items-end">
                 <div>
-                  <h2 className="text-3xl font-black tracking-tight">Configuración <span className="text-amber-500">General</span></h2>
+                  <h2 className="text-3xl font-black tracking-tight">Configuración <span style={{ color: 'var(--purple)' }}>General</span></h2>
                   <p className="text-zinc-500 text-sm mt-1">Ajusta tu restaurante y preferencias del sistema</p>
                 </div>
                 {(configTab === 'negocio' || configTab === 'facturacion') && (
@@ -1756,7 +1818,7 @@ const App = () => {
               </div>
 
               {/* Tabs config */}
-              <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1 w-fit">
+              <div className="tab-group w-fit">
                 {[
                   { key:'negocio',     label:'Negocio',     icon:Building2, adminOnly: false },
                   { key:'facturacion', label:'Facturación', icon:Receipt,   adminOnly: true  },
@@ -1765,8 +1827,8 @@ const App = () => {
                 ].filter(t => !t.adminOnly || isAdmin)
                  .map(({ key, label, icon:Icon }) => (
                   <button key={key} onClick={() => setConfigTab(key)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${configTab===key ? 'bg-amber-500 text-black' : 'text-zinc-500 hover:text-white'}`}>
-                    <Icon size={14}/>{label}
+                    className={`tab-item flex items-center gap-1.5 ${configTab === key ? 'active' : ''}`}>
+                    <Icon size={13} />{label}
                   </button>
                 ))}
               </div>
@@ -1852,13 +1914,13 @@ const App = () => {
                     <div className="grid grid-cols-2 gap-3">
                       {[{ key:'cash',label:'Efectivo',icon:Banknote},{key:'card',label:'Tarjeta',icon:CreditCard},{key:'transfer',label:'Transferencia',icon:Smartphone},{key:'qr',label:'Código QR',icon:QrCode}].map(({key,label,icon:Icon})=>(
                         <div key={key} onClick={()=>setConfig({...config,paymentMethods:{...config.paymentMethods,[key]:!config.paymentMethods[key]}})}
-                          className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${config.paymentMethods[key]?'bg-amber-500/10 border-amber-500/20':'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'}`}>
+                          className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${config.paymentMethods[key]?'bg-[#8B5CF6]/10 border-[#8B5CF6]/20':'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'}`}>
                           <div className="flex items-center gap-2">
-                            <Icon size={16} className={config.paymentMethods[key]?'text-amber-400':'text-zinc-500'}/>
+                            <Icon size={16} className={config.paymentMethods[key]?'text-[#8B5CF6]':'text-zinc-500'}/>
                             <span className={`text-sm font-semibold ${config.paymentMethods[key]?'text-white':'text-zinc-400'}`}>{label}</span>
                           </div>
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.paymentMethods[key]?'bg-amber-500 border-amber-500':'border-zinc-600'}`}>
-                            {config.paymentMethods[key]&&<Check size={10} className="text-black"/>}
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${config.paymentMethods[key]?'bg-[#8B5CF6] border-[#8B5CF6]':'border-zinc-600'}`}>
+                            {config.paymentMethods[key]&&<Check size={10} className="text-white"/>}
                           </div>
                         </div>
                       ))}
@@ -1973,7 +2035,7 @@ const App = () => {
                     </h3>
                     <div
                       onClick={() => setConfig({...config, impuestoActivo: !config.impuestoActivo})}
-                      className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${config.impuestoActivo ? 'bg-amber-500/10 border-amber-500/20' : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'}`}
+                      className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${config.impuestoActivo ? 'bg-[#8B5CF6]/10 border-[#8B5CF6]/20' : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'}`}
                     >
                       <div>
                         <p className={`text-sm font-semibold ${config.impuestoActivo ? 'text-white' : 'text-zinc-400'}`}>
@@ -1983,7 +2045,7 @@ const App = () => {
                           {config.impuestoActivo ? `Se mostrará ${config.taxRate}% en cada documento` : 'El impuesto no aparecerá en los tickets'}
                         </p>
                       </div>
-                      <div className={`w-10 h-6 rounded-full transition-colors relative ${config.impuestoActivo ? 'bg-amber-500' : 'bg-zinc-700'}`}>
+                      <div className={`w-10 h-6 rounded-full transition-colors relative ${config.impuestoActivo ? 'bg-[#8B5CF6]' : 'bg-zinc-700'}`}>
                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${config.impuestoActivo ? 'left-5' : 'left-1'}`}/>
                       </div>
                     </div>
@@ -2279,7 +2341,7 @@ const App = () => {
                   <div className="flex gap-1 flex-wrap">
                     {categorias.map(cat => (
                       <button key={cat.id} onClick={() => setActiveMenuCategory(cat.nombre)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors border ${activeMenuCategory===cat.nombre ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-white'}`}>
+                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-colors border ${activeMenuCategory===cat.nombre ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-white'}`}>
                         {cat.nombre}
                         <span className="ml-1.5 text-[10px]">({productos.filter(p=>p.categoria===cat.nombre).length})</span>
                       </button>
@@ -2341,7 +2403,7 @@ const App = () => {
                 className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-lg font-black text-white">Nueva <span className="text-amber-500">Reserva</span></h3>
+                    <h3 className="text-lg font-black text-white">Nueva <span style={{ color: 'var(--purple)' }}>Reserva</span></h3>
                   </div>
                   <button onClick={() => setIsNewResModalOpen(false)} className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors"><X size={16}/></button>
                 </div>
@@ -2366,8 +2428,8 @@ const App = () => {
 
                 <div className="flex gap-3">
                   <button onClick={() => setIsNewResModalOpen(false)} className="btn-ghost flex-1">Cancelar</button>
-                  <button onClick={addReservation} disabled={!newResData.name} className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Crear Reservación
+                  <button onClick={addReservation} disabled={!newResData.name || addResLoading} className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {addResLoading ? 'Guardando...' : 'Crear Reservación'}
                   </button>
                 </div>
               </motion.div>
@@ -2384,7 +2446,7 @@ const App = () => {
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-white truncate">Reserva guardada</p>
-                <p className="text-xs text-zinc-400 truncate">{lastCreatedRes.nombre} · {lastCreatedRes.fecha} {lastCreatedRes.hora}</p>
+                <p className="text-xs text-zinc-400 truncate">{lastCreatedRes.nombre} · {(lastCreatedRes.fecha || '').toString().split('T')[0]} {lastCreatedRes.hora}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {lastCreatedRes.telefono && (
@@ -2531,9 +2593,9 @@ const App = () => {
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsMovModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md"/>
               <motion.div initial={{ opacity:0, scale:0.95, y:20 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
                 className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
-                <div className="bg-amber-500 px-6 py-4 flex justify-between items-center">
-                  <h3 className="font-black text-black">REGISTRAR MOVIMIENTO</h3>
-                  <button onClick={() => setIsMovModalOpen(false)} className="text-black/60 hover:text-black"><X size={18}/></button>
+                <div className="px-6 py-4 flex justify-between items-center" style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}>
+                  <h3 className="font-black text-white">REGISTRAR MOVIMIENTO</h3>
+                  <button onClick={() => setIsMovModalOpen(false)} className="text-white/60 hover:text-white"><X size={18}/></button>
                 </div>
                 <div className="p-6 flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
@@ -2612,7 +2674,7 @@ const App = () => {
               <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
                 className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
-                  <h3 className="text-xl font-black text-white">{proveedorForm.id ? 'Editar' : 'Nuevo'} <span className="text-amber-500">Proveedor</span></h3>
+                  <h3 className="text-xl font-black text-white">{proveedorForm.id ? 'Editar' : 'Nuevo'} <span style={{ color: 'var(--purple)' }}>Proveedor</span></h3>
                   <button onClick={() => setIsProvModalOpen(false)} className="text-zinc-500 hover:text-white"><X size={20}/></button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -2654,10 +2716,10 @@ const App = () => {
               <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.95 }}
                 className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 
-                <div className="bg-amber-500 px-6 py-4 flex justify-between items-center shrink-0">
+                <div className="px-6 py-4 flex justify-between items-center shrink-0" style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}>
                   <div>
-                    <h3 className="font-black text-black leading-none uppercase">GESTIONAR CONSUMO</h3>
-                    <p className="text-black/60 text-[10px] font-bold mt-1 uppercase">Mesa {reservaConsumoModal.mesa} • {reservaConsumoModal.nombre}</p>
+                    <h3 className="font-black text-white leading-none uppercase">GESTIONAR CONSUMO</h3>
+                    <p className="text-white/60 text-[10px] font-bold mt-1 uppercase">Mesa {reservaConsumoModal.mesa} • {reservaConsumoModal.nombre}</p>
                   </div>
                   <button onClick={() => setReservaConsumoModal(null)} className="text-black/60 hover:text-black"><X size={18}/></button>
                 </div>
@@ -2688,7 +2750,7 @@ const App = () => {
                               className="w-full p-3 rounded-lg hover:bg-zinc-800 border border-transparent hover:border-zinc-700 transition-all flex justify-between items-center group"
                             >
                               <div className="text-left">
-                                <p className="text-sm font-bold text-white group-hover:text-amber-500">{p.nombre}</p>
+                                <p className="text-sm font-bold text-white group-hover:text-[#8B5CF6]">{p.nombre}</p>
                                 <p className="text-[10px] text-zinc-500">Stock: {p.stock} • {p.categoria}</p>
                               </div>
                               <span className="text-amber-500 font-black text-sm">{config.currency}{p.precio}</span>
@@ -2718,7 +2780,7 @@ const App = () => {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-white truncate">{item.nombre}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-black">x{item.cantidad}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#8B5CF6]/10 text-[#8B5CF6] font-black">x{item.cantidad}</span>
                                 <span className="text-[10px] text-zinc-500">{config.currency}{Number(item.precio_unitario).toLocaleString()}</span>
                               </div>
                             </div>
@@ -2745,7 +2807,7 @@ const App = () => {
                         <button 
                           onClick={ejecutarCierreCuentaReserva}
                           disabled={reservaItems.length === 0 || resConsumoLoading}
-                          className="flex-1 py-3 rounded-xl bg-amber-500 text-black font-black text-sm hover:bg-amber-400 shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50"
+                          className="flex-1 py-3 rounded-xl text-white font-black text-sm hover:brightness-110 shadow-lg shadow-purple-500/20 transition-all disabled:opacity-50" style={{ background:'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}
                         >
                           {resConsumoLoading ? 'Cerrando...' : 'PAGAR Y CERRAR'}
                         </button>
@@ -2765,7 +2827,7 @@ const App = () => {
             <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
               className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400"><ShoppingBag size={20}/></div>
+                <div className="p-2.5 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6]"><ShoppingBag size={20}/></div>
                 <div>
                   <h3 className="font-black text-white text-base">Registrar como venta</h3>
                   <p className="text-zinc-500 text-xs mt-0.5">{pedidoConvertModal.numero} · {pedidoConvertModal.cliente_nombre}</p>
@@ -2801,7 +2863,7 @@ const App = () => {
                     { id:'transferencia', label:'Transferencia', icon: Smartphone },
                   ].map(m => (
                     <button key={m.id} onClick={() => setConvertMetodo(m.id)}
-                      className={`py-2.5 rounded-xl text-xs font-bold border transition-colors flex flex-col items-center gap-1 ${convertMetodo===m.id ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}>
+                      className={`py-2.5 rounded-xl text-xs font-bold border transition-colors flex flex-col items-center gap-1 ${convertMetodo===m.id ? 'bg-[#8B5CF6] text-white border-[#8B5CF6]' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}>
                       <m.icon size={14}/>
                       {m.label}
                     </button>
@@ -2821,7 +2883,7 @@ const App = () => {
                   Cancelar
                 </button>
                 <button disabled={convertLoading} onClick={ejecutarConversionVenta}
-                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 py-2.5 rounded-xl text-white font-black text-sm transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-2" style={{ background:'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}>
                   <Receipt size={15}/>
                   {convertLoading ? 'Registrando...' : 'Confirmar venta'}
                 </button>
@@ -2831,115 +2893,287 @@ const App = () => {
         )}
 
         {/* ── Modal global: gestión de ítems de pedido ── */}
+        <AnimatePresence>
         {pedidoDetalle && (
           <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setPedidoDetalle(null); setPedidoDetalleItems([]); }} />
-            <motion.div initial={{ opacity:0, y:40 }} animate={{ opacity:1, y:0 }}
-              className="relative bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400"><ChefHat size={18}/></div>
+            {/* Backdrop */}
+            <motion.div
+              key="pedido-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => { setPedidoDetalle(null); setPedidoDetalleItems([]); }}
+            />
+
+            {/* Modal card */}
+            <motion.div
+              key="pedido-modal"
+              initial={{ opacity: 0, scale: 0.96, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden rounded-3xl"
+              style={{
+                background: 'rgba(9,9,13,0.97)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                boxShadow: '0 0 0 1px rgba(139,92,246,0.12), 0 32px 80px rgba(0,0,0,0.85), 0 0 80px rgba(139,92,246,0.07)',
+              }}
+            >
+              {/* ── Header ── */}
+              <div
+                className="relative flex items-center justify-between px-6 py-5 overflow-hidden flex-shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg,rgba(139,92,246,.14) 0%,rgba(109,40,217,.05) 100%)',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                {/* ambient glow */}
+                <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full opacity-15"
+                  style={{ background: 'radial-gradient(circle,#8B5CF6 0%,transparent 70%)' }} />
+
+                <div className="relative flex items-center gap-3.5">
+                  <div
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow: '0 8px 20px rgba(245,158,11,.3)' }}
+                  >
+                    <ChefHat size={20} className="text-white" />
+                  </div>
                   <div>
-                    <p className="font-black text-white">{pedidoDetalle.numero} — {pedidoDetalle.cliente_nombre}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {pedidoDetalle.mesa && <span className="text-xs text-amber-400 flex items-center gap-1"><Utensils size={10}/>{pedidoDetalle.mesa}</span>}
-                      {pedidoDetalle.personas > 0 && <span className="text-xs text-zinc-500 flex items-center gap-1"><Users size={10}/>{pedidoDetalle.personas} pers.</span>}
-                      {pedidoDetalle.reserva_id && <span className="text-[10px] text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded-md font-bold">RESERVA</span>}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-black text-amber-400 text-base leading-tight tracking-tight">{pedidoDetalle.numero}</span>
+                      <span className="text-zinc-600 text-sm">—</span>
+                      <span className="font-bold text-white text-base">{pedidoDetalle.cliente_nombre}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {pedidoDetalle.mesa && (
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400/80">
+                          <Utensils size={9}/>{pedidoDetalle.mesa}
+                        </span>
+                      )}
+                      {pedidoDetalle.personas > 0 && (
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-600">
+                          <Users size={9}/>{pedidoDetalle.personas} pers.
+                        </span>
+                      )}
+                      {pedidoDetalle.reserva_id && (
+                        <span className="text-[10px] font-black text-indigo-400 border border-indigo-500/25 px-1.5 py-0.5 rounded"
+                          style={{ background: 'rgba(99,102,241,.08)' }}>RESERVA</span>
+                      )}
                       <StatusBadge status={pedidoDetalle.estado}/>
                     </div>
                   </div>
                 </div>
-                <button onClick={() => { setPedidoDetalle(null); setPedidoDetalleItems([]); }} className="text-zinc-500 hover:text-white"><X size={18}/></button>
+
+                <button
+                  onClick={() => { setPedidoDetalle(null); setPedidoDetalleItems([]); }}
+                  className="relative w-8 h-8 rounded-xl flex items-center justify-center text-zinc-500 hover:text-white transition-all cursor-pointer flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,.05)'}
+                >
+                  <X size={14}/>
+                </button>
               </div>
 
-              {/* Items actuales */}
-              <div className="p-5 flex flex-col gap-3 overflow-y-auto flex-1">
-                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Productos del pedido</h4>
-                {pedidoDetalleItems.length === 0 ? (
-                  <div className="py-6 text-center text-zinc-600">
-                    <Package size={28} className="mx-auto mb-2 opacity-30"/>
-                    <p className="text-sm">Sin productos aún — agrega desde el menú</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-                    {pedidoDetalleItems.map(item => (
-                      <div key={item.id} className="flex items-center justify-between bg-zinc-800 rounded-xl px-3 py-2.5">
-                        <div className="flex-1 min-w-0 mr-2">
-                          <p className="text-sm font-semibold text-white truncate">{item.nombre}</p>
-                          <p className="text-xs text-zinc-500">${item.precio_unitario.toLocaleString('es-CL', { minimumFractionDigits:2 })} c/u</p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button onClick={() => handleUpdatePedidoItemQty(item.id, item.cantidad - 1)}
-                            className="w-6 h-6 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-bold flex items-center justify-center">−</button>
-                          <span data-testid="item-cantidad" className="text-white font-bold text-sm w-5 text-center">{item.cantidad}</span>
-                          <button onClick={() => handleUpdatePedidoItemQty(item.id, item.cantidad + 1)}
-                            className="w-6 h-6 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-bold flex items-center justify-center">+</button>
-                          <span className="text-amber-400 font-black text-sm w-16 text-right">${(item.cantidad * item.precio_unitario).toLocaleString('es-CL', { minimumFractionDigits:2 })}</span>
-                          <button disabled={addItemLoading} onClick={() => handleDeletePedidoItem(item.id)} className="text-zinc-600 hover:text-red-400 transition-colors disabled:opacity-40">
-                            <Trash2 size={14}/>
+              {/* ── Body scrollable ── */}
+              <div className="flex flex-col gap-5 overflow-y-auto flex-1 px-6 py-5">
+
+                {/* Section: productos del pedido */}
+                <div>
+                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.14em] mb-3">
+                    Productos del pedido
+                  </p>
+
+                  {pedidoDetalleItems.length === 0 ? (
+                    <div className="py-8 flex flex-col items-center text-zinc-700 rounded-2xl"
+                      style={{ border: '1px dashed rgba(255,255,255,0.06)' }}>
+                      <Package size={26} className="mb-2 opacity-25"/>
+                      <p className="text-sm">Sin productos — agrega del menú</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {pedidoDetalleItems.map(item => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-colors cursor-default"
+                          style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.05)' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.055)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,.03)'}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">{item.nombre}</p>
+                            <p className="text-[11px] text-zinc-600 mt-0.5">
+                              ${item.precio_unitario.toLocaleString('es-CL', { minimumFractionDigits:0 })} c/u
+                            </p>
+                          </div>
+
+                          {/* Qty pill */}
+                          <div
+                            className="flex items-center gap-0.5 flex-shrink-0"
+                            style={{ background: 'rgba(255,255,255,.06)', borderRadius: '12px', padding: '3px' }}
+                          >
+                            <button
+                              onClick={() => handleUpdatePedidoItemQty(item.id, item.cantidad - 1)}
+                              className="w-7 h-7 rounded-[9px] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer font-bold text-base leading-none"
+                            >−</button>
+                            <span data-testid="item-cantidad"
+                              className="text-white font-black text-sm w-6 text-center tabular-nums select-none">
+                              {item.cantidad}
+                            </span>
+                            <button
+                              onClick={() => handleUpdatePedidoItemQty(item.id, item.cantidad + 1)}
+                              className="w-7 h-7 rounded-[9px] flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer font-bold text-base leading-none"
+                            >+</button>
+                          </div>
+
+                          <span className="text-amber-400 font-black text-sm w-20 text-right tabular-nums flex-shrink-0">
+                            ${(item.cantidad * item.precio_unitario).toLocaleString('es-CL', { minimumFractionDigits:0 })}
+                          </span>
+
+                          <button
+                            onClick={() => handleDeletePedidoItem(item.id)}
+                            className="text-zinc-700 hover:text-red-400 transition-colors cursor-pointer p-1 flex-shrink-0"
+                          >
+                            <Trash2 size={13}/>
                           </button>
                         </div>
-                      </div>
-                    ))}
-                    <div className="flex justify-between items-center pt-2 border-t border-zinc-800 mt-1">
-                      <span className="text-zinc-400 text-sm font-semibold">Total</span>
-                      <span className="text-white font-black text-lg">${pedidoDetalleItems.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0).toLocaleString('es-CL', { minimumFractionDigits:2 })}</span>
-                    </div>
-                  </div>
-                )}
+                      ))}
 
-                {/* Agregar productos */}
-                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mt-2">Agregar del menú</h4>
-                <input
-                  value={addItemSearch}
-                  onChange={e => setAddItemSearch(e.target.value)}
-                  placeholder="Buscar producto..."
-                  className="input text-sm"
-                />
-                <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                  {productos
-                    .filter(p => p.activo !== 0 && (addItemSearch === '' || p.nombre.toLowerCase().includes(addItemSearch.toLowerCase())))
-                    .map(prod => (
-                      <button key={prod.id} disabled={addItemLoading} onClick={() => handleAddPedidoItem(prod)}
-                        className="flex items-center justify-between px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors text-left group">
-                        <div>
-                          <p className="text-sm text-white font-semibold group-hover:text-amber-400 transition-colors">{prod.nombre}</p>
-                          <p className="text-[10px] text-zinc-500 capitalize">{prod.categoria} · stock: {prod.stock}</p>
-                        </div>
-                        <span className="text-amber-400 font-black text-sm">${prod.precio.toLocaleString('es-CL', { minimumFractionDigits:2 })}</span>
-                      </button>
-                    ))}
-                  {productos.filter(p => p.activo !== 0 && (addItemSearch === '' || p.nombre.toLowerCase().includes(addItemSearch.toLowerCase()))).length === 0 && (
-                    <p className="text-center text-zinc-600 text-sm py-4">Sin resultados</p>
+                      {/* Total row */}
+                      <div
+                        className="flex justify-between items-center pt-3.5 mt-1 px-1"
+                        style={{ borderTop: '1px solid rgba(255,255,255,.06)' }}
+                      >
+                        <span className="text-zinc-500 text-sm font-semibold">Total del pedido</span>
+                        <span className="text-white font-black text-xl tabular-nums">
+                          ${pedidoDetalleItems.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0).toLocaleString('es-CL', { minimumFractionDigits:0 })}
+                        </span>
+                      </div>
+                    </div>
                   )}
+                </div>
+
+                {/* Section: agregar del menú */}
+                <div>
+                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.14em] mb-3">
+                    Agregar del menú
+                  </p>
+
+                  {/* Search input */}
+                  <div className="relative mb-3">
+                    <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
+                    <input
+                      value={addItemSearch}
+                      onChange={e => setAddItemSearch(e.target.value)}
+                      placeholder="Buscar producto..."
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-zinc-600 outline-none transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,.04)',
+                        border: '1px solid rgba(255,255,255,.07)',
+                      }}
+                      onFocus={e => { e.target.style.border = '1px solid rgba(139,92,246,.45)'; e.target.style.background = 'rgba(139,92,246,.04)'; }}
+                      onBlur={e => { e.target.style.border = '1px solid rgba(255,255,255,.07)'; e.target.style.background = 'rgba(255,255,255,.04)'; }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-0.5 max-h-52 overflow-y-auto">
+                    {productosLoading ? (
+                      <div className="flex items-center justify-center py-7 gap-2 text-sm text-zinc-600">
+                        <span className="w-4 h-4 rounded-full border-2 border-zinc-700 border-t-violet-500 animate-spin" />
+                        Cargando menú...
+                      </div>
+                    ) : (() => {
+                      const list = productos.filter(p => p.activo !== 0 && (addItemSearch === '' || p.nombre.toLowerCase().includes(addItemSearch.toLowerCase())));
+                      if (list.length === 0) return <p className="text-center text-zinc-600 text-sm py-6">Sin resultados</p>;
+                      return list.map(prod => {
+                        const isLoading = addItemLoading === prod.id;
+                        const inCart = pedidoDetalleItems.find(i => i.producto_id === prod.id);
+                        return (
+                          <button
+                            key={prod.id}
+                            disabled={isLoading}
+                            onClick={() => handleAddPedidoItem(prod)}
+                            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-left cursor-pointer disabled:opacity-50 group"
+                            style={{ border: '1px solid transparent' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,.08)'; e.currentTarget.style.border = '1px solid rgba(139,92,246,.2)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; }}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {inCart ? (
+                                <span
+                                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0"
+                                  style={{ background: 'rgba(139,92,246,.2)', color: '#A78BFA' }}
+                                >{inCart.cantidad}</span>
+                              ) : (
+                                <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                                  style={{ background: 'rgba(255,255,255,.04)' }}>
+                                  <Plus size={10} className="text-zinc-600 group-hover:text-violet-400 transition-colors" />
+                                </span>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-zinc-200 group-hover:text-white transition-colors truncate">{prod.nombre}</p>
+                                <p className="text-[10px] text-zinc-600 capitalize">{prod.categoria} · Stock: {prod.stock}</p>
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 ml-3">
+                              {isLoading
+                                ? <span className="w-3.5 h-3.5 rounded-full border-2 border-zinc-700 border-t-violet-500 animate-spin block" />
+                                : <span className="text-amber-400 font-black text-sm tabular-nums">${prod.precio.toLocaleString('es-CL', { minimumFractionDigits:0 })}</span>
+                              }
+                            </div>
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
               </div>
 
-              {/* Footer acciones */}
-              <div className="p-5 border-t border-zinc-800 flex gap-2">
+              {/* ── Footer ── */}
+              <div
+                className="px-6 pb-6 pt-4 flex gap-2.5 flex-shrink-0"
+                style={{ borderTop: '1px solid rgba(255,255,255,.05)' }}
+              >
                 {pedidoDetalle.estado !== 'confirmado' && pedidoDetalle.estado !== 'entregado' && (
-                  <button onClick={async () => {
-                    const flow = ['pendiente','en preparación','entregado'];
-                    const ni = flow.indexOf(pedidoDetalle.estado) + 1;
-                    if (ni < flow.length) {
-                      await updatePedidoEstado(pedidoDetalle.id, flow[ni]);
-                      setPedidoDetalle(prev => ({ ...prev, estado: flow[ni] }));
-                      if (pedidoMesaView) loadMesasPedidos();
-                    }
-                  }} className="flex-1 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-black font-bold text-sm transition-colors flex items-center justify-center gap-2">
-                    <ChevronRight size={15}/>
+                  <button
+                    onClick={async () => {
+                      const flow = ['pendiente','en preparación','entregado'];
+                      const ni = flow.indexOf(pedidoDetalle.estado) + 1;
+                      if (ni < flow.length) {
+                        await updatePedidoEstado(pedidoDetalle.id, flow[ni]);
+                        setPedidoDetalle(prev => ({ ...prev, estado: flow[ni] }));
+                        if (pedidoMesaView) loadMesasPedidos();
+                      }
+                    }}
+                    className="flex-1 py-3 rounded-2xl font-black text-sm text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)', boxShadow: '0 8px 24px rgba(139,92,246,.3)' }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 12px 32px rgba(139,92,246,.5)'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 8px 24px rgba(139,92,246,.3)'}
+                  >
+                    <ChevronRight size={16}/>
                     {pedidoDetalle.estado === 'pendiente' ? 'Pasar a preparación' : 'Marcar entregado'}
                   </button>
                 )}
                 {pedidoDetalle.estado === 'entregado' && (
-                  <button onClick={() => { const p = pedidoDetalle; setPedidoDetalle(null); setPedidoDetalleItems([]); confirmarConversionVenta(p); }}
-                    className="flex-1 py-2.5 rounded-xl bg-green-500/10 hover:bg-green-500 text-green-400 hover:text-black font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => { const p = pedidoDetalle; setPedidoDetalle(null); setPedidoDetalleItems([]); confirmarConversionVenta(p); }}
+                    className="flex-1 py-3 rounded-2xl font-black text-sm text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    style={{ background: 'linear-gradient(135deg,#10B981,#059669)', boxShadow: '0 8px 24px rgba(16,185,129,.3)' }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 12px 32px rgba(16,185,129,.5)'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 8px 24px rgba(16,185,129,.3)'}
+                  >
                     <Receipt size={15}/> Cobrar y registrar venta
                   </button>
                 )}
                 {pedidoDetalle.estado === 'confirmado' && (
-                  <div className="flex-1 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 font-bold text-sm flex items-center justify-center gap-2">
+                  <div
+                    className="flex-1 py-3 rounded-2xl text-emerald-400 font-black text-sm flex items-center justify-center gap-2"
+                    style={{ background: 'rgba(16,185,129,.07)', border: '1px solid rgba(16,185,129,.15)' }}
+                  >
                     <Check size={15}/> Venta registrada
                   </div>
                 )}
@@ -2947,6 +3181,7 @@ const App = () => {
             </motion.div>
           </div>
         )}
+        </AnimatePresence>
 
         {/* Confirm dialog global */}
         <ConfirmDialog
@@ -2976,6 +3211,30 @@ const App = () => {
           onDismiss={() => setShowOnboarding(false)}
         />
       )}
+
+      {/* ── Mobile Bottom Navigation ── */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-[90] flex items-center justify-around px-2 h-[60px]"
+        style={{ background: '#0D0D14', borderTop: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        {[
+          { icon: LayoutDashboard, label: 'Dashboard' },
+          { icon: ShoppingBag,     label: 'Pedidos'   },
+          { icon: Receipt,         label: 'Ventas'    },
+          { icon: Calendar,        label: 'Reservas'  },
+          { icon: Menu,            label: 'Más'       },
+        ].map(({ icon: Icon, label }) => (
+          <button
+            key={label}
+            onClick={() => label === 'Más' ? setSidebarOpen(true) : setActiveTab(label)}
+            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors cursor-pointer min-w-0"
+            style={{ color: activeTab === label ? '#8B5CF6' : '#94A3B8' }}
+          >
+            <Icon size={20} strokeWidth={activeTab === label ? 2.2 : 1.8} />
+            <span className="text-[9px] font-medium truncate">{label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };

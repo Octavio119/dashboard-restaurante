@@ -13,7 +13,7 @@ export default function ConfirmDialog({ open, title, message, onConfirm, onCance
         className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-4"
       >
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${danger ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400'}`}>
+          <div className={`p-2.5 rounded-xl ${danger ? 'bg-red-500/10 text-red-400' : 'bg-[#8B5CF6]/10 text-[#8B5CF6]'}`}>
             <AlertTriangle size={20} />
           </div>
           <div>
@@ -27,7 +27,7 @@ export default function ConfirmDialog({ open, title, message, onConfirm, onCance
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-colors ${danger ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-amber-500 hover:bg-amber-400 text-black'}`}
+            className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-colors ${danger ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-[#8B5CF6] hover:brightness-110 text-white'}`}
           >
             Confirmar
           </button>

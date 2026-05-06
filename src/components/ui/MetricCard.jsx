@@ -1,25 +1,41 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-export default function MetricCard({ title, value, trend, icon: Icon }) {
+const hexToRgba = (hex, alpha) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
+
+export default function MetricCard({ title, value, trend, icon: Icon, iconColor }) {
   const positive = trend >= 0;
+  const ic = iconColor || '#8B5CF6';
+  const iconBg = ic.startsWith('#') ? hexToRgba(ic, 0.12) : 'rgba(139,92,246,.12)';
+
   return (
-    <div className="card card-hover p-5 flex flex-col gap-4 group cursor-default">
+    <div
+      className="dash-card metric-card cursor-default flex flex-col gap-4"
+      style={{
+        borderTop: `2px solid ${ic}`,
+        background: `linear-gradient(135deg, ${ic}0D 0%, var(--bg-card-2) 60%)`,
+      }}
+    >
       <div className="flex justify-between items-start">
-        <div className="p-2.5 rounded-lg bg-zinc-800 text-amber-500 border border-zinc-700 group-hover:border-zinc-600 transition-colors duration-200">
-          <Icon size={18} />
+        <div className="metric-icon" style={{ background: iconBg }}>
+          <Icon size={18} style={{ color: ic }} />
         </div>
-        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
-          positive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-        }`}>
-          {positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+        <span className={positive ? 'badge-positive' : 'badge-negative'}>
+          {positive
+            ? <TrendingUp size={10} className="inline mr-0.5" />
+            : <TrendingDown size={10} className="inline mr-0.5" />}
           {Math.abs(trend)}%
         </span>
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        <p className="text-zinc-500 text-[11px] font-semibold uppercase tracking-widest">{title}</p>
-        <h3 className="text-[1.75rem] font-black text-white leading-none tracking-tight">{value}</h3>
+      <div>
+        <p className="metric-label">{title}</p>
+        <h3 className="metric-value">{value}</h3>
       </div>
     </div>
   );

@@ -15,7 +15,6 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email.trim().toLowerCase(), password);
-      // AuthContext actualiza `user` → App.jsx renderiza dashboard automáticamente
     } catch (err) {
       const msg = err.message || '';
       if (msg.includes('401') || msg.includes('credenciales') || msg.includes('incorrectos') || msg.includes('expirada')) {
@@ -31,288 +30,216 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Columna izquierda ── */}
-      <div
-        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
-        style={{ background: 'radial-gradient(ellipse at 30% 20%, #0a2a5e 0%, #0D1B3E 60%, #081429 100%)' }}
-      >
-        {/* Glow decorativo */}
-        <div
-          className="absolute top-[-80px] left-[-80px] w-[400px] h-[400px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(0,102,204,0.18) 0%, transparent 70%)' }}
-        />
-        <div
-          className="absolute bottom-[-60px] right-[-60px] w-[300px] h-[300px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(29,158,117,0.12) 0%, transparent 70%)' }}
-        />
+    <div style={{ minHeight: '100vh', background: '#FAFAFA', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: "'Geist', 'Inter', sans-serif" }}>
+      <div style={{ width: '100%', maxWidth: '400px' }}>
 
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3">
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
-            style={{ background: 'linear-gradient(135deg, #0066CC, #004fa3)' }}
-          >
-            🍽
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '8px',
+            background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 11l19-9-9 19-2-8-8-2z" />
+            </svg>
           </div>
-          <div className="leading-tight">
-            <span className="text-white font-bold text-xl tracking-tight">Mastexo</span>
-            <span className="font-bold text-xl tracking-tight" style={{ color: '#5ba8f5' }}>POS</span>
-          </div>
+          <span style={{ fontSize: '16px', fontWeight: '600', color: '#0F172A', letterSpacing: '-0.01em' }}>
+            MastexoPOS
+          </span>
         </div>
 
-        {/* Headline */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center py-12">
-          <h1 className="text-5xl font-bold leading-tight mb-5" style={{ fontFamily: 'Instrument Serif, Georgia, serif', color: '#fff' }}>
-            Tu restaurante,{' '}
-            <em style={{ color: '#1D9E75', fontStyle: 'italic' }}>sin caos</em>
-            {' '}desde hoy
-          </h1>
-          <p className="text-base leading-relaxed mb-10" style={{ color: 'rgba(255,255,255,0.62)', maxWidth: '380px' }}>
-            Más de 200 restaurantes en Chile y LatAm ya gestionan pedidos, mesas y ventas con MastexoPOS.
-          </p>
-
-          {/* Proof cards */}
-          <div className="flex flex-col gap-3">
-            {[
-              { icon: '📈', text: '+35% más pedidos por turno', sub: 'Promedio en el primer mes' },
-              { icon: '⚡', text: 'Setup en menos de 10 minutos', sub: 'Sin técnicos ni instalación' },
-              { icon: '🔒', text: 'Datos seguros y respaldados', sub: 'Backups diarios automáticos' },
-            ].map(({ icon, text, sub }) => (
-              <div
-                key={text}
-                className="flex items-center gap-4 rounded-xl px-4 py-3"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <span className="text-xl shrink-0">{icon}</span>
-                <div>
-                  <p className="text-sm font-semibold text-white">{text}</p>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.50)' }}>{sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Pie izquierdo */}
-        <p className="relative z-10 text-xs" style={{ color: 'rgba(255,255,255,0.30)' }}>
-          © 2025 MastexoPOS · Todos los derechos reservados
+        {/* Encabezado */}
+        <h1 style={{ fontSize: '24px', fontWeight: '600', color: '#0F172A', margin: '0 0 6px', letterSpacing: '-0.02em', lineHeight: '1.3' }}>
+          Bienvenido de vuelta
+        </h1>
+        <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 28px', lineHeight: '1.5' }}>
+          Ingresa a tu panel de gestión
         </p>
-      </div>
 
-      {/* ── Columna derecha ── */}
-      <div className="flex-1 flex items-center justify-center bg-white px-6 py-12">
-        <div className="w-full" style={{ maxWidth: '420px' }}>
-          {/* Logo móvil */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-base"
-              style={{ background: 'linear-gradient(135deg, #0066CC, #004fa3)' }}
-            >
-              🍽
-            </div>
-            <span className="font-bold text-lg">
-              <span style={{ color: '#0D1B3E' }}>Mastexo</span>
-              <span style={{ color: '#0066CC' }}>POS</span>
-            </span>
-          </div>
+        <form onSubmit={handleSubmit} noValidate>
 
-          {/* Eyebrow */}
-          <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#0066CC' }}>
-            Panel de control
-          </p>
-
-          {/* Título */}
-          <h2
-            className="text-3xl font-bold mb-2"
-            style={{ fontFamily: 'Instrument Serif, Georgia, serif', color: '#0D1B3E' }}
-          >
-            Bienvenido de vuelta
-          </h2>
-          <p className="text-sm mb-8" style={{ color: '#6b7280' }}>
-            Ingresa tus datos para acceder a tu restaurante
-          </p>
-
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1.5" style={{ color: '#374151' }}>
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base pointer-events-none select-none">✉</span>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onInput={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  placeholder="tu@correo.com"
-                  required
-                  className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition"
-                  style={{
-                    border: '1.5px solid #e5e7eb',
-                    background: '#f9fafb',
-                    color: '#111827',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = '1.5px solid #0066CC';
-                    e.target.style.background = '#fff';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(0,102,204,0.10)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.border = '1.5px solid #e5e7eb';
-                    e.target.style.background = '#f9fafb';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Contraseña */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="text-sm font-medium" style={{ color: '#374151' }}>
-                  Contraseña
-                </label>
-                <a
-                  href="/forgot-password"
-                  className="text-xs font-medium transition"
-                  style={{ color: '#0066CC' }}
-                  onMouseOver={(e) => (e.target.style.opacity = '0.75')}
-                  onMouseOut={(e) => (e.target.style.opacity = '1')}
-                >
-                  ¿Olvidaste?
-                </a>
-              </div>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base pointer-events-none select-none">🔑</span>
-                <input
-                  id="password"
-                  type={showPwd ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onInput={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  placeholder="Tu contraseña"
-                  required
-                  className="w-full pl-10 pr-12 py-3 rounded-xl text-sm outline-none transition"
-                  style={{
-                    border: '1.5px solid #e5e7eb',
-                    background: '#f9fafb',
-                    color: '#111827',
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.border = '1.5px solid #0066CC';
-                    e.target.style.background = '#fff';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(0,102,204,0.10)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.border = '1.5px solid #e5e7eb';
-                    e.target.style.background = '#f9fafb';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((v) => !v)}
-                  tabIndex={-1}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 transition"
-                  style={{ color: '#9ca3af' }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = '#374151')}
-                  onMouseOut={(e) => (e.currentTarget.style.color = '#9ca3af')}
-                  aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                  {showPwd ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div
-                className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm"
-                style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626' }}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                {error}
-              </div>
-            )}
-
-            {/* Botón */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 transition"
+          {/* Email */}
+          <div style={{ marginBottom: '16px' }}>
+            <label htmlFor="email" style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+              Correo electrónico
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="tu@correo.com"
+              required
               style={{
-                background: loading ? '#4d94e0' : '#0066CC',
-                boxShadow: '0 4px 14px rgba(0,102,204,0.30)',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transform: 'translateY(0)',
-                transition: 'transform 0.15s, box-shadow 0.15s, background 0.15s',
+                width: '100%', height: '42px', padding: '0 12px',
+                border: '1px solid #E2E8F0', borderRadius: '8px',
+                fontSize: '14px', color: '#0F172A', background: '#fff',
+                outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s',
               }}
-              onMouseOver={(e) => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,102,204,0.38)'; } }}
-              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,102,204,0.30)'; }}
-            >
-              {loading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Ingresando...
-                </>
-              ) : (
-                'Ingresar al panel →'
-              )}
-            </button>
-          </form>
-
-          {/* Trust row */}
-          <div className="flex items-center justify-center gap-4 mt-6">
-            {[
-              { icon: '🔒', text: 'SSL cifrado' },
-              { icon: '⚡', text: '99.9% uptime' },
-              { icon: '🇨🇱', text: 'Servidores LatAm' },
-            ].map(({ icon, text }) => (
-              <span key={text} className="flex items-center gap-1 text-xs" style={{ color: '#9ca3af' }}>
-                <span>{icon}</span>
-                <span>{text}</span>
-              </span>
-            ))}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#2563EB';
+                e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#E2E8F0';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
           </div>
 
-          {/* Footer */}
-          <p className="text-center text-sm mt-6" style={{ color: '#6b7280' }}>
-            ¿No tienes cuenta?{' '}
-            <a
-              href="/register"
-              className="font-semibold transition"
-              style={{ color: '#0066CC' }}
-              onMouseOver={(e) => (e.target.style.opacity = '0.75')}
-              onMouseOut={(e) => (e.target.style.opacity = '1')}
-            >
-              Crear cuenta gratis
-            </a>
-          </p>
+          {/* Contraseña */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label htmlFor="password" style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
+                Contraseña
+              </label>
+              <a
+                href="/forgot-password"
+                style={{ fontSize: '12px', color: '#2563EB', textDecoration: 'none', fontWeight: '500' }}
+                onMouseOver={(e) => (e.target.style.opacity = '0.7')}
+                onMouseOut={(e) => (e.target.style.opacity = '1')}
+              >
+                ¿Olvidaste?
+              </a>
+            </div>
+            <div style={{ position: 'relative' }}>
+              <input
+                id="password"
+                type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="Tu contraseña"
+                required
+                style={{
+                  width: '100%', height: '42px', padding: '0 40px 0 12px',
+                  border: '1px solid #E2E8F0', borderRadius: '8px',
+                  fontSize: '14px', color: '#0F172A', background: '#fff',
+                  outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#2563EB';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#E2E8F0';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{
+                  position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0', color: '#94A3B8',
+                  display: 'flex', alignItems: 'center',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.color = '#475569')}
+                onMouseOut={(e) => (e.currentTarget.style.color = '#94A3B8')}
+              >
+                {showPwd ? (
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Error inline */}
+          {error && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '10px 12px', borderRadius: '8px', marginBottom: '16px',
+              background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '13px',
+            }}>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {error}
+            </div>
+          )}
+
+          {/* Botón submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%', height: '42px', borderRadius: '8px',
+              background: loading ? '#334155' : '#0F172A',
+              color: '#fff', fontSize: '14px', fontWeight: '500',
+              border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              transition: 'background 0.15s, transform 0.15s',
+              fontFamily: 'inherit',
+            }}
+            onMouseOver={(e) => { if (!loading) { e.currentTarget.style.background = '#1E293B'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+            onMouseOut={(e) => { e.currentTarget.style.background = loading ? '#334155' : '#0F172A'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
+            {loading ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" />
+                  <path d="M12 2a10 10 0 0110 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                Ingresando...
+              </>
+            ) : (
+              'Ingresar'
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
+          <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+          <span style={{ fontSize: '12px', color: '#94A3B8' }}>o</span>
+          <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
         </div>
+
+        {/* Registro */}
+        <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748B', margin: '0 0 24px' }}>
+          ¿No tienes cuenta?{' '}
+          <a
+            href="/register"
+            style={{ color: '#2563EB', fontWeight: '500', textDecoration: 'none' }}
+            onMouseOver={(e) => (e.target.style.opacity = '0.7')}
+            onMouseOut={(e) => (e.target.style.opacity = '1')}
+          >
+            Crear cuenta gratis
+          </a>
+        </p>
+
+        {/* Trust row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+          {[
+            { icon: '🔒', text: 'SSL' },
+            { icon: '⚡', text: '99.9%' },
+            { icon: '🌎', text: 'LatAm' },
+          ].map(({ icon, text }) => (
+            <span key={text} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#94A3B8' }}>
+              <span>{icon}</span>
+              <span>{text}</span>
+            </span>
+          ))}
+        </div>
+
       </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

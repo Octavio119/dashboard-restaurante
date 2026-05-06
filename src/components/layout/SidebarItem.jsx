@@ -5,15 +5,38 @@ export default function SidebarItem({ icon: Icon, label, active, onClick }) {
     <div
       onClick={onClick}
       data-testid={`nav-${label.toLowerCase().replace(/\s+/g, '-')}`}
-      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl cursor-pointer transition-all duration-150 select-none ${
-        active
-          ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-          : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
-      }`}
+      className="flex items-center gap-[10px] rounded-xl cursor-pointer select-none"
+      style={{
+        padding: active ? '10px 16px 10px 14px' : '10px 16px',
+        background: active
+          ? 'linear-gradient(135deg, rgba(139,92,246,.16), rgba(139,92,246,.06))'
+          : 'transparent',
+        borderLeft: active ? '2px solid var(--purple)' : '2px solid transparent',
+        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+        transition: 'all 180ms ease',
+      }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(139,92,246,.07)'; }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
     >
-      <Icon size={17} strokeWidth={active ? 2.2 : 1.8} />
-      <span className={`text-sm ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
-      {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />}
+      <Icon
+        size={16}
+        strokeWidth={active ? 2.2 : 1.8}
+        style={{
+          color: active ? 'var(--purple)' : 'var(--text-secondary)',
+          flexShrink: 0,
+          filter: active ? 'drop-shadow(0 0 5px rgba(139,92,246,0.55))' : undefined,
+          transition: 'filter 180ms ease, color 180ms ease',
+        }}
+      />
+      <span style={{ fontSize: '14px', fontWeight: active ? 600 : 500, transition: 'font-weight 180ms' }}>
+        {label}
+      </span>
+      {active && (
+        <div
+          className="ml-auto w-1.5 h-1.5 rounded-full shrink-0"
+          style={{ background: 'var(--purple)', boxShadow: '0 0 7px rgba(139,92,246,0.85)' }}
+        />
+      )}
     </div>
   );
 }

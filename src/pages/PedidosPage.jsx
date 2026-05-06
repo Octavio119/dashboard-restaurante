@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  List, LayoutGrid, Plus, TableProperties, RefreshCw, Utensils, 
-  Users, ChefHat, Check, Receipt, ShoppingBag, Printer, ChevronRight, 
-  MoreVertical, Trash2, X, ShoppingCart
+import {
+  List, LayoutGrid, Plus, TableProperties, RefreshCw, Utensils,
+  Users, ChefHat, Check, Receipt, ShoppingBag, Printer, ChevronRight,
+  MoreVertical, Trash2, X, ShoppingCart, Clock, DollarSign
 } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
-import { api } from '../api';
 
 export default function PedidosPage({
   pedidoMesaView, setPedidoMesaView,
@@ -20,11 +19,13 @@ export default function PedidosPage({
   pedidoCatFilter, setPedidoCatFilter,
   pedidoModal, setPedidoModal,
   openPedidoDetalle, printPedido, confirmarConversionVenta, updatePedidoEstado, deletePedido,
-  productos, loadProductos,
+  productos, loadProductos, productosLoading,
   clienteSearchResults, setClienteSearchResults, isSearchingClientes,
   pedidoLoading, setPedidoLoading,
   setPedidos, api
 }) {
+
+  const [pedidoError, setPedidoError] = React.useState(null);
 
   const cats = ['Todos', ...new Set(productos.filter(p => p.activo).map(p => p.categoria))];
   const prodsFiltrados = productos.filter(p => p.activo &&
@@ -49,8 +50,9 @@ export default function PedidosPage({
   };
 
   const handleCreatePedido = async () => {
-    setPedidoLoading(true);
+    setPedidoError(null);
     try {
+      setPedidoLoading(true);
       const nuevo = await api.createPedido({
         cliente_nombre: pedidoForm.cliente_nombre,
         mesa:  pedidoForm.mesa,
@@ -62,7 +64,7 @@ export default function PedidosPage({
       setPedidoForm({ cliente_nombre:'', mesa:'' });
       setPedidoSearch('');
       setPedidoCatFilter('Todos');
-    } catch(e) { alert(e.message); }
+    } catch(e) { setPedidoError(e.message); }
     finally { setPedidoLoading(false); }
   };
 
@@ -71,60 +73,103 @@ export default function PedidosPage({
       {/* Header */}
       <div className="flex justify-between items-end flex-wrap gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Gestión de <span className="text-amber-500">Pedidos</span></h2>
-          <p className="text-zinc-500 text-sm mt-1">Control de comandas en tiempo real</p>
+          <h2 className="text-3xl font-black tracking-tight">Gestión de <span style={{ color: 'var(--primary)' }}>Pedidos</span></h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Control de comandas en tiempo real</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-            <button onClick={() => setPedidoMesaView(false)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors ${!pedidoMesaView ? 'bg-amber-500 text-black' : 'text-zinc-500 hover:text-white'}`}>
-              <List size={12}/> Lista
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="tab-group">
+            <button
+              onClick={() => setPedidoMesaView(false)}
+              className={`tab-item flex items-center gap-1.5 ${!pedidoMesaView ? 'active' : ''}`}
+            >
+              <List size={12} /> Lista
             </button>
-            <button onClick={() => { setPedidoMesaView(true); loadMesasPedidos(); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors ${pedidoMesaView ? 'bg-amber-500 text-black' : 'text-zinc-500 hover:text-white'}`}>
-              <LayoutGrid size={12}/> Por Mesa
+            <button
+              onClick={() => { setPedidoMesaView(true); loadMesasPedidos(); }}
+              className={`tab-item flex items-center gap-1.5 ${pedidoMesaView ? 'active' : ''}`}
+            >
+              <LayoutGrid size={12} /> Por Mesa
             </button>
           </div>
           {!pedidoMesaView && (
             <>
-              <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-                {['dia','semana','mes'].map(p => (
-                  <button key={p} onClick={() => setSalesFilter(p)}
-                    className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase transition-colors ${salesFilter===p ? 'bg-amber-500 text-black' : 'text-zinc-500 hover:text-white'}`}>
-                    {p==='dia'?'Hoy':p==='semana'?'Semana':'Mes'}
+              <div className="tab-group">
+                {['dia', 'semana', 'mes'].map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setSalesFilter(p)}
+                    className={`tab-item ${salesFilter === p ? 'active' : ''}`}
+                  >
+                    {p === 'dia' ? 'HOY' : p === 'semana' ? 'SEMANA' : 'MES'}
                   </button>
                 ))}
               </div>
-              <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="input text-sm" />
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={e => setDateFilter(e.target.value)}
+                className="input text-sm"
+              />
             </>
           )}
           <button
-            onClick={() => { setPedidoForm({ cliente_nombre:'', mesa:'' }); setPedidoItems([]); setPedidoSearch(''); setPedidoCatFilter('Todos'); setPedidoModal(true); }}
+            onClick={() => { loadProductos(); setPedidoForm({ cliente_nombre: '', mesa: '' }); setPedidoItems([]); setPedidoSearch(''); setPedidoCatFilter('Todos'); setPedidoError(null); setPedidoModal(true); }}
             className="btn-primary flex items-center gap-2"
           >
-            <Plus size={15}/> Nuevo pedido
+            <Plus size={15} /> Nuevo pedido
           </button>
         </div>
       </div>
 
       {/* Cards resumen */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card p-5">
-          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-1">Pedidos {salesFilter==='dia'?'hoy':salesFilter==='semana'?'semana':'mes'}</p>
-          <h3 className="text-2xl font-black text-white">{filteredOrders.length}</h3>
-        </div>
-        <div className="card p-5">
-          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-1">Pendientes</p>
-          <h3 className="text-2xl font-black text-yellow-400">{filteredOrders.filter(o => o.estado === 'pendiente').length}</h3>
-        </div>
-        <div className="card p-5">
-          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-1">En preparación</p>
-          <h3 className="text-2xl font-black text-blue-400">{filteredOrders.filter(o => o.estado === 'en preparación').length}</h3>
-        </div>
-        <div className="card p-5">
-          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-1">Ventas {salesFilter==='dia'?'hoy':salesFilter==='semana'?'semana':'mes'}</p>
-          <h3 className="text-2xl font-black text-amber-400">${ventasFiltro.toLocaleString('es-CL', { minimumFractionDigits:2 })}</h3>
-        </div>
+        {[
+          {
+            label: `Pedidos ${salesFilter === 'dia' ? 'hoy' : salesFilter === 'semana' ? 'semana' : 'mes'}`,
+            value: filteredOrders.length,
+            Icon: ShoppingBag,
+            color: '#8B5CF6',
+            dimColor: 'var(--purple-dim)',
+          },
+          {
+            label: 'Pendientes',
+            value: filteredOrders.filter(o => o.estado === 'pendiente').length,
+            Icon: Clock,
+            color: '#F59E0B',
+            dimColor: 'var(--yellow-dim)',
+          },
+          {
+            label: 'En preparación',
+            value: filteredOrders.filter(o => o.estado === 'en preparación').length,
+            Icon: ChefHat,
+            color: '#3B82F6',
+            dimColor: 'var(--blue-dim)',
+          },
+          {
+            label: `Ventas ${salesFilter === 'dia' ? 'hoy' : salesFilter === 'semana' ? 'semana' : 'mes'}`,
+            value: `$${ventasFiltro.toLocaleString('es-CL', { minimumFractionDigits: 2 })}`,
+            Icon: DollarSign,
+            color: '#10B981',
+            dimColor: 'var(--teal-dim)',
+          },
+        ].map((s, i) => (
+          <div
+            key={i}
+            className="dash-card metric-card flex flex-col gap-4 cursor-default"
+            style={{
+              borderTop: `2px solid ${s.color}`,
+              background: `linear-gradient(135deg, ${s.color}0D 0%, var(--bg-card-2) 60%)`,
+            }}
+          >
+            <div className="metric-icon" style={{ background: s.dimColor }}>
+              <s.Icon size={17} style={{ color: s.color }} />
+            </div>
+            <div>
+              <p className="metric-label">{s.label}</p>
+              <h3 className="metric-value" style={{ color: s.color }}>{s.value}</h3>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ── Vista Por Mesa ── */}
@@ -133,7 +178,7 @@ export default function PedidosPage({
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-4">
               <h3 className="font-bold text-zinc-300 flex items-center gap-2">
-                <TableProperties size={16} className="text-amber-500"/> Plano de mesas
+                <TableProperties size={16} style={{ color: 'var(--purple)' }}/> Plano de mesas
               </h3>
               <div className="flex items-center gap-2 text-xs text-zinc-500">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block"/>Pendiente</span>
@@ -295,59 +340,80 @@ export default function PedidosPage({
             </thead>
             <tbody>
               {filteredOrders.map(order => (
-                <tr key={order.id} data-testid="pedido-item" className="border-b border-zinc-800/50 hover:bg-white/[0.02] transition-colors">
-                  <td className="px-6 py-4 font-mono text-amber-400 font-bold text-xs">{order.numero}</td>
-                  <td className="px-6 py-4 font-semibold text-white">{order.cliente_nombre}</td>
-                  <td className="px-6 py-4 text-zinc-300 text-xs">{order.item}</td>
+                <tr
+                  key={order.id}
+                  data-testid="pedido-item"
+                  onClick={() => openPedidoDetalle(order)}
+                  className="border-b border-zinc-800/40 transition-all cursor-pointer group/row"
+                  style={{ borderLeft: '2px solid transparent' }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(139,92,246,.05)';
+                    e.currentTarget.style.borderLeft = '2px solid rgba(139,92,246,.5)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderLeft = '2px solid transparent';
+                  }}
+                >
+                  <td className="px-6 py-4">
+                    <span className="font-mono text-amber-400 font-black text-xs group-hover/row:text-amber-300 transition-colors">{order.numero}</span>
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-white text-sm">{order.cliente_nombre}</td>
+                  <td className="px-6 py-4 text-zinc-500 text-xs max-w-[180px] truncate">{order.item}</td>
                   <td className="px-6 py-4"><StatusBadge status={order.estado}/></td>
-                  <td className="px-6 py-4 text-right font-black text-white">${Number(order.total).toFixed(2)}</td>
-                  <td className="px-4 py-4">
+                  <td className="px-6 py-4 text-right font-black text-white tabular-nums">${Number(order.total).toLocaleString('es-CL', { minimumFractionDigits:0 })}</td>
+                  <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => openPedidoDetalle(order)}
-                        className="text-zinc-500 hover:text-amber-400 transition-colors" title="Gestionar productos">
-                        <ChefHat size={14}/>
+                      <button
+                        onClick={e => { e.stopPropagation(); openPedidoDetalle(order); }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-400/10 transition-all cursor-pointer" title="Gestionar productos">
+                        <ChefHat size={13}/>
                       </button>
                       {order.estado === 'confirmado' ? (
-                        <button onClick={() => printPedido(order)}
-                          className="text-zinc-500 hover:text-amber-400 transition-colors" title="Imprimir ticket">
-                          <Printer size={14}/>
+                        <button onClick={e => { e.stopPropagation(); printPedido(order); }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-400/10 transition-all cursor-pointer" title="Imprimir ticket">
+                          <Printer size={13}/>
                         </button>
                       ) : (
-                        <button disabled className="text-zinc-700 cursor-not-allowed" title="Solo disponible cuando confirmado">
-                          <Printer size={14}/>
+                        <button disabled className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-800 cursor-not-allowed" title="Solo disponible cuando confirmado">
+                          <Printer size={13}/>
                         </button>
                       )}
                       {order.estado === 'entregado' && (
-                        <button onClick={() => confirmarConversionVenta(order)}
-                          className="p-1 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-black transition-colors" title="Registrar venta">
-                          <Receipt size={14}/>
+                        <button onClick={e => { e.stopPropagation(); confirmarConversionVenta(order); }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-black transition-all cursor-pointer" title="Registrar venta">
+                          <Receipt size={13}/>
                         </button>
                       )}
                       {order.estado !== 'entregado' && order.estado !== 'confirmado' && (
                         <button
-                          onClick={() => {
+                          onClick={e => {
+                            e.stopPropagation();
                             const flow = ['pendiente','en preparación','entregado'];
                             const ni = flow.indexOf(order.estado)+1;
                             if (ni < flow.length) updatePedidoEstado(order.id, flow[ni]);
                           }}
-                          className="text-zinc-500 hover:text-amber-400 transition-colors" title="Avanzar estado">
-                          <ChevronRight size={14}/>
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-violet-400 hover:bg-violet-400/10 transition-all cursor-pointer" title="Avanzar estado">
+                          <ChevronRight size={13}/>
                         </button>
                       )}
-                      <div className="relative group/menu">
-                        <button className="text-zinc-500 hover:text-white transition-colors p-1">
-                          <MoreVertical size={14}/>
+                      <div className="relative group/menu" onClick={e => e.stopPropagation()}>
+                        <button className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-white hover:bg-white/10 transition-all cursor-pointer">
+                          <MoreVertical size={13}/>
                         </button>
-                        <div className="absolute bottom-full right-0 mb-1 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden">
+                        <div className="absolute bottom-full right-0 mb-1 w-44 rounded-xl shadow-2xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden"
+                          style={{ background: 'rgba(15,15,20,.97)', border: '1px solid rgba(255,255,255,.08)', backdropFilter: 'blur(16px)' }}>
                           {['pendiente','en preparación','entregado'].map(s => (
                             <button key={s}
                               onClick={() => updatePedidoEstado(order.id, s)}
-                              className="w-full text-left px-3 py-2.5 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors border-b border-zinc-800 last:border-0 capitalize">
+                              className="w-full text-left px-3 py-2.5 text-xs text-zinc-400 hover:bg-white/5 hover:text-white transition-colors border-b last:border-0 capitalize"
+                              style={{ borderColor: 'rgba(255,255,255,.05)' }}>
                               → {s}
                             </button>
                           ))}
                           <button onClick={() => confirmarConversionVenta(order)}
-                            className="w-full text-left px-3 py-2.5 text-xs text-green-400 hover:bg-green-500/10 transition-colors border-b border-zinc-800">
+                            className="w-full text-left px-3 py-2.5 text-xs text-green-400 hover:bg-green-500/10 transition-colors border-b"
+                            style={{ borderColor: 'rgba(255,255,255,.05)' }}>
                             → Registrar venta
                           </button>
                           <button onClick={() => deletePedido(order)}
@@ -374,12 +440,12 @@ export default function PedidosPage({
       {/* Modal nuevo pedido */}
       {pedidoModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setPedidoModal(false)} />
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => { setPedidoModal(false); setPedidoError(null); }} />
           <motion.div initial={{ opacity:0, scale:0.97 }} animate={{ opacity:1, scale:1 }}
             className="relative bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
               <h3 className="font-black text-white text-lg">Nuevo Pedido</h3>
-              <button onClick={() => setPedidoModal(false)} className="text-zinc-500 hover:text-white transition-colors"><X size={18}/></button>
+              <button onClick={() => { setPedidoModal(false); setPedidoError(null); }} className="text-zinc-500 hover:text-white transition-colors"><X size={18}/></button>
             </div>
 
             <div className="flex gap-3 px-6 py-3 border-b border-zinc-800">
@@ -403,7 +469,7 @@ export default function PedidosPage({
                               setPedidoForm(f => ({ ...f, cliente_nombre: c.nombre }));
                               setClienteSearchResults([]);
                             }}
-                            className="w-full text-left px-4 py-2.5 hover:bg-amber-500/10 transition-colors flex items-center justify-between border-b border-zinc-800/50 last:border-0"
+                            className="w-full text-left px-4 py-2.5 hover:bg-[#8B5CF6]/10 transition-colors flex items-center justify-between border-b border-zinc-800/50 last:border-0"
                           >
                             <div className="flex flex-col">
                               <span className="text-sm font-bold text-white">{c.nombre}</span>
@@ -444,21 +510,33 @@ export default function PedidosPage({
                 <div className="flex gap-1 px-4 py-2 overflow-x-auto border-b border-zinc-800 scrollbar-none">
                   {cats.map(c => (
                     <button key={c} onClick={() => setPedidoCatFilter(c)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${pedidoCatFilter === c ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
+                      className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${pedidoCatFilter === c ? 'bg-[#8B5CF6] text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
                       {c}
                     </button>
                   ))}
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 sm:grid-cols-3 gap-2 content-start">
-                  {prodsFiltrados.length === 0 ? (
-                    <p className="col-span-3 text-center text-zinc-600 py-8 text-sm">Sin productos</p>
+                  {productosLoading ? (
+                    <div className="col-span-3 flex flex-col items-center justify-center py-10 gap-3">
+                      <div className="w-7 h-7 rounded-full border-2 border-[#8B5CF6]/30 border-t-[#8B5CF6] animate-spin" />
+                      <p className="text-zinc-600 text-xs">Cargando catálogo...</p>
+                    </div>
+                  ) : prodsFiltrados.length === 0 ? (
+                    <div className="col-span-3 flex flex-col items-center justify-center py-10 gap-2 text-center">
+                      <ShoppingCart size={28} className="text-zinc-700 mb-1" />
+                      <p className="text-zinc-500 text-sm font-semibold">Sin productos</p>
+                      <p className="text-zinc-600 text-xs">Agrega productos desde <span className="text-[#8B5CF6] font-bold">Configuración → Menú</span></p>
+                      <button onClick={() => loadProductos()} className="mt-2 text-xs text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500 px-3 py-1.5 rounded-lg transition-colors">
+                        Reintentar
+                      </button>
+                    </div>
                   ) : prodsFiltrados.map(prod => {
                     const enCarrito = pedidoItems.find(i => i.producto_id === prod.id);
                     return (
                       <button key={prod.id} onClick={() => addItem(prod)}
-                        className={`relative flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all ${enCarrito ? 'bg-amber-500/10 border-amber-500/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-600'}`}>
+                        className={`relative flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all ${enCarrito ? 'bg-[#8B5CF6]/10 border-[#8B5CF6]/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-600'}`}>
                         {enCarrito && (
-                          <span className="absolute top-2 right-2 bg-amber-500 text-black text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center">
+                          <span className="absolute top-2 right-2 bg-[#8B5CF6] text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center">
                             {enCarrito.cantidad}
                           </span>
                         )}
@@ -506,7 +584,12 @@ export default function PedidosPage({
                     <span className="text-zinc-400 text-sm font-bold">Total</span>
                     <span className="text-amber-400 font-black text-xl">${Number(totalPedido).toLocaleString('es-CL', { minimumFractionDigits:2 })}</span>
                   </div>
-                  <button onClick={() => setPedidoModal(false)}
+                  {pedidoError && (
+                    <div style={{ background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.2)', borderRadius:'8px', padding:'10px 14px', fontSize:'13px', color:'#EF4444', display:'flex', gap:'8px', alignItems:'center' }}>
+                      <span>⚠</span> {pedidoError}
+                    </div>
+                  )}
+                  <button onClick={() => { setPedidoModal(false); setPedidoError(null); }}
                     className="py-2 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white transition-colors text-sm font-semibold">
                     Cancelar
                   </button>

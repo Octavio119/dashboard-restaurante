@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import PayPalButton from '../components/PayPalButton';
 
 // ─── Google Font ──────────────────────────────────────────────────────────────
 function useFont() {
@@ -236,6 +237,9 @@ export default function Register() {
   const [errors,      setErrors]      = useState({});
   const [submitErr,   setSubmitErr]   = useState('');
   const [loading,     setLoading]     = useState(false);
+  // Flujo de pago: 'form' → usuario llena el form | 'payment' → muestra PayPal SDK
+  const [payStep,     setPayStep]     = useState('form');
+  const [payError,    setPayError]    = useState('');
 
   const clearFieldErr = (k) => setErrors((prev) => ({ ...prev, [k]: '' }));
 
@@ -251,6 +255,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitErr('');
+    setPayError('');
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
@@ -268,8 +273,8 @@ export default function Register() {
       localStorage.setItem('user',          JSON.stringify(data.user));
 
       if (planKey !== 'free') {
-        const checkout = await api.createCheckout(planKey);
-        window.location.href = checkout.url;
+        // Cuenta creada — mostrar PayPal SDK en lugar de redirigir
+        setPayStep('payment');
         return;
       }
 
@@ -287,6 +292,14 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  function handlePaySuccess({ plan: activatedPlan }) {
+    window.location.href = `/dashboard?upgraded=true&plan=${activatedPlan}`;
+  }
+
+  function handlePayError(msg) {
+    setPayError(msg || 'Error en el proceso de pago.');
+  }
 
   const steps = planKey === 'free'
     ? [{ n: 1, label: 'Cuenta' }, { n: 2, label: 'Dashboard' }]
@@ -520,37 +533,100 @@ export default function Register() {
 
           {/* Steps indicator */}
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '28px' }}>
-            {steps.map((s, i) => (
-              <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: s.n === 1 ? fColor : '#f1f5f9',
-                    color: s.n === 1 ? '#fff' : '#94a3b8',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', fontWeight: 700, flexShrink: 0,
-                  }}>
-                    {s.n}
+            {steps.map((s, i) => {
+              const isActive = payStep === 'payment' ? s.n === 2 : s.n === 1;
+              const isDone   = payStep === 'payment' && s.n === 1;
+              return (
+                <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{
+                      width: '22px', height: '22px', borderRadius: '50%',
+                      background: isActive ? fColor : isDone ? '#22c55e' : '#f1f5f9',
+                      color: (isActive || isDone) ? '#fff' : '#94a3b8',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '11px', fontWeight: 700, flexShrink: 0,
+                    }}>
+                      {isDone ? '✓' : s.n}
+                    </div>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? fColor : isDone ? '#16a34a' : '#94a3b8',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {s.label}
+                    </span>
                   </div>
-                  <span style={{
-                    fontSize: '12px',
-                    fontWeight: s.n === 1 ? 600 : 400,
-                    color: s.n === 1 ? fColor : '#94a3b8',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {s.label}
-                  </span>
+                  {i < steps.length - 1 && (
+                    <div style={{ flex: 1, height: '1px', background: '#e2e8f0', margin: '0 8px' }} />
+                  )}
                 </div>
-                {i < steps.length - 1 && (
-                  <div style={{ flex: 1, height: '1px', background: '#e2e8f0', margin: '0 8px' }} />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Social proof */}
+          {/* ── Pantalla de pago PayPal (step 2) ── */}
+          {payStep === 'payment' && (
+            <div>
+              {/* Resumen de lo que están pagando */}
+              <div style={{
+                background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                borderRadius: '12px', padding: '16px 20px', marginBottom: '20px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div>
+                    <p style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a', margin: 0 }}>
+                      Plan {planKey === 'pro' ? 'Pro' : 'Business'}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
+                      Facturación mensual · sin contrato
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontWeight: 800, fontSize: '22px', color: '#0f172a', margin: 0 }}>
+                      {planKey === 'pro' ? '$29' : '$79'}
+                    </p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>USD / mes</p>
+                  </div>
+                </div>
+                <div style={{ height: '1px', background: '#e2e8f0', margin: '12px 0' }} />
+                <p style={{ fontSize: '12px', color: '#475569', margin: 0 }}>
+                  ✓ Cuenta creada para <strong>{email}</strong>
+                </p>
+              </div>
+
+              {/* Error de pago */}
+              {payError && (
+                <div style={{
+                  display: 'flex', alignItems: 'flex-start', gap: '8px',
+                  background: '#fff5f5', border: '1.5px solid #fca5a5',
+                  borderRadius: '10px', padding: '12px 14px', marginBottom: '16px',
+                  color: '#dc2626', fontSize: '13px',
+                }}>
+                  <WarnIcon />
+                  <span>{payError}</span>
+                </div>
+              )}
+
+              {/* Botón PayPal SDK real */}
+              <PayPalButton
+                plan={planKey}
+                onSuccess={handlePaySuccess}
+                onError={handlePayError}
+              />
+
+              <p style={{
+                textAlign: 'center', fontSize: '11.5px', color: '#94a3b8',
+                marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+              }}>
+                <LockIcon /> Pago seguro via PayPal · Tu información nunca toca nuestros servidores
+              </p>
+            </div>
+          )}
+
+          {/* Social proof — solo en step 1 */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
+            display: payStep === 'payment' ? 'none' : 'flex', alignItems: 'center', gap: '10px',
             background: '#fff', border: '1px solid #e2e8f0',
             borderRadius: '10px', padding: '10px 14px', marginBottom: '28px',
           }}>
@@ -579,21 +655,25 @@ export default function Register() {
             </p>
           </div>
 
-          {/* Encabezado */}
-          <p style={{ fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.08em', color: fColor, textTransform: 'uppercase', marginBottom: '6px' }}>
+          {/* Encabezado — solo en step 1 */}
+          {payStep !== 'payment' && <p style={{ fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.08em', color: fColor, textTransform: 'uppercase', marginBottom: '6px' }}>
             Crear cuenta
-          </p>
-          <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: '26px', fontWeight: 700, color: '#0D1B3E', marginBottom: '4px', lineHeight: 1.2 }}>
-            {planKey === 'free'     ? 'Empieza gratis hoy'     : ''}
-            {planKey === 'pro'      ? 'Activa el Plan Pro'      : ''}
-            {planKey === 'business' ? 'Activa el Plan Business' : ''}
-          </h2>
-          <p style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '24px' }}>
-            {planKey === 'free' ? 'Sin tarjeta de crédito, sin compromisos.' : 'Completa el registro y configura el pago.'}
-          </p>
+          </p>}
+          {payStep !== 'payment' && (
+            <>
+              <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: '26px', fontWeight: 700, color: '#0D1B3E', marginBottom: '4px', lineHeight: 1.2 }}>
+                {planKey === 'free'     ? 'Empieza gratis hoy'     : ''}
+                {planKey === 'pro'      ? 'Activa el Plan Pro'      : ''}
+                {planKey === 'business' ? 'Activa el Plan Business' : ''}
+              </h2>
+              <p style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '24px' }}>
+                {planKey === 'free' ? 'Sin tarjeta de crédito, sin compromisos.' : 'Completa el registro y configura el pago.'}
+              </p>
+            </>
+          )}
 
-          {/* ── Formulario ── */}
-          <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* ── Formulario (solo en step 1) ── */}
+          <form onSubmit={handleSubmit} noValidate style={{ display: payStep === 'payment' ? 'none' : 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* 1. Nombre del restaurante */}
             <Field

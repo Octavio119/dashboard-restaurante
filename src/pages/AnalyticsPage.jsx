@@ -17,8 +17,8 @@ export default function AnalyticsPage({
     <motion.div key="analytics" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 sm:gap-8 max-w-[1400px] w-full mx-auto">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Centro de <span className="text-amber-500">Analytics</span></h2>
-          <p className="text-zinc-500 text-sm mt-1">Métricas y tendencias operativas</p>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Centro de <span style={{ color: 'var(--primary)' }}>Analytics</span></h2>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Métricas y tendencias operativas</p>
         </div>
         <button onClick={loadAnalytics} className="btn-ghost flex items-center gap-2 text-xs w-fit">
           <Activity size={14}/> Actualizar
@@ -27,69 +27,88 @@ export default function AnalyticsPage({
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-5 flex flex-col gap-3">
+
+        {/* Ventas hoy */}
+        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
+          style={{ borderTop: '2px solid #8B5CF6', background: 'linear-gradient(135deg, #8B5CF60D 0%, var(--bg-card-2) 60%)' }}>
           <div className="flex justify-between items-start">
-            <div className="p-2.5 rounded-lg bg-zinc-800 text-amber-500 border border-zinc-700"><DollarSign size={18}/></div>
+            <div className="metric-icon" style={{ background: 'var(--purple-dim)' }}>
+              <DollarSign size={17} style={{ color: '#8B5CF6' }} />
+            </div>
             {analytics?.comparacion_pct != null && (
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${analytics.comparacion_pct >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                <TrendingUp size={11} className={analytics.comparacion_pct < 0 ? 'rotate-180' : ''}/>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${analytics.comparacion_pct >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                <TrendingUp size={10} className={analytics.comparacion_pct < 0 ? 'rotate-180' : ''} />
                 {Math.abs(analytics.comparacion_pct)}%
               </span>
             )}
           </div>
           <div>
-            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Ventas hoy</p>
-            <h3 className="text-2xl font-black text-white mt-0.5">
-              ${(analytics?.total_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits:0 })}
-            </h3>
+            <p className="metric-label">Ventas hoy</p>
+            <h3 className="metric-value">${(analytics?.total_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}</h3>
             {analytics?.total_ayer != null && (
-              <p className="text-[11px] text-zinc-500 mt-0.5">Ayer: ${analytics.total_ayer.toLocaleString('es-CL')}</p>
+              <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Ayer: ${analytics.total_ayer.toLocaleString('es-CL')}</p>
             )}
           </div>
         </div>
 
-        <div className="card p-5 flex flex-col gap-3">
-          <div className="p-2.5 rounded-lg bg-zinc-800 text-amber-500 border border-zinc-700 w-fit"><Receipt size={18}/></div>
+        {/* Ticket promedio hoy */}
+        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
+          style={{ borderTop: '2px solid #06B6D4', background: 'linear-gradient(135deg, #06B6D40D 0%, var(--bg-card-2) 60%)' }}>
+          <div className="metric-icon" style={{ background: 'rgba(6,182,212,0.12)' }}>
+            <Receipt size={17} style={{ color: '#06B6D4' }} />
+          </div>
           <div>
-            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Ticket promedio hoy</p>
-            <h3 className="text-2xl font-black text-white mt-0.5">
-              ${(analytics?.ticket_promedio_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits:0 })}
-            </h3>
+            <p className="metric-label">Ticket promedio hoy</p>
+            <h3 className="metric-value" style={{ color: '#06B6D4' }}>${(analytics?.ticket_promedio_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}</h3>
             {analytics?.ticket_promedio_ayer != null && (
-              <p className="text-[11px] text-zinc-500 mt-0.5">Ayer: ${analytics.ticket_promedio_ayer.toLocaleString('es-CL')}</p>
+              <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Ayer: ${analytics.ticket_promedio_ayer.toLocaleString('es-CL')}</p>
             )}
           </div>
         </div>
 
-        <div className="card p-5 flex flex-col gap-3">
-          <div className="p-2.5 rounded-lg bg-zinc-800 text-amber-500 border border-zinc-700 w-fit"><ShoppingBag size={18}/></div>
+        {/* Transacciones hoy */}
+        <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
+          style={{ borderTop: '2px solid #F59E0B', background: 'linear-gradient(135deg, #F59E0B0D 0%, var(--bg-card-2) 60%)' }}>
+          <div className="metric-icon" style={{ background: 'var(--yellow-dim)' }}>
+            <ShoppingBag size={17} style={{ color: '#F59E0B' }} />
+          </div>
           <div>
-            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Transacciones hoy</p>
-            <h3 className="text-2xl font-black text-white mt-0.5">{analytics?.cantidad_hoy ?? 0}</h3>
+            <p className="metric-label">Transacciones hoy</p>
+            <h3 className="metric-value" style={{ color: '#F59E0B' }}>{analytics?.cantidad_hoy ?? 0}</h3>
             {analytics?.cantidad_ayer != null && (
-              <p className="text-[11px] text-zinc-500 mt-0.5">Ayer: {analytics.cantidad_ayer}</p>
+              <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>Ayer: {analytics.cantidad_ayer}</p>
             )}
           </div>
         </div>
 
-        <div className={`card p-5 flex flex-col gap-3 ${analytics?.comparacion_pct == null ? '' : analytics.comparacion_pct >= 0 ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
-          <div className={`p-2.5 rounded-lg border w-fit ${analytics?.comparacion_pct == null ? 'bg-zinc-800 border-zinc-700 text-amber-500' : analytics.comparacion_pct >= 0 ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-            {analytics?.comparacion_pct == null || analytics.comparacion_pct >= 0 ? <TrendingUp size={18}/> : <TrendingUp size={18} className="rotate-180"/>}
-          </div>
-          <div>
-            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Hoy vs ayer</p>
-            <h3 className={`text-2xl font-black mt-0.5 ${analytics?.comparacion_pct == null ? 'text-zinc-500' : analytics.comparacion_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {analytics?.comparacion_pct == null ? 'Sin datos' : `${analytics.comparacion_pct > 0 ? '+' : ''}${analytics.comparacion_pct}%`}
-            </h3>
-            <p className="text-[11px] text-zinc-500 mt-0.5">en ventas totales</p>
-          </div>
-        </div>
+        {/* Hoy vs ayer */}
+        {(() => {
+          const pct = analytics?.comparacion_pct;
+          const color = pct == null ? '#8B5CF6' : pct >= 0 ? '#10B981' : '#EF4444';
+          const dimColor = pct == null ? 'var(--purple-dim)' : pct >= 0 ? 'var(--teal-dim)' : 'var(--red-dim)';
+          return (
+            <div className="dash-card metric-card flex flex-col gap-4 cursor-default"
+              style={{ borderTop: `2px solid ${color}`, background: `linear-gradient(135deg, ${color}0D 0%, var(--bg-card-2) 60%)` }}>
+              <div className="metric-icon" style={{ background: dimColor }}>
+                <TrendingUp size={17} style={{ color, transform: pct != null && pct < 0 ? 'rotate(180deg)' : undefined }} />
+              </div>
+              <div>
+                <p className="metric-label">Hoy vs ayer</p>
+                <h3 className="metric-value" style={{ color }}>
+                  {pct == null ? 'Sin datos' : `${pct > 0 ? '+' : ''}${pct}%`}
+                </h3>
+                <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>en ventas totales</p>
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
 
       {/* Horas pico + Top Productos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-6">
-          <h3 className="font-bold text-zinc-300 mb-4 flex items-center gap-2"><Activity size={16} className="text-amber-400"/>Horas Pico — Hoy</h3>
+          <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-1)', fontSize: '14px' }}><Activity size={16} style={{ color: 'var(--purple)' }}/>Horas Pico — Hoy</h3>
           {analytics?.ventas_por_hora?.length > 0 ? (
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -113,7 +132,7 @@ export default function AnalyticsPage({
         </div>
 
         <div className="card p-6">
-          <h3 className="font-bold text-zinc-300 mb-4 flex items-center gap-2"><Flame size={16} className="text-amber-400"/>Top Productos — 30 días</h3>
+          <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-1)', fontSize: '14px' }}><Flame size={16} style={{ color: 'var(--purple)' }}/>Top Productos — 30 días</h3>
           {analytics?.top_productos?.length > 0 ? (
             <div className="flex gap-6 items-center">
               <div className="w-36 h-36 flex-shrink-0">
