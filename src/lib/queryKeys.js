@@ -1,0 +1,16 @@
+export const qk = {
+  pedidos:       (fecha)        => ['pedidos', fecha],
+  mesasPedidos:  ()             => ['pedidos', 'mesas'],
+  ventas:        (fecha)        => ['ventas', fecha],
+  ventasResumen: (periodo)      => ['ventas', 'resumen', periodo],
+  salesChart:    (days)         => ['ventas', 'chart', days],
+  reservas:      (periodo, dia) => ['reservas', periodo, dia],
+  totalesReservas: (periodo)    => ['reservas', 'totales', periodo],
+  clientes:      (q)            => ['clientes', q ?? ''],
+  productos:     ()             => ['productos'],
+  categorias:    ()             => ['categorias'],
+  analytics:     (period)       => ['analytics', period],
+  cajaHoy:       ()             => ['caja', 'hoy'],
+  config:        ()             => ['config'],
+  usuarios:      ()             => ['usuarios'],
+};

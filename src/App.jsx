@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { qk } from './lib/queryKeys';
 import { updateItemQty } from './lib/pedidoQtyUtils';
 import {
   LayoutDashboard, Utensils, Calendar, Users, BarChart3, Settings, LogOut,
@@ -46,6 +48,8 @@ import UsageBanner from './components/UsageBanner';
 import OnboardingWizard from './components/OnboardingWizard';
 import ApiKeysPage from './pages/ApiKeysPage';
 import BillingSuccess from './pages/BillingSuccess';
+import { silentPrint } from './lib/silentPrint';
+import Spinner from './components/ui/Spinner';
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 const App = () => {
@@ -215,44 +219,228 @@ const App = () => {
   const [ventaMetodo,    setVentaMetodo]    = useState('efectivo');
   const [ventaLoading,   setVentaLoading]   = useState(false);
 
-  // ─── Cargar datos ────────────────────────────────────────────────────────────
-  const loadPedidos = useCallback(async () => {
-    try {
-      const data = await api.getPedidos(dateFilter);
-      // El backend devuelve { rows, total, page, pages }
-      setPedidos(Array.isArray(data) ? data : (data?.rows || []));
-    } catch(e) { console.error(e); }
-  }, [dateFilter]);
+  // ─── TanStack Query client ────────────────────────────────────────────────────
+  const queryClient = useQueryClient();
 
-  const loadVentas = useCallback(async () => {
-    try {
-      const { total } = await api.getResumenVentas(salesFilter);
-      setVentasFiltro(total);
-    } catch(e) { console.error(e); }
-  }, [salesFilter]);
+  // ─── Queries ──────────────────────────────────────────────────────────────────
+  const pedidosQ = useQuery({
+    queryKey: qk.pedidos(dateFilter),
+    queryFn:  () => api.getPedidos(dateFilter).then(d => Array.isArray(d) ? d : (d?.rows || [])),
+    enabled:  !!user,
+    staleTime: 30_000,
+  });
 
-  const loadReservas = useCallback(async () => {
-    try {
-      let data;
-      if (reservasPeriodo === 'dia') {
-        data = await api.getReservas(selectedDate);
-      } else {
-        data = await api.getReservasPeriodo(reservasPeriodo);
-      }
-      // El backend devuelve { rows, total, page, pages }
-      // Normaliza fecha a "YYYY-MM-DD" — Prisma devuelve ISO "2026-05-05T00:00:00.000Z"
+  const ventasResumenQ = useQuery({
+    queryKey: qk.ventasResumen(salesFilter),
+    queryFn:  () => api.getResumenVentas(salesFilter),
+    enabled:  !!user,
+    staleTime: 30_000,
+  });
+
+  const reservasQ = useQuery({
+    queryKey: qk.reservas(reservasPeriodo, selectedDate),
+    queryFn:  async () => {
+      const data = reservasPeriodo === 'dia'
+        ? await api.getReservas(selectedDate)
+        : await api.getReservasPeriodo(reservasPeriodo);
       const normFecha = r => ({ ...r, fecha: (r.fecha || '').toString().split('T')[0] });
-      setReservas((Array.isArray(data) ? data : (data?.rows || [])).map(normFecha));
-      
-      const resTotales = await api.getTotalesReservas(reservasPeriodo);
-      setTotalReservas(resTotales?.total || 0);
-    } catch(e) { console.error(e); }
-  }, [selectedDate, reservasPeriodo]);
+      const rows = (Array.isArray(data) ? data : (data?.rows || [])).map(normFecha);
+      const totales = await api.getTotalesReservas(reservasPeriodo);
+      return { rows, total: totales?.total || 0 };
+    },
+    enabled:  !!user,
+    staleTime: 30_000,
+  });
 
-  const loadClientes = useCallback(async (q = '') => {
-    try { setClientes(await api.getClientes(q)); } catch(e) { console.error(e); }
+  const clientesQ = useQuery({
+    queryKey: qk.clientes(''),
+    queryFn:  () => api.getClientes(''),
+    enabled:  !!user,
+    staleTime: 60_000,
+  });
+
+  const productosQ = useQuery({
+    queryKey: qk.productos(),
+    queryFn:  () => api.getProductos(),
+    enabled:  !!user,
+    staleTime: 15 * 60_000, // 15 min — catalog changes infrequently
+  });
+
+  const categoriasQ = useQuery({
+    queryKey: qk.categorias(),
+    queryFn:  () => api.getCategorias(),
+    enabled:  !!user,
+    staleTime: 15 * 60_000,
+  });
+
+  const usuariosQ = useQuery({
+    queryKey: qk.usuarios(),
+    queryFn:  () => api.getUsuarios(),
+    enabled:  !!user && user?.rol === 'admin',
+    staleTime: 60_000,
+  });
+
+  const ventasDiaQ = useQuery({
+    queryKey: qk.ventas(ventasFecha),
+    queryFn:  () => api.getVentasDia(ventasFecha),
+    enabled:  !!user,
+    staleTime: 30_000,
+  });
+
+  const ventasResumenDiaQ = useQuery({
+    queryKey: qk.ventasResumen('dia'),
+    queryFn:  () => api.getResumenVentas('dia'),
+    enabled:  !!user,
+    staleTime: 30_000,
+  });
+
+  const analyticsQ = useQuery({
+    queryKey: qk.analytics(analyticsPeriod),
+    queryFn:  () => api.getAnalytics(),
+    enabled:  !!user,
+    staleTime: 10 * 60_000, // 10 min
+  });
+
+  const salesDataQ = useQuery({
+    queryKey: qk.salesChart(7),
+    queryFn:  () => api.getSalesChart(7),
+    enabled:  !!user,
+    staleTime: 10 * 60_000,
+  });
+
+  const mesasPedidosQ = useQuery({
+    queryKey: qk.mesasPedidos(),
+    queryFn:  () => api.getPedidosPorMesa(),
+    enabled:  !!user && pedidoMesaView,
+    staleTime: 30_000,
+  });
+
+  const configQ = useQuery({
+    queryKey: qk.config(),
+    queryFn:  () => api.getConfig(),
+    enabled:  !!user,
+    staleTime: 5 * 60_000,
+  });
+
+  // ─── Sync query results into local state ─────────────────────────────────────
+  // pedidos — only when not in optimistic-update mode (no temp entries)
+  useEffect(() => {
+    if (pedidosQ.data && !pedidos.some(p => String(p.id).startsWith('temp-'))) {
+      setPedidos(pedidosQ.data);
+    }
+  }, [pedidosQ.data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (ventasResumenQ.data) setVentasFiltro(ventasResumenQ.data.total ?? 0);
+  }, [ventasResumenQ.data]);
+
+  useEffect(() => {
+    if (reservasQ.data) {
+      setReservas(reservasQ.data.rows);
+      setTotalReservas(reservasQ.data.total);
+    }
+  }, [reservasQ.data]);
+
+  useEffect(() => {
+    if (clientesQ.data) setClientes(clientesQ.data);
+  }, [clientesQ.data]);
+
+  useEffect(() => {
+    if (productosQ.data) {
+      setProductos(productosQ.data);
+      setProductosLoading(false);
+    } else {
+      setProductosLoading(productosQ.isLoading);
+    }
+  }, [productosQ.data, productosQ.isLoading]);
+
+  useEffect(() => {
+    if (categoriasQ.data) {
+      setCategorias(categoriasQ.data);
+      setActiveMenuCategory(prev => prev ?? (categoriasQ.data[0]?.nombre || null));
+      setNewProduct(prev => prev.categoria ? prev : { ...prev, categoria: categoriasQ.data[0]?.nombre || '' });
+    }
+  }, [categoriasQ.data]);
+
+  useEffect(() => {
+    if (usuariosQ.data) setUsuarios(usuariosQ.data);
+  }, [usuariosQ.data]);
+
+  useEffect(() => {
+    if (ventasDiaQ.data) setVentasDia(ventasDiaQ.data);
+  }, [ventasDiaQ.data]);
+
+  useEffect(() => {
+    if (ventasResumenDiaQ.data) setVentasResumen(ventasResumenDiaQ.data);
+  }, [ventasResumenDiaQ.data]);
+
+  useEffect(() => {
+    if (analyticsQ.data) setAnalytics(analyticsQ.data);
+  }, [analyticsQ.data]);
+
+  useEffect(() => {
+    if (salesDataQ.data) setSalesData(salesDataQ.data);
+  }, [salesDataQ.data]);
+
+  useEffect(() => {
+    if (mesasPedidosQ.data) setMesasPedidos(mesasPedidosQ.data);
+  }, [mesasPedidosQ.data]);
+
+  useEffect(() => {
+    if (!configQ.data) return;
+    const data = configQ.data;
+    setConfig({
+      restaurantName: data.nombre        ?? 'masterGrowth Gourmet',
+      rut:            data.rut           ?? '',
+      direccion:      data.direccion     ?? '',
+      currency:       data.currency      ?? '$',
+      currencyCode:   data.currency_code ?? 'CLP',
+      openTime:       data.open_time     ?? '11:00',
+      closeTime:      data.close_time    ?? '23:30',
+      taxRate:        data.tax_rate      ?? 19,
+      paymentMethods: data.payment_methods ?? { cash:true, card:true, transfer:true, qr:false },
+      timezone:       data.timezone      ?? 'America/Santiago',
+      idioma:         data.idioma        ?? 'es',
+      formatoFecha:   data.formato_fecha ?? 'DD/MM/YYYY',
+      prefijoTicket:  data.prefijo_ticket  ?? 'TKT',
+      numeroInicial:  data.numero_inicial  ?? 1,
+      impuestoActivo: data.impuesto_activo != null ? Boolean(data.impuesto_activo) : true,
+      logoUrl:        data.logo_url        ?? '',
+    });
+  }, [configQ.data]);
+
+  // ─── Compat shims — keep existing call sites working ─────────────────────────
+  const loadPedidos   = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.pedidos(dateFilter) }), [queryClient, dateFilter]);
+  const loadVentas    = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.ventasResumen(salesFilter) }), [queryClient, salesFilter]);
+  const loadReservas  = useCallback(() => queryClient.invalidateQueries({ queryKey: ['reservas'] }), [queryClient]);
+  const loadClientes  = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.clientes('') }), [queryClient]);
+  const loadProductos = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.productos() }), [queryClient]);
+  const loadCategorias = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.categorias() }), [queryClient]);
+  const loadVentasDia  = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: qk.ventas(ventasFecha) });
+    queryClient.invalidateQueries({ queryKey: qk.ventasResumen('dia') });
+  }, [queryClient, ventasFecha]);
+  const loadAnalytics   = useCallback(() => queryClient.invalidateQueries({ queryKey: ['analytics'] }), [queryClient]);
+  const loadSalesData   = useCallback(() => queryClient.invalidateQueries({ queryKey: ['ventas', 'chart'] }), [queryClient]);
+  const loadMesasPedidos = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.mesasPedidos() }), [queryClient]);
+  const loadConfig      = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.config() }), [queryClient]);
+  const loadUsuarios    = useCallback(() => queryClient.invalidateQueries({ queryKey: qk.usuarios() }), [queryClient]);
+  const loadInventario  = useCallback(async (filtros = {}) => {
+    try {
+      setInvLoading(true);
+      const [p, movRes] = await Promise.all([
+        api.getProveedores(),
+        api.getMovimientos(filtros)
+      ]);
+      setProveedores(p);
+      setMovimientos(movRes.rows ?? movRes);
+      if (movRes.stats) setMovStats(movRes.stats);
+      if (movRes.total !== undefined) setMovTotal(movRes.total);
+    } catch(e) { console.error(e); }
+    finally { setInvLoading(false); }
   }, []);
 
+  // Debounced client search inside POS modal (not cached — short-lived)
   useEffect(() => {
     const query = pedidoForm.cliente_nombre;
     if (pedidoModal && query.length >= 2) {
@@ -270,89 +458,31 @@ const App = () => {
     }
   }, [pedidoForm.cliente_nombre, pedidoModal]);
 
-  const loadProductos = useCallback(async () => {
-    setProductosLoading(true);
-    try { setProductos(await api.getProductos()); } catch(e) { console.error(e); }
-    finally { setProductosLoading(false); }
-  }, []);
-
-  const loadCategorias = useCallback(async () => {
-    try {
-      const data = await api.getCategorias();
-      setCategorias(data);
-      setActiveMenuCategory(prev => prev ?? (data[0]?.nombre || null));
-      setNewProduct(prev => prev.categoria ? prev : { ...prev, categoria: data[0]?.nombre || '' });
-    } catch(e) { console.error(e); }
-  }, []);
-
-  const loadUsuarios = useCallback(async () => {
-    if (user?.rol !== 'admin') return;
-    try { setUsuarios(await api.getUsuarios()); } catch(e) { console.error(e); }
+  // Backfill único: vincula reservas existentes sin cliente al iniciar sesión
+  useEffect(() => {
+    if (user) api.backfillClientes().catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const loadVentasDia = useCallback(async () => {
-    try {
-      const [rows, resumen] = await Promise.all([
-        api.getVentasDia(ventasFecha),
-        api.getResumenVentas('dia'),
-      ]);
-      setVentasDia(rows);
-      setVentasResumen(resumen);
-    } catch(e) { console.error(e); }
-  }, [ventasFecha]);
+  // Onboarding: show wizard to new admin restaurants with no products/categories yet
+  useEffect(() => {
+    if (!user || user.rol !== 'admin') return;
+    const dismissed = localStorage.getItem(`onboarding_dismissed_${user.restaurante_id}`);
+    if (dismissed) return;
+    Promise.all([api.getProductos(), api.getCategorias()]).then(([prods, cats]) => {
+      if (prods.length === 0 && cats.length === 0) setShowOnboarding(true);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-  const loadAnalytics = useCallback(async () => {
-    try { setAnalytics(await api.getAnalytics()); } catch(e) { console.error(e); }
+  // Low-perf device detection: disables all backdrop-filter via CSS class
+  useEffect(() => {
+    const lowPerf =
+      navigator.hardwareConcurrency <= 4 ||
+      /Android/.test(navigator.userAgent);
+    if (lowPerf) document.documentElement.classList.add('no-blur');
+    return () => document.documentElement.classList.remove('no-blur');
   }, []);
-
-  const loadSalesData = useCallback(async () => {
-    try { setSalesData(await api.getSalesChart(7)); } catch(e) { console.error(e); }
-  }, []);
-
-  const loadMesasPedidos = useCallback(async () => {
-    try { setMesasPedidos(await api.getPedidosPorMesa()); } catch(e) { console.error(e); }
-  }, []);
-
-  const loadInventario = useCallback(async (filtros = {}) => {
-    try {
-      setInvLoading(true);
-      const [p, movRes] = await Promise.all([
-        api.getProveedores(),
-        api.getMovimientos(filtros)
-      ]);
-      setProveedores(p);
-      setMovimientos(movRes.rows ?? movRes);
-      if (movRes.stats) setMovStats(movRes.stats);
-      if (movRes.total !== undefined) setMovTotal(movRes.total);
-    } catch(e) { console.error(e); }
-    finally { setInvLoading(false); }
-  }, []);
-
-  const loadConfig = useCallback(async () => {
-    try {
-      const data = await api.getConfig();
-      setConfig({
-        restaurantName: data.nombre        ?? 'masterGrowth Gourmet',
-        rut:            data.rut           ?? '',
-        direccion:      data.direccion     ?? '',
-        currency:       data.currency      ?? '$',
-        currencyCode:   data.currency_code ?? 'CLP',
-        openTime:       data.open_time     ?? '11:00',
-        closeTime:      data.close_time    ?? '23:30',
-        taxRate:        data.tax_rate      ?? 19,
-        paymentMethods: data.payment_methods ?? { cash:true, card:true, transfer:true, qr:false },
-        timezone:       data.timezone      ?? 'America/Santiago',
-        idioma:         data.idioma        ?? 'es',
-        formatoFecha:   data.formato_fecha ?? 'DD/MM/YYYY',
-        prefijoTicket:  data.prefijo_ticket  ?? 'TKT',
-        numeroInicial:  data.numero_inicial  ?? 1,
-        impuestoActivo: data.impuesto_activo != null ? Boolean(data.impuesto_activo) : true,
-        logoUrl:        data.logo_url        ?? '',
-      });
-    } catch(e) { console.error(e); }
-  }, []);
-
-  useEffect(() => { if (user) loadConfig(); }, [user, loadConfig]);
 
   // Manejar redirects de PayPal post-pago
   useEffect(() => {
@@ -370,34 +500,10 @@ const App = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-  useEffect(() => { if (user) { loadPedidos(); loadVentas(); loadVentasDia(); loadSalesData(); } }, [user, loadPedidos, loadVentas, loadVentasDia, loadSalesData]);
-  useEffect(() => { if (user && activeTab === 'Dashboard') { loadPedidos(); loadVentasDia(); loadVentas(); loadSalesData(); } }, [user, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (user) loadReservas(); }, [user, loadReservas]);
-  useEffect(() => { if (user && activeTab === 'Reservas') { loadPedidos(); loadProductos(); loadReservas(); } }, [user, activeTab, loadPedidos, loadProductos]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Backfill único: vincula reservas existentes sin cliente al iniciar sesión
-  useEffect(() => {
-    if (user) api.backfillClientes().catch(() => {}).finally(() => loadClientes());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-  useEffect(() => { if (user && activeTab === 'Clientes') loadClientes(); }, [user, activeTab, loadClientes]);
-
-  // Onboarding: show wizard to new admin restaurants with no products/categories yet
-  useEffect(() => {
-    if (!user || user.rol !== 'admin') return;
-    const dismissed = localStorage.getItem(`onboarding_dismissed_${user.restaurante_id}`);
-    if (dismissed) return;
-    Promise.all([api.getProductos(), api.getCategorias()]).then(([prods, cats]) => {
-      if (prods.length === 0 && cats.length === 0) setShowOnboarding(true);
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  useEffect(() => { if (user && (activeTab === 'Configuración' || activeTab === 'Analytics')) { loadProductos(); loadCategorias(); } }, [user, activeTab, loadProductos, loadCategorias]);
-  useEffect(() => { if (user && activeTab === 'Configuración') loadConfig(); }, [user, activeTab, loadConfig]);
-  useEffect(() => { if (user && activeTab === 'Analytics') loadAnalytics(); }, [user, activeTab, loadAnalytics]);
-  useEffect(() => { if (user && activeTab === 'Configuración') loadUsuarios(); }, [user, activeTab, loadUsuarios]);
 
   // ─── WebSocket — notificaciones en tiempo real ───────────────────────────────
+  // Dep array is [user, addToast, queryClient] — no loader functions, so socket
+  // does NOT reconnect when dateFilter / ventasFecha / salesFilter change.
   useEffect(() => {
     if (!user) return;
     const socket = socketIO({
@@ -411,7 +517,7 @@ const App = () => {
 
     socket.on('pedido:creado', data => {
       addToast(`${data.numero} · ${data.cliente_nombre}${data.mesa ? ` · Mesa ${data.mesa}` : ''}`, 'info', { icon: '🛎️', title: 'Nuevo pedido' });
-      loadPedidos();
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
     });
     socket.on('pedido:actualizado', data => {
       if (data.estado === 'listo') {
@@ -421,13 +527,12 @@ const App = () => {
       } else if (data.estado === 'confirmado') {
         addToast(`${data.numero} confirmado y cobrado`, 'success', { icon: '💰', title: 'Pedido confirmado' });
       }
-      loadPedidos();
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
     });
     socket.on('venta:realizada', data => {
       addToast(`Venta $${data.total?.toFixed(0)} · ${data.metodo_pago}`, 'success', { icon: '💵', title: 'Venta registrada' });
-      loadVentasDia();
-      loadVentas();
-      loadSalesData();
+      // Invalidate all three ventas-related keys
+      queryClient.invalidateQueries({ queryKey: ['ventas'] });
     });
     socket.on('stock:alerta', data => {
       addToast(`${data.nombre}: ${data.stock} uds restantes (mín: ${data.minimo})`, 'warning', { icon: '⚠️', title: 'Stock bajo' });
@@ -435,7 +540,7 @@ const App = () => {
     socket.on('connect_error', () => {});
 
     return () => { socket.disconnect(); socketRef.current = null; };
-  }, [user, addToast, loadPedidos, loadVentasDia, loadVentas, loadSalesData]);
+  }, [user, addToast, queryClient]);
 
   // ─── Acciones Inventario ─────────────────────────────────────────────────────
   const saveProveedor = async () => {
@@ -637,8 +742,7 @@ const App = () => {
     const fecha = order.fecha
       ? new Date(order.fecha).toLocaleDateString('es-CL')
       : new Date().toLocaleDateString('es-CL');
-    const win = window.open('', '_blank', 'width=380,height=600');
-    win.document.write(`<!DOCTYPE html>
+    silentPrint(`<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
@@ -675,10 +779,8 @@ const App = () => {
   <div class="total-row"><span>TOTAL</span><span>${config.currency}${Number(order.total).toLocaleString('es-CL', { minimumFractionDigits:2 })}</span></div>
   <hr/>
   <p class="footer">Estado: CONFIRMADO &nbsp;|&nbsp; ¡Gracias por su preferencia!</p>
-  <script>window.onload = () => { window.print(); window.close(); }</script>
 </body>
 </html>`);
-    win.document.close();
   };
 
   // ─── Acciones Reservas ───────────────────────────────────────────────────────
@@ -881,6 +983,7 @@ const App = () => {
       setCategorias(c => [...c, creada].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       setNuevaCategoria('');
       setActiveMenuCategory(creada.nombre);
+      queryClient.invalidateQueries({ queryKey: qk.categorias() });
     } catch(e) { alert(e.message); }
   };
 
@@ -894,6 +997,8 @@ const App = () => {
       if (activeMenuCategory === editCategoria.nombreOriginal) setActiveMenuCategory(actualizada.nombre);
       setProductos(p => p.map(x => x.categoria === editCategoria.nombreOriginal ? { ...x, categoria: actualizada.nombre } : x));
       setEditCategoria(null);
+      queryClient.invalidateQueries({ queryKey: qk.categorias() });
+      queryClient.invalidateQueries({ queryKey: qk.productos() });
     } catch(e) { alert(e.message); }
   };
 
@@ -912,6 +1017,8 @@ const App = () => {
             const restantes = categorias.filter(x => x.id !== cat.id);
             setActiveMenuCategory(restantes[0]?.nombre || null);
           }
+          queryClient.invalidateQueries({ queryKey: qk.categorias() });
+          queryClient.invalidateQueries({ queryKey: qk.productos() });
         } catch(e) { alert(e.message); }
         setConfirmDialog(null);
       },
@@ -931,6 +1038,7 @@ const App = () => {
       setProductos(p => [...p, created]);
       setNewProduct({ nombre:'', categoria: categorias[0]?.nombre || '', precio:'', stock:'' });
       setActiveMenuCategory(created.categoria);
+      queryClient.invalidateQueries({ queryKey: qk.productos() });
     } catch(e) { alert(e.message); }
   };
 
@@ -940,6 +1048,7 @@ const App = () => {
       const updated = await api.updateProducto(editProduct.id, editProduct);
       setProductos(p => p.map(x => x.id === updated.id ? updated : x));
       setEditProduct(null);
+      queryClient.invalidateQueries({ queryKey: qk.productos() });
     } catch(e) { alert(e.message); }
   };
 
@@ -947,6 +1056,7 @@ const App = () => {
     try {
       const { stock } = await api.updateStock(id, delta);
       setProductos(p => p.map(x => x.id === id ? { ...x, stock } : x));
+      queryClient.invalidateQueries({ queryKey: qk.productos() });
     } catch(e) { alert(e.message); }
   };
 
@@ -958,6 +1068,7 @@ const App = () => {
         try {
           await api.deleteProducto(prod.id);
           setProductos(p => p.filter(x => x.id !== prod.id));
+          queryClient.invalidateQueries({ queryKey: qk.productos() });
         } catch(e) { alert(e.message); }
         setConfirmDialog(null);
       }
@@ -1287,12 +1398,10 @@ const App = () => {
     <div style="margin-top:8px">¡Gracias por su visita!</div>
   </div>
 
-  <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
 </body>
 </html>`;
 
-    const win = window.open('', '_blank', 'width=400,height=600');
-    if (win) { win.document.write(html); win.document.close(); }
+    silentPrint(html);
   };
 
   // ─── Descargar ticket en PDF ──────────────────────────────────────────────────
@@ -1412,7 +1521,7 @@ const App = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
+        <Spinner size="lg" color="violet" />
       </div>
     );
   }
@@ -1483,7 +1592,7 @@ const App = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] lg:hidden"
+            className="fixed inset-0 bg-black/80 z-[90] lg:hidden"
           />
         )}
       </AnimatePresence>
@@ -1579,7 +1688,7 @@ const App = () => {
       <main className="flex-grow flex flex-col pb-16 lg:pb-0 main-content-area">
         {/* Header */}
         {/* Header */}
-        <header className="h-[60px] px-4 lg:px-8 flex items-center justify-between sticky top-0 z-50" style={{ background: 'rgba(10,10,18,0.88)', borderBottom: '1px solid var(--border)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+        <header className="h-[60px] px-4 lg:px-8 flex items-center justify-between sticky top-0 z-50" style={{ background: '#0A0A12', borderBottom: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 1px 0 rgba(0,0,0,0.6)' }}>
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -2398,8 +2507,8 @@ const App = () => {
           {isNewResModalOpen && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-                onClick={() => setIsNewResModalOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm"/>
-              <motion.div initial={{ opacity:0, scale:0.95, y:16 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
+                onClick={() => setIsNewResModalOpen(false)} className="absolute inset-0 bg-black/85"/>
+              <motion.div initial={{ opacity:0, scale:0.97, y:8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.97 }} transition={{ duration:0.2, ease:[0.16,1,0.3,1] }}
                 className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5">
                 <div className="flex justify-between items-center">
                   <div>
@@ -2471,7 +2580,7 @@ const App = () => {
           {selectedCustomer && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-                onClick={() => setSelectedCustomer(null)} className="absolute inset-0 bg-black/70 backdrop-blur-sm"/>
+                onClick={() => setSelectedCustomer(null)} className="absolute inset-0 bg-black/85"/>
               <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
                 className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5">
                 <div className="flex justify-between items-start">
@@ -2536,7 +2645,7 @@ const App = () => {
           {clienteFormOpen && clienteForm && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-                onClick={() => setClienteFormOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm"/>
+                onClick={() => setClienteFormOpen(false)} className="absolute inset-0 bg-black/85"/>
               <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
                 className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5">
                 <div className="flex justify-between items-center">
@@ -2590,8 +2699,8 @@ const App = () => {
         <AnimatePresence>
           {isMovModalOpen && (
             <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
-              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsMovModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md"/>
-              <motion.div initial={{ opacity:0, scale:0.95, y:20 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.95 }}
+              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsMovModalOpen(false)} className="absolute inset-0 bg-black/88"/>
+              <motion.div initial={{ opacity:0, scale:0.97, y:8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.97 }} transition={{ duration:0.2, ease:[0.16,1,0.3,1] }}
                 className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
                 <div className="px-6 py-4 flex justify-between items-center" style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}>
                   <h3 className="font-black text-white">REGISTRAR MOVIMIENTO</h3>
@@ -2639,7 +2748,7 @@ const App = () => {
                   >
                     {isSavingMov ? (
                       <>
-                        <RefreshCw size={18} className="animate-spin"/> PROCESANDO...
+                        <Spinner size="sm" color="white" /> PROCESANDO...
                       </>
                     ) : (
                       'Procesar Movimiento'
@@ -2656,7 +2765,7 @@ const App = () => {
           {successMessage && (
             <motion.div
               initial={{ opacity:0, y:50 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:50 }}
-              className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500] bg-zinc-900 border border-green-500/30 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 backdrop-blur-xl"
+              className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500] bg-zinc-900 border border-green-500/30 text-white px-6 py-3 rounded-full flex items-center gap-3" style={{ boxShadow: 'var(--shadow-xl)' }}
             >
               <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-black">
                 <Check size={14} strokeWidth={4}/>
@@ -2670,7 +2779,7 @@ const App = () => {
         <AnimatePresence>
           {isProvModalOpen && (
             <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
-              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsProvModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md"/>
+              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsProvModalOpen(false)} className="absolute inset-0 bg-black/88"/>
               <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0 }}
                 className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
@@ -2712,7 +2821,7 @@ const App = () => {
         <AnimatePresence>
           {reservaConsumoModal && (
             <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
-              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setReservaConsumoModal(null)} className="absolute inset-0 bg-black/80 backdrop-blur-md"/>
+              <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setReservaConsumoModal(null)} className="absolute inset-0 bg-black/88"/>
               <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.95 }}
                 className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 
@@ -2823,7 +2932,7 @@ const App = () => {
         {/* ── Modal global: conversión pedido → venta ── */}
         {pedidoConvertModal && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => !convertLoading && setPedidoConvertModal(null)} />
+            <div className="absolute inset-0 bg-black/88" onClick={() => !convertLoading && setPedidoConvertModal(null)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.97, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2968,22 +3077,20 @@ const App = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              className="absolute inset-0 bg-black/88"
               onClick={() => { setPedidoDetalle(null); setPedidoDetalleItems([]); }}
             />
 
             {/* Modal card */}
             <motion.div
               key="pedido-modal"
-              initial={{ opacity: 0, scale: 0.96, y: 24 }}
+              initial={{ opacity: 0, scale: 0.97, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               className="relative w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden rounded-3xl"
               style={{
-                background: 'rgba(9,9,13,0.97)',
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
+                background: '#09090D',
                 border: '1px solid rgba(255,255,255,0.07)',
                 boxShadow: '0 0 0 1px rgba(139,92,246,0.12), 0 32px 80px rgba(0,0,0,0.85), 0 0 80px rgba(139,92,246,0.07)',
               }}
@@ -3148,7 +3255,7 @@ const App = () => {
                   <div className="flex flex-col gap-0.5 max-h-52 overflow-y-auto">
                     {productosLoading ? (
                       <div className="flex items-center justify-center py-7 gap-2 text-sm text-zinc-600">
-                        <span className="w-4 h-4 rounded-full border-2 border-zinc-700 border-t-violet-500 animate-spin" />
+                        <Spinner size="sm" color="violet" />
                         Cargando menú...
                       </div>
                     ) : (() => {
@@ -3186,7 +3293,7 @@ const App = () => {
                             </div>
                             <div className="flex-shrink-0 ml-3">
                               {isLoading
-                                ? <span className="w-3.5 h-3.5 rounded-full border-2 border-zinc-700 border-t-violet-500 animate-spin block" />
+                                ? <Spinner size="sm" color="violet" />
                                 : <span className="text-amber-400 font-black text-sm tabular-nums">${prod.precio.toLocaleString('es-CL', { minimumFractionDigits:0 })}</span>
                               }
                             </div>
