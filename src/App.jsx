@@ -484,6 +484,22 @@ const App = () => {
     return () => document.documentElement.classList.remove('no-blur');
   }, []);
 
+  // Listen for plan-gated feature errors dispatched by api.js
+  useEffect(() => {
+    const handler = (e) => {
+      const { feature, plan_requerido } = e.detail || {};
+      const label = feature === 'analytics' ? 'Analytics' : feature === 'pdf' ? 'PDF de tickets' : feature || 'esta función';
+      addToast(`${label} requiere plan ${plan_requerido ?? 'Pro'}. Actualiza en Facturación.`, 'warning', { icon: '🔒', title: 'Plan requerido' });
+    };
+    const navBilling = () => setActiveTab('Billing');
+    window.addEventListener('upgrade_required', handler);
+    window.addEventListener('nav:billing', navBilling);
+    return () => {
+      window.removeEventListener('upgrade_required', handler);
+      window.removeEventListener('nav:billing', navBilling);
+    };
+  }, [addToast]);
+
   // Manejar redirects de PayPal post-pago
   useEffect(() => {
     if (!user) return;
@@ -1907,6 +1923,7 @@ const App = () => {
             <AnalyticsPage
               loadAnalytics={loadAnalytics}
               analytics={analytics}
+              analyticsError={analyticsQ.error}
             />
           )}
 

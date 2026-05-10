@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-  Activity, DollarSign, TrendingUp, Receipt, ShoppingBag, Flame, BarChart2,
+  Activity, DollarSign, TrendingUp, Receipt, ShoppingBag, Flame, BarChart2, Lock, Zap,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
@@ -12,12 +12,58 @@ const PIE_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#14B8A6', '#0EA5E9'];
 
 const NUM_STYLE = { fontVariantNumeric: 'tabular-nums' };
 
-export default function AnalyticsPage({ loadAnalytics, analytics }) {
+export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError }) {
+  const isPlanLocked = analyticsError?.message === 'plan_required';
   const pct = analytics?.comparacion_pct;
 
   const deltaColor  = pct == null ? '#64748B' : pct >= 0 ? '#10B981' : '#EF4444';
   const deltaBorder = pct == null ? 'rgba(100,116,139,.12)' : pct >= 0 ? 'rgba(16,185,129,.18)' : 'rgba(239,68,68,.18)';
   const deltaDivider = pct == null ? 'rgba(100,116,139,.12)' : pct >= 0 ? 'rgba(16,185,129,.18)' : 'rgba(239,68,68,.18)';
+
+  if (isPlanLocked) {
+    return (
+      <motion.div
+        key="analytics-locked"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="p-5 sm:p-8 flex flex-col gap-7 max-w-[1400px] w-full mx-auto"
+      >
+        <div className="flex items-center gap-3 mb-1">
+          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+            style={{ background: 'rgba(59,130,246,.1)', color: '#3B82F6', border: '1px solid rgba(59,130,246,.2)' }}>
+            <BarChart2 size={9} className="inline" /> Análisis
+          </span>
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-none">
+          Centro de <span style={{ color: '#3B82F6' }}>Analytics</span>
+        </h2>
+
+        <div className="card flex flex-col items-center justify-center gap-6 py-20 px-8 text-center"
+          style={{ border: '1px solid rgba(139,92,246,.2)', background: 'linear-gradient(160deg, rgba(139,92,246,.06) 0%, rgba(18,18,30,1) 60%)' }}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{ background: 'rgba(139,92,246,.12)', border: '1px solid rgba(139,92,246,.2)' }}>
+            <Lock size={28} style={{ color: '#8B5CF6' }} />
+          </div>
+          <div className="flex flex-col gap-2 max-w-sm">
+            <p className="text-xl font-black" style={{ color: '#F0F0FF' }}>Analytics requiere plan Pro</p>
+            <p className="text-sm" style={{ color: '#9090B0' }}>
+              Desbloquea métricas de ventas por hora, ranking de productos, comparativas semana a semana y más.
+            </p>
+          </div>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('nav:billing'))}
+            className="btn-primary flex items-center gap-2">
+            <Zap size={14} /> Actualizar a Pro
+          </button>
+          <p className="text-xs" style={{ color: '#50506A' }}>
+            Plan Pro · $29/mes · Sin límite de órdenes
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
