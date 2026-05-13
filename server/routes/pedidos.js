@@ -103,7 +103,7 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), checkOrderLimi
       const totalCalc = items.reduce((s, i) => s + (parseFloat(i.precio_unitario) * parseInt(i.cantidad)), 0);
       const resumen   = items.map(i => `${i.nombre} x${i.cantidad}`).join(', ');
 
-      // Stock check + pedido creation + stock decrement son atómicos en una sola transacción interactiva
+      // Pedido creation + stock decrement son atómicos — stock puede quedar negativo, pedido siempre se crea
       let pedido;
       let createdItems;
       try {
@@ -112,12 +112,12 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), checkOrderLimi
           for (const i of items.filter(i => i.producto_id)) {
             const prod = await tx.producto.findFirst({ where: { id: parseInt(i.producto_id), restaurante_id: rid } });
             if (!prod) throw Object.assign(new Error(`Producto "${i.nombre}" no encontrado`), { status: 404 });
-            stockSnap[i.producto_id] = prod.stock; // capturar antes del decrement
-            const stockResult = await tx.producto.updateMany({
-              where: { id: parseInt(i.producto_id), restaurante_id: rid, stock: { gte: parseInt(i.cantidad) } },
+            stockSnap[i.producto_id] = prod.stock;
+            // Descontar stock siempre — sin bloqueo por stock insuficiente
+            await tx.producto.update({
+              where: { id: parseInt(i.producto_id) },
               data: { stock: { decrement: parseInt(i.cantidad) } },
             });
-            if (stockResult.count === 0) throw Object.assign(new Error(`Stock insuficiente para ${prod.nombre}`), { status: 400 });
           }
 
           pedido = await tx.pedido.create({
@@ -134,7 +134,7 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), checkOrderLimi
           createdItems = await Promise.all(items.map(i => tx.pedidoItem.create({
             data: { pedido_id: pedido.id, producto_id: i.producto_id ? parseInt(i.producto_id) : null, nombre: i.nombre, cantidad: parseInt(i.cantidad), precio_unitario: parseFloat(i.precio_unitario), restaurante_id: rid },
           })));
-        });
+        }, { timeout: 15000 });
       } catch (e) {
         if (e.status) return res.status(e.status).json({ error: e.message });
         throw e;
@@ -175,11 +175,11 @@ router.post('/:id/items', verifyRole('admin', 'staff', 'chef', 'gerente'), async
         if (producto_id) {
           const prod = await tx.producto.findFirst({ where: { id: parseInt(producto_id), restaurante_id: rid } });
           if (!prod) throw Object.assign(new Error('Producto no encontrado'), { status: 404 });
-          const stockResult = await tx.producto.updateMany({
-            where: { id: parseInt(producto_id), restaurante_id: rid, stock: { gte: parseInt(cantidad) } },
+          // Descontar siempre — sin bloqueo por stock insuficiente
+          await tx.producto.update({
+            where: { id: parseInt(producto_id) },
             data: { stock: { decrement: parseInt(cantidad) } },
           });
-          if (stockResult.count === 0) throw Object.assign(new Error(`Stock insuficiente para ${prod.nombre}`), { status: 400 });
           prodRef = { ...prod };
           await tx.inventarioMovimiento.create({
             data: { producto_id: parseInt(producto_id), usuario_id: req.user.id, tipo: 'salida', cantidad: parseInt(cantidad), motivo: `Pedido ${pedido.numero}`, restaurante_id: rid, stock_anterior: prod.stock },
@@ -191,13 +191,13 @@ router.post('/:id/items', verifyRole('admin', 'staff', 'chef', 'gerente'), async
         const allItems = await tx.pedidoItem.findMany({ where: { pedido_id: pedidoId } });
         const nuevoTotal = allItems.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
         await tx.pedido.update({ where: { id: pedidoId }, data: { total: nuevoTotal } });
-      });
+      }, { timeout: 15000 });
     } catch (e) {
       if (e.status) return res.status(e.status).json({ error: e.message });
       throw e;
     }
 
-    // FIX #5: leer stock real post-transaction para la alerta
+    // leer stock real post-transaction para la alerta
     if (prodRef) {
       const prodActualizado = await req.prisma.producto.findUnique({ where: { id: parseInt(producto_id) } });
       const stockReal = prodActualizado?.stock ?? (prodRef.stock - parseInt(cantidad));
@@ -236,11 +236,11 @@ router.patch('/:id/items/:itemId', verifyRole('admin', 'staff', 'chef', 'gerente
         if (delta !== 0 && item.producto_id) {
           const prod = await tx.producto.findFirst({ where: { id: item.producto_id, restaurante_id: rid } });
           if (delta > 0) {
-            const stockResult = await tx.producto.updateMany({
-              where: { id: item.producto_id, restaurante_id: rid, stock: { gte: delta } },
+            // Descontar siempre — sin bloqueo por stock insuficiente
+            await tx.producto.update({
+              where: { id: item.producto_id },
               data: { stock: { decrement: delta } },
             });
-            if (stockResult.count === 0) throw Object.assign(new Error(`Stock insuficiente para ${prod?.nombre}`), { status: 400 });
           } else {
             await tx.producto.update({ where: { id: item.producto_id }, data: { stock: { decrement: delta } } });
           }
@@ -254,7 +254,7 @@ router.patch('/:id/items/:itemId', verifyRole('admin', 'staff', 'chef', 'gerente
         const allItems = await tx.pedidoItem.findMany({ where: { pedido_id: pedidoId } });
         nuevoTotal = allItems.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
         await tx.pedido.update({ where: { id: pedidoId }, data: { total: nuevoTotal } });
-      });
+      }, { timeout: 15000 });
     } catch (e) {
       if (e.status) return res.status(e.status).json({ error: e.message });
       throw e;
