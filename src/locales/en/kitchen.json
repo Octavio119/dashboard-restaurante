@@ -1,0 +1,20 @@
+{
+  "title": "Kitchen",
+  "live": "Kitchen View",
+  "queue": "Order queue",
+  "status": {
+    "waiting": "Waiting",
+    "in_prep": "In preparation",
+    "ready": "Ready",
+    "delivered": "Delivered"
+  },
+  "actions": {
+    "start": "Start preparation",
+    "mark_ready": "Mark as ready",
+    "deliver": "Deliver"
+  },
+  "empty": "No orders in kitchen",
+  "order": "Order",
+  "table": "Table",
+  "time_elapsed": "{{minutes}} min ago"
+}

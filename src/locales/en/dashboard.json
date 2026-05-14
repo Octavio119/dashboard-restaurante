@@ -1,0 +1,41 @@
+{
+  "greeting": "Hello,",
+  "fallback_user": "User",
+  "live": "Live",
+  "reservations_label": "reservations",
+  "demo_data": "Demo data",
+  "new_reservation": "New Reservation",
+  "kpi": {
+    "daily_sales": "Daily Sales",
+    "total_orders": "Total Orders",
+    "reservations_today": "Today's Reservations",
+    "avg_ticket": "Avg. Ticket"
+  },
+  "kitchen": {
+    "title": "Live Kitchen",
+    "active_one": "{{count}} active",
+    "active_other": "{{count}} active",
+    "view_orders": "View orders"
+  },
+  "kitchen_status": {
+    "waiting": "Waiting",
+    "in_kitchen": "In kitchen"
+  },
+  "chart": {
+    "section_label": "Performance",
+    "title": "Sales — last 7 days",
+    "legend_income": "Revenue",
+    "tooltip_sales": "Sales"
+  },
+  "activity": {
+    "section_label": "Activity",
+    "title": "Recent Orders",
+    "empty": "No orders today"
+  },
+  "ops": {
+    "pending": "Pending",
+    "in_prep": "In preparation",
+    "completed": "Completed",
+    "success_rate": "Success rate"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "title": "Inventory",
+  "search": "Search product...",
+  "add_product": "Add product",
+  "import_bulk": "Bulk import",
+  "stock": "Stock",
+  "min_stock": "Min stock",
+  "unit": "Unit",
+  "category": "Category",
+  "price": "Price",
+  "movements": "Movements",
+  "status": {
+    "ok": "OK",
+    "low": "Low stock",
+    "out": "Out of stock"
+  },
+  "movement_types": {
+    "entrada": "In",
+    "salida": "Out",
+    "ajuste": "Adjustment"
+  },
+  "alert": {
+    "low_stock": "Low stock: {{product}}",
+    "out_of_stock": "Out of stock: {{product}}"
+  },
+  "empty": "No products in inventory",
+  "import": {
+    "title": "Import products",
+    "description": "Upload an Excel or CSV file with the required format",
+    "download_template": "Download template",
+    "upload": "Upload file",
+    "success": "{{count}} products imported successfully",
+    "error": "Import error: {{message}}"
+  }
+}

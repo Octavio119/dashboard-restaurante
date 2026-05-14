@@ -6,6 +6,7 @@ import { registerSW } from 'virtual:pwa-register'
 import { AuthProvider } from './AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import App from './App.jsx'
+import './i18n'
 import './index.css'
 import './styles/dashboard-theme.css'
 

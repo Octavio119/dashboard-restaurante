@@ -1,0 +1,37 @@
+{
+  "search_placeholder": "Buscar...",
+  "notifications": "Notificaciones",
+  "no_new_notifications": "Sin notificaciones nuevas",
+  "new_badge": "0 nuevas",
+  "close": "Cerrar",
+  "collapse": "Colapsar",
+  "expand": "Expandir",
+  "logout": "Cerrar sesión",
+  "export": "Exportar",
+  "view_all": "Ver todos",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "confirm": "Confirmar",
+  "loading": "Cargando...",
+  "language": "Idioma",
+  "nav": {
+    "Dashboard": "Dashboard",
+    "Pedidos": "Pedidos",
+    "Ventas": "Ventas",
+    "Reservas": "Reservas",
+    "Clientes": "Clientes",
+    "Inventario": "Inventario",
+    "Analytics": "Analytics",
+    "Configuración": "Configuración",
+    "Más": "Más"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "chef": "Chef",
+    "staff": "Personal",
+    "gerente": "Gerente",
+    "super_admin": "Super Admin"
+  }
+}

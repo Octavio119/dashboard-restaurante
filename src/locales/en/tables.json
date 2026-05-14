@@ -1,0 +1,16 @@
+{
+  "title": "Table Map",
+  "legend": {
+    "free": "Free",
+    "occupied": "Occupied",
+    "reserved": "Reserved"
+  },
+  "table": "Table {{number}}",
+  "capacity": "{{count}} people",
+  "actions": {
+    "open_order": "Open order",
+    "view_order": "View order",
+    "free_table": "Free table"
+  },
+  "empty": "No tables configured"
+}

@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect, useRef } from "react"
 import { motion, animate } from "framer-motion"
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
+import { formatCurrency, formatDate } from "../lib/i18nFormatters"
 import {
   Download, Plus, DollarSign, ShoppingBag,
   Calendar, Activity, ArrowRight, ChefHat,
@@ -29,6 +31,8 @@ function Skeleton({ className }) {
 }
 
 function AnimatedNumber({ value }) {
+  const { i18n } = useTranslation()
+  const numLocale = i18n.language?.startsWith("en") ? "en-US" : "es-CL"
   const ref = useRef(null)
   useEffect(() => {
     const str    = String(value)
@@ -37,21 +41,20 @@ function AnimatedNumber({ value }) {
     if (!ref.current || isNaN(num) || num === 0) { if (ref.current) ref.current.textContent = value; return }
     const ctrl = animate(Math.max(0, Math.round(num * 0.55)), num, {
       duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94],
-      onUpdate(v) { if (ref.current) ref.current.textContent = prefix + Math.round(v).toLocaleString("es-CL") },
+      onUpdate(v) { if (ref.current) ref.current.textContent = prefix + Math.round(v).toLocaleString(numLocale) },
     })
     return ctrl.stop
-  }, [value])
+  }, [value, numLocale])
   return <span ref={ref}>{value}</span>
-}
-
-// ─── Kitchen status config ──────────────────────────────────────────────────────
-const KITCHEN_STATUS = {
-  pendiente:       { color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  icon: Clock,        label: "Esperando" },
-  en_preparacion:  { color: "#3B82F6", bg: "rgba(59,130,246,0.08)",  icon: Flame,        label: "En cocina" },
 }
 
 // ─── Kitchen card ───────────────────────────────────────────────────────────────
 function KitchenCard({ order, index }) {
+  const { t } = useTranslation("dashboard")
+  const KITCHEN_STATUS = {
+    pendiente:      { color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  icon: Clock,  label: t("kitchen_status.waiting") },
+    en_preparacion: { color: "#3B82F6", bg: "rgba(59,130,246,0.08)",  icon: Flame,  label: t("kitchen_status.in_kitchen") },
+  }
   const cfg = KITCHEN_STATUS[order.estado] || KITCHEN_STATUS.pendiente
   const StatusIcon = cfg.icon
   return (
@@ -76,7 +79,7 @@ function KitchenCard({ order, index }) {
         {order.item || "—"}
       </p>
       <p className="text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>
-        ${(order.total || 0).toLocaleString("es-CL")}
+        {order.total ? `$${(order.total || 0).toLocaleString()}` : "—"}
       </p>
     </motion.div>
   )
@@ -115,6 +118,9 @@ export default function DashboardPage({
   salesData,
   setActiveTab,
 }) {
+  const { t, i18n } = useTranslation(["dashboard", "common"])
+  const numLocale = i18n.language?.startsWith("en") ? "en-US" : "es-CL"
+
   // Detect real data vs empty state
   const hasRealData = (ventasResumen?.total || 0) > 0 || pedidos.length > 0 || salesData.length > 0
 
@@ -130,14 +136,17 @@ export default function DashboardPage({
   const isLoading = !mounted
 
   // Use real data or inject demo data
-  const displayPedidos     = hasRealData ? pedidos          : DEMO_PEDIDOS
-  const displayVentas      = hasRealData ? ventasResumen    : DEMO_VENTAS_RESUMEN
-  const displaySalesData   = hasRealData ? salesData        : DEMO_SALES_DATA
-  const displayReservas    = hasRealData ? todayReservations : DEMO_RESERVAS
+  const displayPedidos   = hasRealData ? pedidos          : DEMO_PEDIDOS
+  const displayVentas    = hasRealData ? ventasResumen    : DEMO_VENTAS_RESUMEN
+  const displaySalesData = hasRealData ? salesData        : DEMO_SALES_DATA
+  const displayReservas  = hasRealData ? todayReservations : DEMO_RESERVAS
 
   // Derived
   const ticketProm = displayPedidos.length
-    ? `$${Math.round(displayPedidos.reduce((s, o) => s + (o.total || 0), 0) / displayPedidos.length).toLocaleString("es-CL")}`
+    ? formatCurrency(
+        Math.round(displayPedidos.reduce((s, o) => s + (o.total || 0), 0) / displayPedidos.length),
+        i18n.language
+      )
     : "$0"
 
   const activeOrders = useMemo(
@@ -161,9 +170,9 @@ export default function DashboardPage({
     return { pending, inPrep, done, rate }
   }, [displayPedidos])
 
-  const todayLabel = new Intl.DateTimeFormat("es-CL", {
+  const todayLabel = formatDate(new Date(), i18n.language, {
     weekday: "long", day: "numeric", month: "long",
-  }).format(new Date())
+  })
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -183,9 +192,9 @@ export default function DashboardPage({
             className="text-[21px] font-bold tracking-tight leading-none"
             style={{ color: "var(--text-1)" }}
           >
-            Hola,{" "}
+            {t("greeting", { ns: "dashboard" })}{" "}
             <span style={{ color: "#8B5CF6" }}>
-              {user?.nombre?.split(" ")[0] || "Usuario"}
+              {user?.nombre?.split(" ")[0] || t("fallback_user", { ns: "dashboard" })}
             </span>
           </h2>
 
@@ -198,7 +207,7 @@ export default function DashboardPage({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
               </span>
-              <span className="font-medium text-emerald-400">En vivo</span>
+              <span className="font-medium text-emerald-400">{t("live", { ns: "dashboard" })}</span>
             </span>
 
             <span className="opacity-25">·</span>
@@ -208,7 +217,8 @@ export default function DashboardPage({
               <>
                 <span className="opacity-25">·</span>
                 <span>
-                  <span style={{ color: "var(--text-2)" }}>{displayReservas.length}</span> reservas
+                  <span style={{ color: "var(--text-2)" }}>{displayReservas.length}</span>{" "}
+                  {t("reservations_label", { ns: "dashboard" })}
                 </span>
               </>
             )}
@@ -220,7 +230,7 @@ export default function DashboardPage({
                   className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
                   style={{ background: "rgba(139,92,246,0.1)", color: "#8B5CF6" }}
                 >
-                  Datos demo
+                  {t("demo_data", { ns: "dashboard" })}
                 </span>
               </>
             )}
@@ -234,7 +244,7 @@ export default function DashboardPage({
             style={{ background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-2)" }}
           >
             <Download size={12} />
-            Exportar
+            {t("export", { ns: "common" })}
           </button>
           <ShineBorder color={["#A78BFA", "#7C3AED"]} borderWidth={1} className="rounded-lg">
             <button
@@ -243,7 +253,7 @@ export default function DashboardPage({
               style={{ background: "#8B5CF6", color: "white" }}
             >
               <Plus size={12} />
-              Nueva Reserva
+              {t("new_reservation", { ns: "dashboard" })}
             </button>
           </ShineBorder>
         </div>
@@ -262,10 +272,30 @@ export default function DashboardPage({
                 <motion.div key={i} variants={stagger.item}><MetricSkeleton /></motion.div>
               ))
             : [
-                { title: "Ventas del día",  value: `$${(displayVentas?.total || 0).toLocaleString("es-CL", { minimumFractionDigits: 0 })}`, trend: 12.5,  icon: DollarSign, iconColor: "#10B981", beamFrom: "#7C3AED", beamTo: "#4F46E5", beamDuration: 8,  beamDelay: 0 },
-                { title: "Pedidos totales", value: displayPedidos.length, trend: 8.2, icon: ShoppingBag, iconColor: "#8B5CF6", beamFrom: "#2563EB", beamTo: "#7C3AED", beamDuration: 10, beamDelay: 2 },
-                { title: "Reservas hoy",   value: displayReservas.length, trend: 4.0, icon: Calendar,   iconColor: "#3B82F6", beamFrom: "#16A34A", beamTo: "#2563EB", beamDuration: 12, beamDelay: 4 },
-                { title: "Ticket promedio",value: ticketProm,             trend: 4.1, icon: Activity,   iconColor: "#F59E0B", beamFrom: "#D97706", beamTo: "#7C3AED", beamDuration: 9,  beamDelay: 6 },
+                {
+                  title: t("kpi.daily_sales", { ns: "dashboard" }),
+                  value: formatCurrency(displayVentas?.total || 0, i18n.language),
+                  trend: 12.5, icon: DollarSign, iconColor: "#10B981",
+                  beamFrom: "#7C3AED", beamTo: "#4F46E5", beamDuration: 8, beamDelay: 0,
+                },
+                {
+                  title: t("kpi.total_orders", { ns: "dashboard" }),
+                  value: displayPedidos.length,
+                  trend: 8.2, icon: ShoppingBag, iconColor: "#8B5CF6",
+                  beamFrom: "#2563EB", beamTo: "#7C3AED", beamDuration: 10, beamDelay: 2,
+                },
+                {
+                  title: t("kpi.reservations_today", { ns: "dashboard" }),
+                  value: displayReservas.length,
+                  trend: 4.0, icon: Calendar, iconColor: "#3B82F6",
+                  beamFrom: "#16A34A", beamTo: "#2563EB", beamDuration: 12, beamDelay: 4,
+                },
+                {
+                  title: t("kpi.avg_ticket", { ns: "dashboard" }),
+                  value: ticketProm,
+                  trend: 4.1, icon: Activity, iconColor: "#F59E0B",
+                  beamFrom: "#D97706", beamTo: "#7C3AED", beamDuration: 9, beamDelay: 6,
+                },
               ].map((card, i) => (
                 <motion.div key={i} variants={stagger.item} ref={kpiRefs[i]}>
                   <MetricCard {...card} />
@@ -303,13 +333,13 @@ export default function DashboardPage({
                 className="text-[11px] font-semibold uppercase tracking-[0.1em]"
                 style={{ color: "var(--text-3)" }}
               >
-                Cocina en vivo
+                {t("kitchen.title", { ns: "dashboard" })}
               </span>
               <span
                 className="flex items-center justify-center rounded-full px-1.5 py-[1px] text-[10px] font-bold"
                 style={{ background: "rgba(59,130,246,0.1)", color: "#3B82F6" }}
               >
-                {activeOrders.length} activos
+                {t("kitchen.active_other", { ns: "dashboard", count: activeOrders.length })}
               </span>
             </div>
             <button
@@ -317,7 +347,7 @@ export default function DashboardPage({
               className="flex cursor-pointer items-center gap-1 text-[11px] font-medium transition-colors duration-150 hover:text-white"
               style={{ color: "var(--text-3)" }}
             >
-              Ver comandas
+              {t("kitchen.view_orders", { ns: "dashboard" })}
               <ArrowRight size={10} />
             </button>
           </div>
@@ -344,15 +374,15 @@ export default function DashboardPage({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-3)" }}>
-                  Rendimiento
+                  {t("chart.section_label", { ns: "dashboard" })}
                 </p>
                 <h3 className="mt-0.5 text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
-                  Ventas — últimos 7 días
+                  {t("chart.title", { ns: "dashboard" })}
                 </h3>
               </div>
               <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
                 <span className="inline-block h-[2px] w-4 rounded bg-violet-500/50" />
-                Ingresos
+                {t("chart.legend_income", { ns: "dashboard" })}
               </div>
             </div>
 
@@ -382,7 +412,10 @@ export default function DashboardPage({
                         boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                       }}
                       cursor={{ stroke: "rgba(255,255,255,0.04)", strokeWidth: 1 }}
-                      formatter={v => [`$${Number(v).toLocaleString("es-CL")}`, "Ventas"]}
+                      formatter={v => [
+                        formatCurrency(Number(v), i18n.language),
+                        t("chart.tooltip_sales", { ns: "dashboard" }),
+                      ]}
                     />
                     <Area
                       type="monotone"
@@ -408,10 +441,10 @@ export default function DashboardPage({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-3)" }}>
-                  Actividad
+                  {t("activity.section_label", { ns: "dashboard" })}
                 </p>
                 <h3 className="mt-0.5 text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
-                  Pedidos recientes
+                  {t("activity.title", { ns: "dashboard" })}
                 </h3>
               </div>
               <button
@@ -419,7 +452,7 @@ export default function DashboardPage({
                 className="flex cursor-pointer items-center gap-1 text-[11px] font-medium transition-colors duration-150 hover:text-white"
                 style={{ color: "var(--text-3)" }}
               >
-                Ver todos <ArrowRight size={10} />
+                {t("view_all", { ns: "common" })} <ArrowRight size={10} />
               </button>
             </div>
 
@@ -450,7 +483,7 @@ export default function DashboardPage({
                         )}
                       </div>
                       <span className="shrink-0 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-                        ${(order.total || 0).toLocaleString("es-CL")}
+                        {formatCurrency(order.total || 0, i18n.language)}
                       </span>
                     </motion.div>
                   ))
@@ -459,7 +492,7 @@ export default function DashboardPage({
               {!isLoading && displayPedidos.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "var(--text-3)" }}>
                   <ShoppingBag size={20} className="opacity-30" />
-                  <p className="text-[12px]">Sin pedidos hoy</p>
+                  <p className="text-[12px]">{t("activity.empty", { ns: "dashboard" })}</p>
                 </div>
               )}
             </div>
@@ -475,10 +508,10 @@ export default function DashboardPage({
         className="grid grid-cols-2 sm:grid-cols-4 gap-3"
       >
         {[
-          { label: "Pendientes",     value: ops.pending, color: "#F59E0B", icon: Clock        },
-          { label: "En preparación", value: ops.inPrep,  color: "#3B82F6", icon: Flame        },
-          { label: "Completados",    value: ops.done,    color: "#10B981", icon: CheckCircle2 },
-          { label: "Tasa de éxito",  value: `${ops.rate}%`, color: "#8B5CF6", icon: Activity },
+          { label: t("ops.pending",      { ns: "dashboard" }), value: ops.pending,        color: "#F59E0B", icon: Clock        },
+          { label: t("ops.in_prep",      { ns: "dashboard" }), value: ops.inPrep,          color: "#3B82F6", icon: Flame        },
+          { label: t("ops.completed",    { ns: "dashboard" }), value: ops.done,            color: "#10B981", icon: CheckCircle2 },
+          { label: t("ops.success_rate", { ns: "dashboard" }), value: `${ops.rate}%`,      color: "#8B5CF6", icon: Activity     },
         ].map(({ label, value, color, icon: Icon }) => (
           <div
             key={label}

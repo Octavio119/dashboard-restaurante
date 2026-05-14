@@ -1,0 +1,16 @@
+{
+  "title": "Mapa de Mesas",
+  "legend": {
+    "free": "Libre",
+    "occupied": "Ocupada",
+    "reserved": "Reservada"
+  },
+  "table": "Mesa {{number}}",
+  "capacity": "{{count}} personas",
+  "actions": {
+    "open_order": "Abrir pedido",
+    "view_order": "Ver pedido",
+    "free_table": "Liberar mesa"
+  },
+  "empty": "Sin mesas configuradas"
+}

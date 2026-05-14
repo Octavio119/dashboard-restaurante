@@ -1,0 +1,20 @@
+{
+  "title": "Cocina",
+  "live": "Vista Cocina",
+  "queue": "Cola de pedidos",
+  "status": {
+    "waiting": "Esperando",
+    "in_prep": "En preparación",
+    "ready": "Listo",
+    "delivered": "Entregado"
+  },
+  "actions": {
+    "start": "Iniciar preparación",
+    "mark_ready": "Marcar como listo",
+    "deliver": "Entregar"
+  },
+  "empty": "No hay pedidos en cocina",
+  "order": "Pedido",
+  "table": "Mesa",
+  "time_elapsed": "Hace {{minutes}} min"
+}

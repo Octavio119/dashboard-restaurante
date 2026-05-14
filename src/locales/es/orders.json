@@ -1,0 +1,59 @@
+{
+  "title": "Pedidos",
+  "new_order": "Nuevo Pedido",
+  "list_view": "Lista",
+  "table_view": "Mesas",
+  "filter_all": "Todos",
+  "search_products": "Buscar productos...",
+  "search_client": "Buscar cliente...",
+  "table_label": "Mesa",
+  "guest_label": "Sin nombre",
+  "no_results": "Sin resultados",
+  "status": {
+    "pendiente": "Pendiente",
+    "en_preparacion": "En preparación",
+    "completado": "Completado",
+    "pagado": "Pagado",
+    "cancelado": "Cancelado"
+  },
+  "actions": {
+    "add_item": "Agregar",
+    "remove_item": "Quitar",
+    "complete_order": "Completar pedido",
+    "convert_to_sale": "Cobrar",
+    "print": "Imprimir",
+    "delete": "Eliminar pedido",
+    "new_order": "Nuevo pedido",
+    "save_offline": "Guardado sin conexión"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "items_one": "{{count}} ítem",
+    "items_other": "{{count}} ítems",
+    "empty_cart": "Sin ítems en el pedido",
+    "no_orders": "Sin pedidos",
+    "no_orders_desc": "Crea tu primer pedido para empezar",
+    "order_number": "Pedido #{{id}}"
+  },
+  "filter": {
+    "date": "Fecha",
+    "period_day": "Hoy",
+    "period_week": "Semana",
+    "period_month": "Mes",
+    "status_all": "Todos los estados"
+  },
+  "toast": {
+    "created": "Pedido creado correctamente",
+    "updated": "Pedido actualizado",
+    "deleted": "Pedido eliminado",
+    "error": "Error al procesar el pedido",
+    "offline": "Pedido guardado — se sincronizará al conectarse"
+  },
+  "mesa": {
+    "free": "Libre",
+    "occupied": "Ocupada",
+    "reserved": "Reservada",
+    "table": "Mesa {{number}}"
+  }
+}

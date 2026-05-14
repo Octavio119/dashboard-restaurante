@@ -1,0 +1,41 @@
+{
+  "greeting": "Hola,",
+  "fallback_user": "Usuario",
+  "live": "En vivo",
+  "reservations_label": "reservas",
+  "demo_data": "Datos demo",
+  "new_reservation": "Nueva Reserva",
+  "kpi": {
+    "daily_sales": "Ventas del día",
+    "total_orders": "Pedidos totales",
+    "reservations_today": "Reservas hoy",
+    "avg_ticket": "Ticket promedio"
+  },
+  "kitchen": {
+    "title": "Cocina en vivo",
+    "active_one": "{{count}} activo",
+    "active_other": "{{count}} activos",
+    "view_orders": "Ver comandas"
+  },
+  "kitchen_status": {
+    "waiting": "Esperando",
+    "in_kitchen": "En cocina"
+  },
+  "chart": {
+    "section_label": "Rendimiento",
+    "title": "Ventas — últimos 7 días",
+    "legend_income": "Ingresos",
+    "tooltip_sales": "Ventas"
+  },
+  "activity": {
+    "section_label": "Actividad",
+    "title": "Pedidos recientes",
+    "empty": "Sin pedidos hoy"
+  },
+  "ops": {
+    "pending": "Pendientes",
+    "in_prep": "En preparación",
+    "completed": "Completados",
+    "success_rate": "Tasa de éxito"
+  }
+}

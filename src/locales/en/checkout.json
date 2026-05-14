@@ -1,0 +1,23 @@
+{
+  "title": "Checkout",
+  "summary": "Order summary",
+  "subtotal": "Subtotal",
+  "tax": "Tax ({{percent}}%)",
+  "total": "Total due",
+  "payment_method": "Payment method",
+  "methods": {
+    "cash": "Cash",
+    "card": "Card",
+    "transfer": "Bank transfer",
+    "paypal": "PayPal"
+  },
+  "cash_received": "Cash received",
+  "change": "Change",
+  "confirm_payment": "Confirm payment",
+  "processing": "Processing...",
+  "success": "Payment confirmed",
+  "error": "Error processing payment",
+  "print_ticket": "Print receipt",
+  "new_order": "New order",
+  "tip": "Tip"
+}

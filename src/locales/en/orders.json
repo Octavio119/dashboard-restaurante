@@ -1,0 +1,59 @@
+{
+  "title": "Orders",
+  "new_order": "New Order",
+  "list_view": "List",
+  "table_view": "Tables",
+  "filter_all": "All",
+  "search_products": "Search products...",
+  "search_client": "Search client...",
+  "table_label": "Table",
+  "guest_label": "No name",
+  "no_results": "No results",
+  "status": {
+    "pendiente": "Pending",
+    "en_preparacion": "In preparation",
+    "completado": "Completed",
+    "pagado": "Paid",
+    "cancelado": "Cancelled"
+  },
+  "actions": {
+    "add_item": "Add",
+    "remove_item": "Remove",
+    "complete_order": "Complete order",
+    "convert_to_sale": "Charge",
+    "print": "Print",
+    "delete": "Delete order",
+    "new_order": "New order",
+    "save_offline": "Saved offline"
+  },
+  "summary": {
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "empty_cart": "No items in order",
+    "no_orders": "No orders",
+    "no_orders_desc": "Create your first order to get started",
+    "order_number": "Order #{{id}}"
+  },
+  "filter": {
+    "date": "Date",
+    "period_day": "Today",
+    "period_week": "Week",
+    "period_month": "Month",
+    "status_all": "All statuses"
+  },
+  "toast": {
+    "created": "Order created successfully",
+    "updated": "Order updated",
+    "deleted": "Order deleted",
+    "error": "Error processing order",
+    "offline": "Order saved — will sync when online"
+  },
+  "mesa": {
+    "free": "Free",
+    "occupied": "Occupied",
+    "reserved": "Reserved",
+    "table": "Table {{number}}"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Checkout",
+  "summary": "Resumen del pedido",
+  "subtotal": "Subtotal",
+  "tax": "IVA ({{percent}}%)",
+  "total": "Total a pagar",
+  "payment_method": "Método de pago",
+  "methods": {
+    "cash": "Efectivo",
+    "card": "Tarjeta",
+    "transfer": "Transferencia",
+    "paypal": "PayPal"
+  },
+  "cash_received": "Efectivo recibido",
+  "change": "Vuelto",
+  "confirm_payment": "Confirmar pago",
+  "processing": "Procesando...",
+  "success": "Pago confirmado",
+  "error": "Error al procesar el pago",
+  "print_ticket": "Imprimir ticket",
+  "new_order": "Nuevo pedido",
+  "tip": "Propina"
+}
