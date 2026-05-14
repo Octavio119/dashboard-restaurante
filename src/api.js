@@ -182,6 +182,7 @@ export const api = {
   getVentasDia: (fecha) => request(`/ventas${fecha ? `?fecha=${fecha}` : ''}`).then(r => Array.isArray(r) ? r : (r?.rows ?? [])),
   getResumenVentas: (periodo) => request(`/ventas/resumen?periodo=${periodo}`),
   getAnalytics:    () => request('/analytics/ventas'),
+  getAIInsights:   (refresh = false) => request(`/analytics/insights${refresh ? '?refresh=true' : ''}`),
   getSalesChart:   (dias = 7) => request(`/ventas/chart?dias=${dias}`),
   createVenta: (data) => request('/ventas', { method: 'POST', body: JSON.stringify(data) }),
   deleteVenta: (id, adminCode) => request(`/ventas/${id}`, { method: 'DELETE', body: JSON.stringify({ admin_code: adminCode }) }),

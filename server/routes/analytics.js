@@ -1,6 +1,8 @@
+const https       = require('https');
 const router      = require('express').Router();
 const requireAuth = require('../middleware/auth');
 const { checkPlanFeature } = require('../lib/planLimits');
+const cache       = require('../lib/cache');
 const logger      = require('../lib/logger');
 
 const RID = (req) => req.user.restaurante_id;
@@ -229,6 +231,272 @@ router.get('/comparativa', async (req, res) => {
   } catch (e) {
     logger.error({ err: e }, 'analytics/comparativa error');
     res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// ─── AI Insights helpers ──────────────────────────────────────────────────────
+
+const DOW_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const INSIGHTS_TTL = 6 * 60 * 60; // 6 hours
+
+/** Call Anthropic Messages API, return parsed JSON from assistant text. */
+async function _callAnthropic(prompt) {
+  const body = JSON.stringify({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 600,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+    }, (res) => {
+      let raw = '';
+      res.on('data', c => { raw += c; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(raw);
+          if (res.statusCode !== 200) {
+            return reject(new Error(parsed.error?.message || `Anthropic ${res.statusCode}`));
+          }
+          const text = parsed.content?.[0]?.text || '';
+          // Strip optional markdown fences
+          const json = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+          resolve(JSON.parse(json));
+        } catch (e) {
+          reject(new Error('Respuesta inválida de Anthropic: ' + e.message));
+        }
+      });
+    });
+    req.setTimeout(28_000, () => { req.destroy(); reject(new Error('Anthropic timeout')); });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+/** Rule-based insights when no API key is configured. */
+function _staticInsights({ salesByDay, topProducts, peakHour, avgTicket }) {
+  const insights = [];
+
+  // Weakest day of the week
+  if (salesByDay.length >= 3) {
+    const avg = salesByDay.reduce((s, d) => s + Number(d.total), 0) / salesByDay.length;
+    const worst = salesByDay.reduce((a, b) => Number(a.total) < Number(b.total) ? a : b);
+    const pct = avg > 0 ? Math.round((1 - Number(worst.total) / avg) * 100) : 0;
+    if (pct >= 25) {
+      insights.push({
+        type: 'warning',
+        title: `Ventas bajas los ${DOW_NAMES[worst.dow]}`,
+        description: `Las ventas del ${DOW_NAMES[worst.dow]} están un ${pct}% por debajo del promedio semanal.`,
+        action: `Lanza una promo exclusiva para los ${DOW_NAMES[worst.dow]} — combo, 2×1 o descuento para grupos.`,
+      });
+    }
+  }
+
+  // Peak hour opportunity
+  if (peakHour) {
+    const h = Number(peakHour.hour);
+    insights.push({
+      type: 'trend',
+      title: `Hora pico: ${h}:00 – ${h + 1}:00`,
+      description: `Tu restaurante concentra la mayor actividad entre las ${h}:00 y las ${h + 1}:00 con ${peakHour.count} pedidos en promedio.`,
+      action: 'Asegura staff completo y mise en place lista al menos 30 min antes de ese horario.',
+    });
+  }
+
+  // Top product
+  const top = topProducts[0];
+  if (top) {
+    insights.push({
+      type: 'opportunity',
+      title: `"${top.nombre}" domina las ventas`,
+      description: `Es tu producto más vendido este mes con ${top.unidades} unidades. Aprovéchalo como ancla de menú.`,
+      action: 'Colócalo en el inicio del menú y úsalo en fotos para redes sociales para potenciar la conversión.',
+    });
+  }
+
+  // Ticket average
+  if (insights.length < 3 && avgTicket) {
+    const formatted = Math.round(avgTicket).toLocaleString('es-CL');
+    insights.push({
+      type: 'opportunity',
+      title: `Ticket promedio: $${formatted}`,
+      description: `El valor promedio por pedido la última semana fue $${formatted}.`,
+      action: 'Ofrece postres o bebidas al momento del cierre de cuenta para aumentar el ticket sin fricción.',
+    });
+  }
+
+  return insights.slice(0, 3);
+}
+
+// ─── GET /api/analytics/insights ─────────────────────────────────────────────
+router.get('/insights', async (req, res) => {
+  const rid      = RID(req);
+  const forceRefresh = req.query.refresh === 'true';
+  const cacheKey = `ai-insights:${rid}`;
+
+  try {
+    // ── Cache read ────────────────────────────────────────────────────────────
+    if (!forceRefresh) {
+      const cached = await cache.get(cacheKey);
+      if (cached) return res.json({ ...cached, from_cache: true });
+    } else {
+      await cache.del(cacheKey);
+    }
+
+    // ── Data queries (parallel) ───────────────────────────────────────────────
+    const now       = new Date();
+    const from90    = new Date(now); from90.setDate(now.getDate() - 90); from90.setHours(0, 0, 0, 0);
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endPrevMonth   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const startLastWeek  = new Date(now); startLastWeek.setDate(now.getDate() - 7); startLastWeek.setHours(0, 0, 0, 0);
+
+    const [salesByDayRaw, peakHourRaw, currentItems, prevItems, ticketAgg] = await Promise.all([
+      // Sales by day of week (0=Sun … 6=Sat)
+      req.prisma.$queryRaw`
+        SELECT EXTRACT(DOW FROM fecha)::int AS dow,
+               COUNT(*)::int               AS count,
+               SUM(total)                  AS total
+        FROM "Venta"
+        WHERE restaurante_id = ${rid}
+          AND fecha >= ${from90}
+        GROUP BY dow
+        ORDER BY dow
+      `,
+      // Peak hour
+      req.prisma.$queryRaw`
+        SELECT EXTRACT(HOUR FROM fecha)::int AS hour,
+               COUNT(*)::int                 AS count
+        FROM "Venta"
+        WHERE restaurante_id = ${rid}
+          AND fecha >= ${from90}
+        GROUP BY hour
+        ORDER BY count DESC
+        LIMIT 1
+      `,
+      // Top products this month
+      req.prisma.ventaItem.findMany({
+        where: { restaurante_id: rid, venta: { fecha: { gte: startMonth, lte: now } } },
+        select: { nombre: true, qty: true },
+      }),
+      // Top products previous month
+      req.prisma.ventaItem.findMany({
+        where: { restaurante_id: rid, venta: { fecha: { gte: startPrevMonth, lte: endPrevMonth } } },
+        select: { nombre: true, qty: true },
+      }),
+      // Average ticket last 7 days
+      req.prisma.venta.aggregate({
+        where: { restaurante_id: rid, fecha: { gte: startLastWeek } },
+        _avg: { total: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    // ── Aggregate products ────────────────────────────────────────────────────
+    const aggProducts = (items) => {
+      const map = {};
+      for (const i of items) {
+        map[i.nombre] = (map[i.nombre] || 0) + i.qty;
+      }
+      return Object.entries(map)
+        .map(([nombre, unidades]) => ({ nombre, unidades }))
+        .sort((a, b) => b.unidades - a.unidades)
+        .slice(0, 5);
+    };
+
+    const topCurrent  = aggProducts(currentItems);
+    const topPrev     = aggProducts(prevItems);
+    const peakHour    = peakHourRaw[0] || null;
+    const avgTicket   = ticketAgg._avg.total || 0;
+    const salesByDay  = salesByDayRaw;
+
+    // ── Build response payload ────────────────────────────────────────────────
+    let insights;
+    let source = 'static';
+
+    if (process.env.ANTHROPIC_API_KEY) {
+      // ── Build prompt ────────────────────────────────────────────────────────
+      const dowTable = DOW_NAMES.map((name, i) => {
+        const d = salesByDay.find(r => r.dow === i);
+        return d
+          ? `  ${name}: $${Number(d.total).toFixed(0)} (${d.count} ventas)`
+          : `  ${name}: sin datos`;
+      }).join('\n');
+
+      const topTable = topCurrent.map((p, idx) => {
+        const prev = topPrev.find(x => x.nombre === p.nombre);
+        const diff = prev ? ` (mes anterior: ${prev.unidades} uds)` : ' (sin datos mes anterior)';
+        return `  ${idx + 1}. ${p.nombre}: ${p.unidades} uds${diff}`;
+      }).join('\n') || '  Sin ventas este mes';
+
+      const prompt = `Eres un experto en analytics para restaurantes latinoamericanos. Analiza estos datos reales y genera exactamente 3 insights accionables.
+
+DATOS DEL RESTAURANTE (últimos 90 días):
+
+Ventas por día de semana:
+${dowTable}
+
+Top 5 productos más vendidos este mes:
+${topTable}
+
+Hora pico de pedidos: ${peakHour ? `${peakHour.hour}:00 – ${Number(peakHour.hour) + 1}:00 (${peakHour.count} pedidos)` : 'sin datos'}
+
+Ticket promedio última semana: $${Math.round(avgTicket).toLocaleString('es-CL')} (${ticketAgg._count.id} pedidos)
+
+REGLAS:
+- Exactamente 3 insights. No más, no menos.
+- Usa números reales del dataset en la descripción.
+- "action" debe ser concreta (1-2 oraciones), no genérica.
+- type: "warning" = problema urgente, "opportunity" = potencial sin explotar, "trend" = patrón identificado.
+- Idioma: español latinoamericano, informal y directo.
+
+Responde ÚNICAMENTE con JSON válido sin markdown:
+{"insights":[{"type":"...","title":"...","description":"...","action":"..."},{"type":"...","title":"...","description":"...","action":"..."},{"type":"...","title":"...","description":"...","action":"..."}]}`;
+
+      try {
+        const aiResponse = await _callAnthropic(prompt);
+        if (Array.isArray(aiResponse.insights) && aiResponse.insights.length > 0) {
+          insights = aiResponse.insights.slice(0, 3);
+          source   = 'ai';
+        } else {
+          throw new Error('Estructura de respuesta inesperada');
+        }
+      } catch (aiErr) {
+        logger.warn({ err: aiErr }, 'AI insights fallback to static');
+        insights = _staticInsights({ salesByDay, topProducts: topCurrent, peakHour, avgTicket });
+      }
+    } else {
+      insights = _staticInsights({ salesByDay, topProducts: topCurrent, peakHour, avgTicket });
+    }
+
+    const payload = {
+      insights,
+      source,
+      generated_at: new Date().toISOString(),
+      data_summary: {
+        ventas_semana: salesByDay,
+        top_productos: topCurrent,
+        hora_pico: peakHour,
+        ticket_promedio: avgTicket,
+        pedidos_semana: ticketAgg._count.id,
+      },
+    };
+
+    await cache.set(cacheKey, payload, INSIGHTS_TTL);
+    res.json({ ...payload, from_cache: false });
+  } catch (e) {
+    logger.error({ err: e }, 'analytics/insights error');
+    res.status(500).json({ error: 'Error al generar insights' });
   }
 });
 
