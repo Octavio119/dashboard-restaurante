@@ -4,10 +4,11 @@ import { useAuth } from './AuthContext';
 import { api } from './api';
 
 // Domain hooks
-import { useToast }      from './hooks/useToast';
-import { useNavigation } from './hooks/useNavigation';
-import { useWebSocket }  from './hooks/useWebSocket';
-import { useConfig }     from './hooks/useConfig';
+import { useToast }         from './hooks/useToast';
+import { useNavigation }    from './hooks/useNavigation';
+import { useWebSocket }     from './hooks/useWebSocket';
+import { useConfig }        from './hooks/useConfig';
+import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { usePedidos }    from './hooks/usePedidos';
 import { useReservas }   from './hooks/useReservas';
 import { useVentas }     from './hooks/useVentas';
@@ -35,6 +36,7 @@ import Billing           from './pages/Billing';
 import ApiKeysPage       from './pages/ApiKeysPage';
 import BillingSuccess    from './pages/BillingSuccess';
 import Spinner           from './components/ui/Spinner';
+import SyncBanner        from './components/SyncBanner';
 
 // Pure utility functions (no React state)
 import { exportCSV, exportReportePDF, exportVentasExcel, exportInventarioExcel } from './lib/exportUtils';
@@ -57,6 +59,10 @@ const App = () => {
   useWebSocket({ user, addToast });
   const cfg   = useConfig({ user });
   const peds  = usePedidos({ user, dateFilter, salesFilter });
+  const { isOnline, pendingCount, isSyncing, syncNow, refreshPendingCount } = useNetworkStatus({
+    addToast,
+    onSyncComplete: () => peds.loadPedidos(),
+  });
   const ress  = useReservas({ user, selectedDate, setSelectedDate, reservasPeriodo, setReservasPeriodo });
   const vtas  = useVentas({ user, salesFilter });
   const inv   = useInventario({ user });
@@ -185,6 +191,12 @@ const App = () => {
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <>
+      <SyncBanner
+        isOnline={isOnline}
+        pendingCount={pendingCount}
+        isSyncing={isSyncing}
+        syncNow={syncNow}
+      />
       <AppLayout
         user={user} logout={logout} config={cfg.config}
         activeTab={nav.activeTab} setActiveTab={nav.setActiveTab}
@@ -234,6 +246,9 @@ const App = () => {
               pedidoLoading={peds.pedidoLoading}       setPedidoLoading={peds.setPedidoLoading}
               pedidosLoading={peds.pedidosLoading}
               setPedidos={peds.setPedidos}              api={api}
+              isOnline={isOnline}
+              addToast={addToast}
+              refreshPendingCount={refreshPendingCount}
             />
           )}
 

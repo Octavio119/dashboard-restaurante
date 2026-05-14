@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence, animate } from 'framer-motion';
 import { SkeletonRow, SkeletonFade, SkeletonMetricGrid } from '../components/ui/Skeleton';
+import { saveOrder } from '../lib/offlineQueue';
 import {
   List, LayoutGrid, Plus, TableProperties, RefreshCw, Utensils,
   Users, ChefHat, Check, Receipt, ShoppingBag, Printer, ChevronRight,
@@ -63,7 +64,8 @@ export default function PedidosPage({
   productos, loadProductos, productosLoading,
   clienteSearchResults, setClienteSearchResults, isSearchingClientes,
   pedidoLoading, setPedidoLoading,
-  setPedidos, api
+  setPedidos, api,
+  isOnline, addToast, refreshPendingCount,
 }) {
 
   const [pedidoError, setPedidoError] = React.useState(null);
@@ -104,13 +106,12 @@ export default function PedidosPage({
   const handleCreatePedido = useCallback(async () => {
     setPedidoError(null);
 
-    // Capture current values before closing modal (optimistic update)
     const capturedForm  = { ...pedidoForm };
     const capturedItems = [...pedidoItems];
     const capturedTotal = capturedItems.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0);
     const tempId = `temp-${Date.now()}`;
 
-    // Close modal + show temp entry immediately — no waiting for server
+    // Optimistic UI — close modal, show entry immediately
     setPedidoModal(false);
     setPedidoItems([]);
     setPedidoForm({ cliente_nombre: '', mesa: '' });
@@ -127,13 +128,40 @@ export default function PedidosPage({
       _optimistic: true,
     }, ...p]);
 
+    // ── OFFLINE PATH ─────────────────────────────────────────────────────────
+    if (isOnline === false) {
+      try {
+        await saveOrder({
+          cliente_nombre: capturedForm.cliente_nombre,
+          mesa:  capturedForm.mesa,
+          items: capturedItems,
+        });
+        await refreshPendingCount?.();
+        addToast?.(
+          'Pedido guardado localmente, se enviará cuando vuelva la conexión',
+          'warning',
+          { title: 'Sin conexión' }
+        );
+        // Mark the optimistic entry so the UI shows it as offline
+        setPedidos(p => p.map(o => o.id === tempId ? { ...o, _offline: true } : o));
+      } catch {
+        // IDB failed — rollback
+        setPedidos(p => p.filter(o => o.id !== tempId));
+        setPedidoForm(capturedForm);
+        setPedidoItems(capturedItems);
+        setPedidoModal(true);
+        setPedidoError('No se pudo guardar el pedido localmente');
+      }
+      return;
+    }
+
+    // ── ONLINE PATH ──────────────────────────────────────────────────────────
     try {
       const nuevo = await api.createPedido({
         cliente_nombre: capturedForm.cliente_nombre,
         mesa:  capturedForm.mesa,
         items: capturedItems,
       });
-      // Swap temp entry for real server response
       setPedidos(p => p.map(o => o.id === tempId ? nuevo : o));
     } catch(e) {
       // Rollback: remove temp, reopen modal with original data
@@ -143,7 +171,7 @@ export default function PedidosPage({
       setPedidoModal(true);
       setPedidoError(e.message);
     }
-  }, [api, pedidoForm, pedidoItems, setPedidos, setPedidoModal, setPedidoItems, setPedidoForm, setPedidoSearch, setPedidoCatFilter]);
+  }, [api, pedidoForm, pedidoItems, setPedidos, setPedidoModal, setPedidoItems, setPedidoForm, setPedidoSearch, setPedidoCatFilter, isOnline, addToast, refreshPendingCount]);
 
   // Demo mode — only show placeholder orders when loaded AND empty
   const isDemoMode = !pedidosLoading && filteredOrders.length === 0;
