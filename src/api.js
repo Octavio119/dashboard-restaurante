@@ -276,4 +276,43 @@ export const api = {
     return request(`/inventario/movimientos${query ? '?' + query : ''}`);
   },
   createMovimiento: (data) => request('/inventario/movimientos', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Productos — importación masiva desde Excel/CSV
+  importProductos: async (file) => {
+    const doUpload = async (token) => {
+      const form = new FormData();
+      form.append('file', file);
+      return fetch(`${BASE}/productos/import`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+    };
+
+    let res = await doUpload(getToken());
+    if (res.status === 401) {
+      if (_isRefreshing) {
+        const newToken = await new Promise((resolve, reject) => {
+          _refreshQueue.push({ resolve, reject });
+        });
+        res = await doUpload(newToken);
+      } else {
+        _isRefreshing = true;
+        try {
+          const newToken = await _doRefresh();
+          _processQueue(null, newToken);
+          res = await doUpload(newToken);
+        } catch (err) {
+          _processQueue(err);
+          _clearSession();
+          throw new Error('Sesión expirada');
+        } finally {
+          _isRefreshing = false;
+        }
+      }
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    return data;
+  },
 };

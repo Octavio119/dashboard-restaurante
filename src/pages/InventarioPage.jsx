@@ -1,9 +1,10 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { RippleButton } from '../components/ui/ripple';
 import { SkeletonTable, SkeletonRow } from '../components/ui/Skeleton';
+import ImportProductosModal from '../components/modals/ImportProductosModal';
 import {
-  Package, List, Truck, Download, History, Plus,
+  Package, List, Truck, Download, Upload, History, Plus,
   AlertTriangle, AlertCircle, RefreshCw, X, Pencil, Trash2, Users, Smartphone, Mail
 } from 'lucide-react';
 
@@ -38,7 +39,7 @@ const INVENTARIO_STYLES = `
 export default function InventarioPage({
   inventarioTab, setInventarioTab,
   exportInventarioExcel, productos,
-  productosLoading,
+  productosLoading, loadProductos,
   setMovimientoForm, setIsMovModalOpen,
   proveedores,
   movStats,
@@ -48,7 +49,10 @@ export default function InventarioPage({
   setProveedorForm, setIsProvModalOpen,
   deleteProveedor
 }) {
+  const [importOpen, setImportOpen] = useState(false);
+
   return (
+    <>
     <motion.div key="inventario" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
       <style>{INVENTARIO_STYLES}</style>
       <div className="flex justify-between items-center flex-wrap gap-4">
@@ -88,6 +92,15 @@ export default function InventarioPage({
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#27272A'; e.currentTarget.style.color = '#A1A1AA'; }}
           >
             <Download size={14}/> Excel
+          </button>
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-2 rounded-lg transition-all cursor-pointer"
+            style={{ height: '38px', padding: '0 16px', fontSize: '13px', border: '1px solid rgba(139,92,246,0.3)', color: '#A78BFA', background: 'rgba(139,92,246,0.07)' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#8B5CF6'; e.currentTarget.style.color = '#C4B5FD'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.background = 'rgba(139,92,246,0.07)'; }}
+          >
+            <Upload size={14}/> Importar
           </button>
           <RippleButton
             onClick={() => { setMovimientoForm({ producto_id:'', tipo:'entrada', cantidad:'', proveedor_id:'', notas:'' }); setIsMovModalOpen(true); }}
@@ -413,5 +426,15 @@ export default function InventarioPage({
         </div>
       )}
     </motion.div>
+
+    <AnimatePresence>
+      {importOpen && (
+        <ImportProductosModal
+          onClose={() => setImportOpen(false)}
+          onSuccess={() => { loadProductos?.(); }}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }

@@ -277,12 +277,13 @@ const App = () => {
               inventarioTab={inv.inventarioTab}   setInventarioTab={inv.setInventarioTab}
               exportInventarioExcel={exportInventarioExcel}
               productos={prods.productos}
+              productosLoading={prods.productosLoading}
+              loadProductos={prods.loadProductos}
               setMovimientoForm={inv.setMovimientoForm} setIsMovModalOpen={inv.setIsMovModalOpen}
               proveedores={inv.proveedores}
               movStats={inv.movStats}             movFiltros={inv.movFiltros}
               setMovFiltros={inv.setMovFiltros}
               invLoading={inv.invLoading}         movimientos={inv.movimientos}
-              productosLoading={prods.productosLoading}
               movTotal={inv.movTotal}
               setProveedorForm={inv.setProveedorForm} setIsProvModalOpen={inv.setIsProvModalOpen}
               deleteProveedor={inv.deleteProveedor}
