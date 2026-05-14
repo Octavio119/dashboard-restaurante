@@ -20,7 +20,37 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
 // ── Rate limiting ──────────────────────────────────────────────────────────────
-const apiLimiter = rateLimit({
+// En modo cluster cada proceso tiene su propia memoria, por lo que los contadores
+// del rate limiter no se comparten entre instancias. Con REDIS_URL configurado,
+// usamos rate-limit-redis como store compartido para que el límite sea global.
+let _rateLimitStore = null;
+if (process.env.REDIS_URL) {
+  try {
+    const { RedisStore } = require('rate-limit-redis');
+    const { createClient } = require('redis');
+    const rlRedis = createClient({
+      url: process.env.REDIS_URL,
+      ...(process.env.REDIS_URL.startsWith('rediss://')
+        ? { socket: { tls: true, rejectUnauthorized: false } }
+        : {}),
+    });
+    rlRedis.on('error', err => logger.warn({ err }, '[rate-limit] Redis error'));
+    rlRedis.connect()
+      .then(() => {
+        _rateLimitStore = new RedisStore({ sendCommand: (...args) => rlRedis.sendCommand(args) });
+        logger.info('[rate-limit] Redis store activo — contadores compartidos en cluster');
+      })
+      .catch(err => logger.warn({ err }, '[rate-limit] Redis no disponible, usando store en memoria'));
+  } catch {
+    logger.warn('[rate-limit] rate-limit-redis no instalado, usando store en memoria');
+  }
+}
+
+function makeLimiter(opts) {
+  return rateLimit({ ...opts, ...(_rateLimitStore ? { store: _rateLimitStore } : {}) });
+}
+
+const apiLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 300,
   standardHeaders: true,
@@ -29,14 +59,14 @@ const apiLimiter = rateLimit({
   skip: (req) => req.path === '/api/health',
 });
 
-const authLimiter = rateLimit({
+const authLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: { error: 'Demasiados intentos de login. Intenta en 15 minutos.' },
 });
 
 // Limiter específico para endpoints de escritura — evita spam/DOS en creación de recursos
-const writeLimiter = rateLimit({
+const writeLimiter = makeLimiter({
   windowMs: 60 * 1000, // 1 minuto
   max: 60,
   standardHeaders: true,
@@ -57,13 +87,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'"],
-      styleSrc:   ["'self'"],
-      imgSrc:     ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-      fontSrc:    ["'self'"],
+      scriptSrc:  ["'self'", "https://*.paypal.com", "https://*.paypalobjects.com"],
+      styleSrc:   ["'self'", "https://*.paypal.com"],
+      imgSrc:     ["'self'", "data:", "blob:", "https://*.paypal.com", "https://*.paypalobjects.com"],
+      connectSrc: ["'self'", "ws:", "wss:", "https://*.paypal.com", "https://*.sandbox.paypal.com"],
+      fontSrc:    ["'self'", "https://*.paypalobjects.com"],
       objectSrc:  ["'none'"],
-      frameSrc:   ["'none'"],
+      frameSrc:   ["https://*.paypal.com", "https://*.sandbox.paypal.com"],
       baseUri:    ["'self'"],
       formAction: ["'self'"],
     },
@@ -83,11 +113,16 @@ const allowedOrigins = [
 
 app.use(cors({ origin: allowedOrigins }));
 
-// Raw body para webhook de PayPal — DEBE ir antes de express.json()
+// Raw body para webhooks — DEBE ir antes de express.json()
 app.use(
   '/api/billing/webhook',
   express.raw({ type: 'application/json' }),
   (req, _res, next) => { req.body = JSON.parse(req.body); next(); }
+);
+app.use(
+  '/api/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  (req, _res, next) => { req.body = req.body ? JSON.parse(req.body) : {}; next(); }
 );
 
 app.use(express.json({ limit: '10kb' }));
@@ -119,9 +154,32 @@ app.use('/api/config',     require('./routes/config'));
 app.use('/api/inventario', require('./routes/inventario'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/apikeys',   require('./routes/apikeys'));
+app.use('/api/payments',  require('./routes/payments'));
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
-app.get('/health',     (_req, res) => res.status(200).json({ status: 'ok' }));
+app.get('/api/health', (_req, res) => {
+  // Lazy-require para evitar dependencia circular en la inicialización
+  const { getIO }  = require('./lib/socket');
+  const cache      = require('./lib/cache');
+  const io         = getIO();
+
+  res.json({
+    status:  'ok',
+    ts:      new Date().toISOString(),
+    uptime:  Math.floor(process.uptime()),           // segundos desde que arrancó el proceso
+    version: process.env.npm_package_version || '1.0.0',
+    worker:  process.env.NODE_APP_INSTANCE ?? 'standalone', // índice del worker PM2
+    sockets: {
+      // clientsCount = sockets conectados a ESTE worker; con Redis adapter la suma
+      // real es la de todos los workers, pero eso requeriría un query a Redis.
+      connected_this_worker: io?.engine?.clientsCount ?? 0,
+    },
+    redis: {
+      configured: !!process.env.REDIS_URL,
+      cache_ready: cache.isReady(),
+    },
+  });
+});
+app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 
 // ── Swagger UI ─────────────────────────────────────────────────────────────────
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {

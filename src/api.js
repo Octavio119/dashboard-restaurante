@@ -179,7 +179,7 @@ export const api = {
   deleteProducto: (id) => request(`/productos/${id}`, { method: 'DELETE' }),
 
   // Ventas
-  getVentasDia: (fecha) => request(`/ventas${fecha ? `?fecha=${fecha}` : ''}`),
+  getVentasDia: (fecha) => request(`/ventas${fecha ? `?fecha=${fecha}` : ''}`).then(r => Array.isArray(r) ? r : (r?.rows ?? [])),
   getResumenVentas: (periodo) => request(`/ventas/resumen?periodo=${periodo}`),
   getAnalytics:    () => request('/analytics/ventas'),
   getSalesChart:   (dias = 7) => request(`/ventas/chart?dias=${dias}`),
@@ -247,6 +247,12 @@ export const api = {
   getBillingPortal:  ()          => request('/billing/portal'),
   signup: (nombre_restaurante, email, password, nombre_admin) =>
     request('/auth/signup', { method: 'POST', body: JSON.stringify({ nombre_restaurante, email, password, nombre_admin }) }),
+
+  // Payments — PayPal one-time capture
+  createPaypalOrder: (pedido_id) =>
+    request('/payments/paypal/create-order', { method: 'POST', body: JSON.stringify({ pedido_id }) }),
+  capturePaypalOrder: (orderID, pedido_id) =>
+    request('/payments/paypal/capture-order', { method: 'POST', body: JSON.stringify({ orderID, pedido_id }) }),
 
   // API Keys (plan business)
   getApiKeys: () => request('/apikeys'),

@@ -1,16 +1,93 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   X, Check, Search, Trash2, History, ShoppingBag,
   ChefHat, Utensils, Users, Package, Plus,
   Banknote, CreditCard, Smartphone, AlertTriangle, Receipt,
 } from 'lucide-react';
+import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import AdminCodeModal from '../ui/AdminCodeModal';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import ToastContainer from '../notifications/ToastContainer';
 import OnboardingWizard from '../OnboardingWizard';
 import Spinner from '../ui/Spinner';
 import StatusBadge from '../ui/StatusBadge';
+import { api } from '../../api';
+
+// ── PayPal icon (inline SVG, no external dependency) ──────────────────────────
+function PayPalIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M19.5 8.25c0 3.75-2.75 6.5-6.5 6.5h-2l-.75 4.5H7l2.5-15h5.75c2.5 0 4.25 1.75 4.25 4z"
+        fill="#003087" />
+      <path d="M20.5 6.5c0 3.75-2.75 6.5-6.5 6.5H12l-.75 4.5H8l1.5-9h6.25c2.5 0 4.75 1.5 4.75 4z"
+        fill="#009cde" />
+    </svg>
+  );
+}
+
+// ── PayPal wrapper inside conversion modal ────────────────────────────────────
+function PayPalPaymentSection({ pedidoConvertModal, ejecutarConversionVenta, setPedidoConvertModal }) {
+  const [{ isPending }] = usePayPalScriptReducer();
+  const [ppError, setPpError]         = useState(null);
+  const [capturing, setCapturing]     = useState(false);
+
+  const handleCreateOrder = useCallback(async () => {
+    setPpError(null);
+    const { orderID } = await api.createPaypalOrder(pedidoConvertModal.id);
+    return orderID;
+  }, [pedidoConvertModal.id]);
+
+  const handleApprove = useCallback(async (data) => {
+    try {
+      setCapturing(true);
+      await api.capturePaypalOrder(data.orderID, pedidoConvertModal.id);
+      await ejecutarConversionVenta();
+    } catch (err) {
+      setPpError(err.message || 'Error al confirmar el pago');
+    } finally {
+      setCapturing(false);
+    }
+  }, [pedidoConvertModal.id, ejecutarConversionVenta]);
+
+  const handleCancel = useCallback(() => {
+    setPpError('Pago cancelado. Puedes intentarlo nuevamente.');
+  }, []);
+
+  const handleError = useCallback((err) => {
+    setPpError('Error en PayPal. Intenta con otro método de pago.');
+    console.error('PayPal error:', err);
+  }, []);
+
+  if (isPending || capturing) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-4 text-xs" style={{ color: '#64748B' }}>
+        <Spinner size={16} />
+        {capturing ? 'Confirmando pago...' : 'Cargando PayPal...'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {ppError && (
+        <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+          <AlertTriangle size={12} className="flex-shrink-0" />
+          {ppError}
+        </div>
+      )}
+      <PayPalButtons
+        style={{ layout: 'horizontal', color: 'blue', shape: 'rect', label: 'pay', height: 40 }}
+        createOrder={handleCreateOrder}
+        onApprove={handleApprove}
+        onCancel={handleCancel}
+        onError={handleError}
+        forceReRender={[pedidoConvertModal.id]}
+      />
+    </div>
+  );
+}
 
 export default function GlobalModals({
   // ── Reservas ────────────────────────────────────────────────────────────
@@ -531,16 +608,17 @@ export default function GlobalModals({
             </div>
             <div className="px-6 pb-4 flex flex-col gap-2">
               <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#334155' }}>Método de pago</span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {[
                   { id: 'efectivo',      label: 'Efectivo',      icon: Banknote },
                   { id: 'tarjeta',       label: 'Tarjeta',       icon: CreditCard },
                   { id: 'transferencia', label: 'Transferencia', icon: Smartphone },
+                  { id: 'paypal',        label: 'PayPal',        icon: PayPalIcon },
                 ].map(m => {
                   const active = convertMetodo === m.id;
                   return (
                     <button key={m.id} onClick={() => setConvertMetodo(m.id)}
-                      className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold transition-all"
+                      className="flex-1 min-w-[60px] flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-semibold transition-all"
                       style={{
                         background: active ? 'rgba(248,250,252,0.09)' : 'rgba(255,255,255,0.03)',
                         border: active ? '1px solid rgba(248,250,252,0.18)' : '1px solid rgba(255,255,255,0.05)',
@@ -553,36 +631,53 @@ export default function GlobalModals({
                 })}
               </div>
             </div>
-            {cajaHoy?.estado !== 'abierta' && (
+            {cajaHoy?.estado !== 'abierta' && convertMetodo !== 'paypal' && (
               <div className="mx-6 mb-3 flex items-center gap-2 text-xs rounded-lg px-3 py-2.5"
                 style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.18)', color: '#CA8A04' }}>
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 La caja no está abierta. La venta se registrará igual.
               </div>
             )}
-            <div className="flex gap-2.5 px-6 pb-5">
-              <button
-                disabled={convertLoading}
-                onClick={() => setPedidoConvertModal(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#64748B' }}
-                onMouseEnter={e => { if (!convertLoading) { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; } }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
-              >
-                Cancelar
-              </button>
-              <button
-                disabled={convertLoading}
-                onClick={ejecutarConversionVenta}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: '#10B981', color: '#fff' }}
-                onMouseEnter={e => { if (!convertLoading) e.currentTarget.style.background = '#059669'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#10B981'; }}
-              >
-                <Receipt size={14} />
-                {convertLoading ? 'Registrando...' : 'Confirmar venta'}
-              </button>
-            </div>
+            {convertMetodo === 'paypal' ? (
+              <div className="px-6 pb-5 flex flex-col gap-2.5">
+                <PayPalPaymentSection
+                  pedidoConvertModal={pedidoConvertModal}
+                  ejecutarConversionVenta={ejecutarConversionVenta}
+                  setPedidoConvertModal={setPedidoConvertModal}
+                />
+                <button
+                  onClick={() => setPedidoConvertModal(null)}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#64748B' }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2.5 px-6 pb-5">
+                <button
+                  disabled={convertLoading}
+                  onClick={() => setPedidoConvertModal(null)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#64748B' }}
+                  onMouseEnter={e => { if (!convertLoading) { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; } }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={convertLoading}
+                  onClick={ejecutarConversionVenta}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                  style={{ background: '#10B981', color: '#fff' }}
+                  onMouseEnter={e => { if (!convertLoading) e.currentTarget.style.background = '#059669'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#10B981'; }}
+                >
+                  <Receipt size={14} />
+                  {convertLoading ? 'Registrando...' : 'Confirmar venta'}
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
       )}

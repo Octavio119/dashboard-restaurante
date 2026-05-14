@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Restaurante {
@@ -119,19 +120,23 @@ model Producto {
 }
 
 model Pedido {
-  id             Int      @id @default(autoincrement())
-  numero         String   @unique
-  cliente_nombre String
-  item           String
-  total          Float
-  estado         String   @default("pendiente")
-  metodo_pago    String   @default("efectivo")
-  mesa           String   @default("")
-  personas       Int      @default(0)
-  fecha          DateTime
-  reserva_id     Int?
-  restaurante_id Int      @default(1)
-  created_at     DateTime @default(now())
+  id                     Int       @id @default(autoincrement())
+  numero                 String    @unique
+  cliente_nombre         String
+  item                   String
+  total                  Float
+  estado                 String    @default("pendiente")
+  metodo_pago            String    @default("efectivo")
+  mesa                   String    @default("")
+  personas               Int       @default(0)
+  fecha                  DateTime
+  reserva_id             Int?
+  restaurante_id         Int       @default(1)
+  created_at             DateTime  @default(now())
+  payment_status         String?
+  payment_provider       String?
+  payment_transaction_id String?
+  payment_captured_at    DateTime?
 
   restaurante  Restaurante  @relation(fields: [restaurante_id], references: [id])
   pedido_items PedidoItem[]

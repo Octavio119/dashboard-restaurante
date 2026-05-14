@@ -21,10 +21,22 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "start": "cd server && node index.js",
+    "start:prod": "pm2-runtime ecosystem.config.cjs --env production",
+    "start:dev": "pm2 start ecosystem.config.cjs --env development",
+    "logs": "pm2 logs",
+    "monit": "pm2 monit",
+    "db:migrate": "cd server && npx prisma migrate deploy --schema=./prisma/schema.prisma",
+    "db:migrate:dev": "cd server && npx prisma migrate dev --schema=./prisma/schema.prisma",
+    "db:push": "cd server && npx prisma db push --schema=./prisma/schema.prisma",
+    "db:studio": "cd server && npx prisma studio --schema=./prisma/schema.prisma",
     "postinstall": "cd server && npm install && prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^9.2.0",
+    "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.100.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dompurify": "^3.4.1",
     "framer-motion": "^11.11.1",
     "jspdf": "^4.2.1",
@@ -34,6 +46,7 @@
     "recharts": "^2.12.7",
     "socket.io-client": "^4.8.3",
     "stripe": "^22.0.2",
+    "tailwind-merge": "^3.6.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

@@ -12,7 +12,7 @@ router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
 
 const RID = (req) => req.user.restaurante_id;
-const VALID_METODOS = ['efectivo', 'tarjeta', 'transferencia', 'qr'];
+const VALID_METODOS = ['efectivo', 'tarjeta', 'transferencia', 'qr', 'paypal'];
 
 function formatVenta(v) {
   return {
