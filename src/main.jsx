@@ -9,6 +9,7 @@ import App from './App.jsx'
 import './i18n'
 import './index.css'
 import './styles/dashboard-theme.css'
+import './styles/print.css'
 
 // Register PWA Service Worker — prompt mode: silently update after the
 // user's current session ends (next reload). No intrusive popups.

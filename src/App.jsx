@@ -41,6 +41,7 @@ import SyncBanner        from './components/SyncBanner';
 // Pure utility functions (no React state)
 import { exportCSV, exportReportePDF, exportVentasExcel, exportInventarioExcel } from './lib/exportUtils';
 import { printPedido, printTicket, downloadPDF } from './lib/printUtils';
+import { printKitchenOrder, printCustomerTicket } from './lib/thermal-print';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 const App = () => {
@@ -235,6 +236,8 @@ const App = () => {
               pedidoModal={peds.pedidoModal}           setPedidoModal={peds.setPedidoModal}
               openPedidoDetalle={peds.openPedidoDetalle}
               printPedido={(o) => printPedido(o, cfg.config)}
+              printKitchenOrder={(o) => printKitchenOrder(o)}
+              printCustomerTicket={(o) => printCustomerTicket(o, cfg.config)}
               confirmarConversionVenta={peds.confirmarConversionVenta}
               updatePedidoEstado={peds.updatePedidoEstado}
               deletePedido={deletePedidoAdapter}

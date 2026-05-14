@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Settings, Building2, Receipt, Shield, Utensils,
   Clock, CreditCard, Banknote, Smartphone, QrCode,
-  Zap, Save, Check, Upload, X, ImageIcon, Plus, FileText
+  Zap, Save, Check, Upload, X, ImageIcon, Plus, FileText, Printer
 } from 'lucide-react';
 import MenuPage from './MenuPage';
 
@@ -148,6 +148,10 @@ const ConfiguracionPage = ({
                 <label style={{ fontSize: '11px', fontWeight: 500, color: '#52525B', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Dirección</label>
                 <input type="text" value={config.direccion} onChange={e=>setConfig({...config,direccion:e.target.value})} className="input" style={{ background: '#111113', border: '1px solid #1F1F23', borderRadius: '8px', color: '#F4F4F5', fontSize: '14px', height: '44px' }}/>
               </div>
+              <div className="col-span-2 flex flex-col gap-1.5">
+                <label style={{ fontSize: '11px', fontWeight: 500, color: '#52525B', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Teléfono</label>
+                <input type="tel" value={config.telefono} onChange={e=>setConfig({...config,telefono:e.target.value})} placeholder="+56 9 1234 5678" className="input" style={{ background: '#111113', border: '1px solid #1F1F23', borderRadius: '8px', color: '#F4F4F5', fontSize: '14px', height: '44px' }}/>
+              </div>
             </div>
           </div>
 
@@ -231,6 +235,41 @@ const ConfiguracionPage = ({
                 <p className="text-[10px] text-zinc-600">
                   Ejemplo: precio $1.000 → con IVA ${((1000 * (1 + config.taxRate / 100))).toLocaleString('es-CL', {maximumFractionDigits:0})}
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Ticket Térmico */}
+          <div className="flex flex-col gap-4" style={{ background: 'rgba(249,115,22,.03)', border: '1px solid rgba(249,115,22,.18)', borderRadius: '12px', padding: '24px' }}>
+            <h3 className="flex items-center gap-2" style={{ fontSize: '11px', fontWeight: 600, color: '#7A3A10', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '16px', borderBottom: '1px solid rgba(249,115,22,.12)', marginBottom: '4px' }}>
+              <Printer size={14} style={{ color: '#F97316' }}/>Ticket Térmico
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 flex flex-col gap-1.5">
+                <label style={{ fontSize: '11px', fontWeight: 500, color: '#52525B', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Mensaje de cierre</label>
+                <input type="text" value={config.mensajeCierre}
+                  onChange={e => setConfig({...config, mensajeCierre: e.target.value})}
+                  placeholder="¡Gracias por su preferencia!"
+                  className="input" style={{ background: '#111113', border: '1px solid #1F1F23', borderRadius: '8px', color: '#F4F4F5', fontSize: '14px', height: '44px' }}/>
+                <p className="text-[10px] text-zinc-600">Texto que aparece al pie de cada ticket impreso.</p>
+              </div>
+              <div className="col-span-2">
+                <div
+                  onClick={() => setConfig({...config, mostrarQR: !config.mostrarQR})}
+                  className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${config.mostrarQR ? 'bg-[#F97316]/10 border-[#F97316]/20' : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'}`}>
+                  <div className="flex items-center gap-3">
+                    <QrCode size={18} style={{ color: config.mostrarQR ? '#F97316' : '#52525B' }}/>
+                    <div>
+                      <p className={`text-sm font-semibold ${config.mostrarQR ? 'text-white' : 'text-zinc-400'}`}>Mostrar código QR en tickets</p>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        {config.mostrarQR ? 'Se imprimirá un QR con el número de orden' : 'Sin código QR en los tickets'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full transition-colors relative flex-shrink-0 ${config.mostrarQR ? 'bg-[#F97316]' : 'bg-zinc-700'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${config.mostrarQR ? 'left-5' : 'left-1'}`}/>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

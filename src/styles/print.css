@@ -1,0 +1,33 @@
+/**
+ * print.css — MastexoPOS
+ *
+ * Hides the entire dashboard UI when a user triggers Ctrl+P by accident.
+ * Normal ticket printing goes through silentPrint() (hidden iframe) so this
+ * file has NO effect on the actual ticket output — it's a safety net only.
+ */
+@media print {
+  /* Hide everything in the dashboard */
+  body > * {
+    display: none !important;
+  }
+
+  /* If something explicitly opts into being printed (future use) */
+  body > [data-printable] {
+    display: block !important;
+  }
+
+  /* Generic reset for any accidentally-triggered print */
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    width: 80mm !important;
+  }
+}

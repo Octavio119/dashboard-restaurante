@@ -60,6 +60,7 @@ export default function PedidosPage({
   pedidoCatFilter, setPedidoCatFilter,
   pedidoModal, setPedidoModal,
   openPedidoDetalle, printPedido, confirmarConversionVenta, updatePedidoEstado, deletePedido,
+  printKitchenOrder, printCustomerTicket,
   pedidosLoading,
   productos, loadProductos, productosLoading,
   clienteSearchResults, setClienteSearchResults, isSearchingClientes,
@@ -507,6 +508,32 @@ export default function PedidosPage({
                             >
                               <Plus size={12}/> Productos
                             </button>
+                            {/* Kitchen comanda print button */}
+                            {printKitchenOrder && !['confirmado','pagado'].includes(pedido.estado) && (
+                              <button
+                                onClick={() => printKitchenOrder(pedido)}
+                                className="py-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                style={{ background: 'rgba(245,158,11,0.08)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.15)' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.18)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.08)'; }}
+                                title="Imprimir comanda de cocina"
+                              >
+                                <Printer size={12}/> Comanda
+                              </button>
+                            )}
+                            {/* Customer ticket button */}
+                            {printCustomerTicket && ['confirmado','pagado','entregado'].includes(pedido.estado) && (
+                              <button
+                                onClick={() => printCustomerTicket(pedido)}
+                                className="py-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                style={{ background: 'rgba(16,185,129,0.08)', color: '#10B981', border: '1px solid rgba(16,185,129,0.15)' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
+                                title="Imprimir ticket cliente"
+                              >
+                                <Receipt size={12}/> Ticket
+                              </button>
+                            )}
 
                             {pedido.estado === 'pendiente' && (
                               <button
@@ -653,16 +680,25 @@ export default function PedidosPage({
                           >
                             <ChefHat size={13}/>
                           </button>
-                          {order.estado === 'confirmado' ? (
+                          {/* Kitchen comanda — active orders */}
+                          {!['confirmado','pagado'].includes(order.estado) && printKitchenOrder ? (
                             <button
-                              onClick={e => { e.stopPropagation(); printPedido(order); }}
+                              onClick={e => { e.stopPropagation(); printKitchenOrder(order); }}
                               className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-400/10 transition-all cursor-pointer"
-                              title="Imprimir ticket"
+                              title="Imprimir comanda de cocina"
+                            >
+                              <Printer size={13}/>
+                            </button>
+                          ) : ['confirmado','pagado'].includes(order.estado) && printCustomerTicket ? (
+                            <button
+                              onClick={e => { e.stopPropagation(); printCustomerTicket(order); }}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-emerald-400 hover:bg-emerald-400/10 transition-all cursor-pointer"
+                              title="Reimprimir ticket cliente"
                             >
                               <Printer size={13}/>
                             </button>
                           ) : (
-                            <button disabled className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-800 cursor-not-allowed" title="Solo disponible cuando confirmado">
+                            <button disabled className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-800 cursor-not-allowed">
                               <Printer size={13}/>
                             </button>
                           )}
@@ -694,13 +730,13 @@ export default function PedidosPage({
                               <MoreVertical size={13}/>
                             </button>
                             <div
-                              className="absolute bottom-full right-0 mb-1 w-44 rounded-xl shadow-2xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden"
+                              className="absolute bottom-full right-0 mb-1 w-48 rounded-xl shadow-2xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden"
                               style={{ background: 'rgba(15,15,20,.97)', border: '1px solid rgba(255,255,255,.08)', backdropFilter: 'blur(16px)' }}
                             >
                               {['pendiente','en preparación','entregado'].map(s => (
                                 <button key={s}
                                   onClick={() => updatePedidoEstado(order.id, s)}
-                                  className="w-full text-left px-3 py-2.5 text-xs text-zinc-400 hover:bg-white/5 hover:text-white transition-colors border-b last:border-0 capitalize"
+                                  className="w-full text-left px-3 py-2.5 text-xs text-zinc-400 hover:bg-white/5 hover:text-white transition-colors border-b capitalize"
                                   style={{ borderColor: 'rgba(255,255,255,.05)' }}
                                 >
                                   → {s}
@@ -713,6 +749,24 @@ export default function PedidosPage({
                               >
                                 → Registrar venta
                               </button>
+                              {printKitchenOrder && (
+                                <button
+                                  onClick={() => printKitchenOrder(order)}
+                                  className="w-full text-left px-3 py-2.5 text-xs text-amber-400 hover:bg-amber-500/10 transition-colors border-b flex items-center gap-2"
+                                  style={{ borderColor: 'rgba(255,255,255,.05)' }}
+                                >
+                                  <Printer size={11}/> Imprimir comanda
+                                </button>
+                              )}
+                              {printCustomerTicket && (
+                                <button
+                                  onClick={() => printCustomerTicket(order)}
+                                  className="w-full text-left px-3 py-2.5 text-xs text-emerald-400 hover:bg-emerald-500/10 transition-colors border-b flex items-center gap-2"
+                                  style={{ borderColor: 'rgba(255,255,255,.05)' }}
+                                >
+                                  <Receipt size={11}/> Imprimir ticket
+                                </button>
+                              )}
                               <button
                                 onClick={() => deletePedido(order)}
                                 className="w-full text-left px-3 py-2.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"

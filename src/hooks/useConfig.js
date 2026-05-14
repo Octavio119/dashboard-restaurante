@@ -7,6 +7,7 @@ const DEFAULT_CONFIG = {
   restaurantName: 'masterGrowth Gourmet',
   rut: '76.123.456-7',
   direccion: 'Av. Providencia 1234, Santiago',
+  telefono: '',
   currency: '$', currencyCode: 'CLP',
   openTime: '11:00', closeTime: '23:30',
   taxRate: 19,
@@ -18,6 +19,9 @@ const DEFAULT_CONFIG = {
   numeroInicial: 1,
   impuestoActivo: true,
   logoUrl: '',
+  // Thermal ticket settings
+  mensajeCierre: '¡Gracias por su preferencia!',
+  mostrarQR: false,
 };
 
 export const useConfig = ({ user }) => {
@@ -56,6 +60,9 @@ export const useConfig = ({ user }) => {
       numeroInicial:  data.numero_inicial  ?? 1,
       impuestoActivo: data.impuesto_activo != null ? Boolean(data.impuesto_activo) : true,
       logoUrl:        data.logo_url        ?? '',
+      telefono:       data.telefono        ?? '',
+      mensajeCierre:  data.mensaje_cierre  ?? '¡Gracias por su preferencia!',
+      mostrarQR:      data.mostrar_qr      != null ? Boolean(data.mostrar_qr) : false,
     });
   }, [configQ.data]);
 
@@ -86,6 +93,9 @@ export const useConfig = ({ user }) => {
         numero_inicial:  config.numeroInicial,
         impuesto_activo: config.impuestoActivo,
         logo_url:        finalLogoUrl,
+        telefono:        config.telefono,
+        mensaje_cierre:  config.mensajeCierre,
+        mostrar_qr:      config.mostrarQR,
       });
       setConfig(prev => ({ ...prev, logoUrl: finalLogoUrl }));
       setConfigSaved(true);
