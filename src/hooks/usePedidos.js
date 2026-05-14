@@ -209,5 +209,6 @@ export const usePedidos = ({ user, dateFilter, salesFilter }) => {
     confirmarConversionVenta, ejecutarConversionVenta,
     openPedidoDetalle,
     handleAddPedidoItem, handleUpdatePedidoItemQty, handleDeletePedidoItem,
+    pedidosLoading: pedidosQ.isLoading,
   };
 };

@@ -232,6 +232,7 @@ const App = () => {
               setClienteSearchResults={peds.setClienteSearchResults}
               isSearchingClientes={peds.isSearchingClientes}
               pedidoLoading={peds.pedidoLoading}       setPedidoLoading={peds.setPedidoLoading}
+              pedidosLoading={peds.pedidosLoading}
               setPedidos={peds.setPedidos}              api={api}
             />
           )}
@@ -281,6 +282,7 @@ const App = () => {
               movStats={inv.movStats}             movFiltros={inv.movFiltros}
               setMovFiltros={inv.setMovFiltros}
               invLoading={inv.invLoading}         movimientos={inv.movimientos}
+              productosLoading={prods.productosLoading}
               movTotal={inv.movTotal}
               setProveedorForm={inv.setProveedorForm} setIsProvModalOpen={inv.setIsProvModalOpen}
               deleteProveedor={inv.deleteProveedor}

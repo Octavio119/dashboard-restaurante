@@ -1,27 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* ── Variables are defined in dashboard-theme.css — only kept here for Tailwind compat ── */
-  --background:  #0A0A12;
-  --card-bg:     #12121E;
-  --card-border: rgba(255,255,255,.06);
-  --text-main:   #F0F0FF;
+  /* ── shadcn/ui semantic tokens — bridges to design system in dashboard-theme.css ── */
+  --background:             #0A0A12;
+  --foreground:             #F0F0FF;
+  --card:                   #0F0F17;
+  --card-foreground:        #F0F0FF;
+  --popover:                #12121E;
+  --popover-foreground:     #F0F0FF;
+  --primary:                #8B5CF6;
+  --primary-foreground:     #ffffff;
+  --secondary:              #16162A;
+  --secondary-foreground:   #F0F0FF;
+  --muted:                  #1A1A2E;
+  --muted-foreground:       #9090B0;
+  --accent:                 #10B981;
+  --accent-foreground:      #ffffff;
+  --destructive:            #EF4444;
+  --destructive-foreground: #ffffff;
+  --border:                 rgba(255,255,255,.06);
+  --input:                  #1A1A2E;
+  --ring:                   #8B5CF6;
+  --radius:                 14px;
+}
+
+/* ── Tailwind v4: bridge shadcn CSS vars → utility classes ── */
+@theme inline {
+  --color-background:          var(--background);
+  --color-foreground:          var(--foreground);
+  --color-card:                var(--card);
+  --color-card-foreground:     var(--card-foreground);
+  --color-popover:             var(--popover);
+  --color-popover-foreground:  var(--popover-foreground);
+  --color-primary:             var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+  --color-secondary:           var(--secondary);
+  --color-secondary-foreground:var(--secondary-foreground);
+  --color-muted:               var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+  --color-accent:              var(--accent);
+  --color-accent-foreground:   var(--accent-foreground);
+  --color-destructive:         var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border:              var(--border);
+  --color-input:               var(--input);
+  --color-ring:                var(--ring);
+  --radius-sm:   calc(var(--radius) - 4px);
+  --radius-md:   calc(var(--radius) - 2px);
+  --radius-lg:   var(--radius);
+  --radius-xl:   calc(var(--radius) + 4px);
 }
 
 @theme {
-  --font-jakarta: "Plus Jakarta Sans", "Inter", sans-serif;
-  --font-inter:   "Plus Jakarta Sans", "Inter", sans-serif;
-  --font-outfit:  "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-jakarta: "Plus Jakarta Sans", "DM Sans", "Inter", sans-serif;
+  --font-inter:   "Plus Jakarta Sans", "DM Sans", "Inter", sans-serif;
+  --font-outfit:  "Plus Jakarta Sans", "DM Sans", "Inter", sans-serif;
 
+  /* ── Brand surface scale ── */
   --color-brand-app:     #0A0A12;
   --color-brand-sidebar: #0D0D18;
-  --color-brand-card:    #12121E;
+  --color-brand-card:    #0F0F17;
+  --color-brand-raised:  #12121E;
+  --color-brand-overlay: #16162A;
+  --color-brand-input:   #1A1A2E;
   --color-brand-primary: #8B5CF6;
-  --color-brand-accent:  #1D9E75;
+  --color-brand-accent:  #10B981;
 
-  /* zinc → new dark palette */
+  /* ── zinc → Mastexo dark palette ── */
   --color-zinc-950: #0A0A12;
-  --color-zinc-900: #12121E;
+  --color-zinc-900: #0F0F17;
   --color-zinc-800: #16162A;
   --color-zinc-700: #1A1A2E;
   --color-zinc-600: #50506A;
@@ -30,15 +78,32 @@
   --color-zinc-300: #E0E0F0;
   --color-zinc-200: #F0F0FF;
 
-  /* amber stays yellow — semantic warning color */
+  /* ── Semantic colors ── */
+  --color-emerald-500: #10B981;
+  --color-emerald-400: #34D399;
+  --color-violet-500:  #8B5CF6;
+  --color-violet-600:  #7C3AED;
+  --color-violet-700:  #6D28D9;
+
+  /* amber stays yellow — semantic warning */
   --color-amber-500: #F59E0B;
   --color-amber-400: #FBBF24;
 }
 
 @layer base {
   body {
-    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-    @apply bg-[#0A0A12] text-[#F0F0FF] antialiased selection:bg-[#8B5CF6]/20;
+    font-family: 'Plus Jakarta Sans', 'DM Sans', 'Inter', sans-serif;
+    @apply bg-[#0A0A12] text-[#F0F0FF] antialiased selection:bg-[#6D28D9]/25;
+  }
+
+  /* Smooth scrolling */
+  html { scroll-behavior: smooth; }
+
+  /* Better focus for accessibility */
+  :focus-visible {
+    outline: 2px solid rgba(139,92,246,0.5);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
@@ -46,23 +111,46 @@
   .brand { @apply font-bold; }
 }
 
-/* Print */
-@media print {
-  body { background: white !important; color: black !important; }
-  aside, header, .no-print, button { display: none !important; }
-  .fixed { position: static !important; padding: 0 !important; margin: 0 !important; }
-  .card { background: white !important; color: black !important; border: 1px solid #eee !important; box-shadow: none !important; }
+/* ── Skeleton shimmer ────────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
 }
 
-.no-print { @media print { display: none !important; } }
-
-/* Recharts */
-.recharts-default-tooltip {
-  background: var(--bg-card) !important;
-  border: 1px solid var(--border) !important;
-  @apply !rounded-[10px] !shadow-xl !px-4 !py-3;
+/* ── Cult UI: BorderBeam ──────────────────────────────────────────────────── */
+@keyframes border-beam {
+  from { offset-distance: 0%; }
+  to   { offset-distance: 100%; }
 }
-.recharts-tooltip-item-list {
-  color: var(--purple) !important;
-  @apply !font-bold;
+
+/* ── Cult UI: ShineBorder ────────────────────────────────────────────────── */
+@keyframes shine-border-move {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ── Cult UI: Ripple ─────────────────────────────────────────────────────── */
+@keyframes ripple-expand {
+  to { transform: scale(4); opacity: 0; }
+}
+.ripple-effect {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  margin-left: -40px;
+  margin-top: -40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+  animation: ripple-expand 0.58s ease-out forwards;
+}
+
+/* ── Cult UI: RetroGrid ──────────────────────────────────────────────────── */
+@keyframes retro-grid-scroll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(40px); }
+}
+.animate-grid {
+  animation: retro-grid-scroll 4s linear infinite;
 }
