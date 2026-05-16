@@ -17,7 +17,7 @@ const RID = (req) => req.user.restaurante_id;
 // ─── GET /api/apikeys ──────────────────────────────────────────────────────────
 // List all API keys for this restaurant.
 // Returns safe fields only — key_hash is NEVER exposed.
-router.get('/', verifyRole('admin', 'gerente'), async (req, res) => {
+router.get('/', checkPlanFeature('api_keys'), verifyRole('admin', 'gerente'), async (req, res) => {
   try {
     const keys = await req.prisma.apiKey.findMany({
       where: {

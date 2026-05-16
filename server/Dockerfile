@@ -4,6 +4,9 @@ FROM node:22-alpine
 # Instalar dependencias necesarias para Prisma y herramientas de red
 RUN apk add --no-cache openssl
 
+# Instalar PM2 globalmente para modo cluster en producción
+RUN npm install -g pm2
+
 # Directorio de trabajo
 WORKDIR /app
 
@@ -20,6 +23,9 @@ RUN npx prisma generate
 # Copiar el resto del código del servidor
 COPY . .
 
+# Crear directorio de logs para PM2
+RUN mkdir -p /logs
+
 # Puerto expuesto (Railway inyecta PORT en runtime — 3000 es el fallback)
 EXPOSE 3000
 
@@ -27,5 +33,5 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Comando para iniciar la aplicación
-CMD ["node", "index.js"]
+# PM2 en modo runtime — gestiona el cluster y reenvía señales SIGTERM correctamente
+CMD ["pm2-runtime", "ecosystem.config.cjs", "--env", "production"]

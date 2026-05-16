@@ -80,7 +80,7 @@ async function request(path, options = {}) {
   const ct = res.headers.get('content-type') || '';
   const data = ct.includes('application/json') ? await res.json().catch(() => ({})) : {};
   if (!res.ok) {
-    _handlePlanError(data);
+    _handlePlanError(data, res.status);
     if (!data.error && res.status >= 500) {
       throw new Error('El servidor no respondió correctamente. Asegúrate de correr el backend con npm run dev:full.');
     }
@@ -89,7 +89,27 @@ async function request(path, options = {}) {
   return data;
 }
 
-function _handlePlanError(data) {
+function _handlePlanError(data, status) {
+  // New error codes (backend v2)
+  if (status === 403 && data.error === 'PLAN_LIMIT') {
+    window.dispatchEvent(new CustomEvent('plan:upgrade_required', {
+      detail: { feature: data.feature, requiredPlan: data.requiredPlan, currentPlan: data.currentPlan },
+    }));
+    return;
+  }
+  if (status === 429 && data.error === 'ORDER_LIMIT_REACHED') {
+    window.dispatchEvent(new CustomEvent('plan:order_limit', {
+      detail: { used: data.used, limit: data.limit },
+    }));
+    return;
+  }
+  if (status === 402 && data.error === 'PAYMENT_REQUIRED') {
+    window.dispatchEvent(new CustomEvent('plan:payment_required', {
+      detail: { plan_status: data.plan_status, message: data.message },
+    }));
+    return;
+  }
+  // Legacy error codes (backward compat)
   if (data.error === 'plan_required' || data.error === 'limite_alcanzado') {
     window.dispatchEvent(new CustomEvent('upgrade_required', { detail: data }));
   }
@@ -105,7 +125,7 @@ async function _retryRequest(path, options, newToken) {
   const ct = res.headers.get('content-type') || '';
   const data = ct.includes('application/json') ? await res.json().catch(() => ({})) : {};
   if (!res.ok) {
-    _handlePlanError(data);
+    _handlePlanError(data, res.status);
     if (!data.error && res.status >= 500) {
       throw new Error('El servidor no respondió correctamente. Asegúrate de correr el backend con npm run dev:full.');
     }

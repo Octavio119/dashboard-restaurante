@@ -1,6 +1,62 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Users, Building2, FileText, Trash2, Star } from 'lucide-react';
+import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
+import { Plus, Users, Building2, FileText, Trash2, Star, Repeat2 } from 'lucide-react';
+
+// Cult UI — spotlight cursor tracking for table rows
+function SpotlightRow({ children, style, ...props }) {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const spotlight = useMotionTemplate`radial-gradient(
+    220px circle at ${mouseX}px ${mouseY}px,
+    rgba(139,92,246,0.07),
+    transparent 80%
+  )`;
+
+  return (
+    <motion.tr
+      onMouseMove={({ currentTarget, clientX, clientY }) => {
+        const { left, top } = currentTarget.getBoundingClientRect();
+        mouseX.set(clientX - left);
+        mouseY.set(clientY - top);
+      }}
+      whileHover={{ backgroundColor: '#131316' }}
+      style={{ cursor: 'pointer', background: spotlight, transition: 'background 0.15s ease', ...style }}
+      {...props}
+    >
+      {children}
+    </motion.tr>
+  );
+}
+
+// Badge: "Nuevo" vs "Recurrente" (más de 3 visitas)
+function VisitaBadge({ visitas }) {
+  if (visitas > 3) return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider"
+      style={{ background: 'rgba(16,185,129,0.12)', color: '#34D399', border: '1px solid rgba(16,185,129,0.25)' }}
+    >
+      <Repeat2 size={8} /> Recurrente
+    </span>
+  );
+  return (
+    <span
+      className="inline-flex items-center"
+      style={{
+        background: '#1A1A2E',
+        border: '1px solid #4F46E5',
+        color: '#818CF8',
+        borderRadius: '4px',
+        padding: '2px 8px',
+        fontSize: '10px',
+        fontWeight: 500,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+      }}
+    >
+      Nuevo
+    </span>
+  );
+}
 
 const AVATAR_PALETTES = [
   ['#8B5CF6','#6D28D9'],
@@ -17,11 +73,12 @@ function ClienteAvatar({ nombre }) {
   const [from, to] = AVATAR_PALETTES[idx];
   return (
     <div
-      className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0"
+      className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
       style={{
         background: `linear-gradient(135deg, ${from}, ${to})`,
-        boxShadow: `0 0 0 1px ${from}40`,
+        boxShadow: `0 0 0 2px #0D0D0F, 0 0 0 3px ${from}66`,
         fontSize: '13px',
+        fontWeight: 500,
       }}
     >
       {nombre?.charAt(0).toUpperCase()}
@@ -43,8 +100,13 @@ function EstadoBadge({ estado }) {
     </span>
   );
   return (
-    <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider"
-      style={{ background: 'var(--bg-surface)', color: 'var(--text-3)', border: '1px solid var(--border)' }}>
+    <span
+      className="inline-flex items-center"
+      style={estado === 'Nuevo'
+        ? { background: '#1A1A2E', border: '1px solid #4F46E5', color: '#818CF8', borderRadius: '4px', padding: '2px 8px', fontSize: '10px', fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }
+        : { background: 'var(--bg-surface)', color: 'var(--text-3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 10px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }
+      }
+    >
       {estado}
     </span>
   );
@@ -68,6 +130,7 @@ export default function ClientesPage({
         <button
           onClick={() => { setClienteForm({ nombre:'', email:'', telefono:'', rut:'', tipo_cliente:'persona', razon_social:'', estado:'Nuevo' }); setClienteFormOpen(true); }}
           className="btn-primary flex items-center gap-2 w-fit"
+          style={{ height: '40px', padding: '0 20px', fontSize: '14px', fontWeight: 500 }}
         >
           <Plus size={15}/> Nuevo Cliente
         </button>
@@ -76,81 +139,103 @@ export default function ClientesPage({
       <div className="card overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+            <tr style={{ borderBottom: '1px solid #1F1F23', background: 'var(--bg-surface)' }}>
               {['Cliente','RUT / Tipo','Contacto','Visitas','Total Gastado','Estado','Acciones'].map(h => (
-                <th key={h} className="px-5 py-4 text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>{h}</th>
+                <th key={h} className="px-5 pt-4" style={{ fontSize: '11px', fontWeight: 500, color: '#3F3F46', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '12px' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filteredClientes.map(c => (
-              <tr
+              <SpotlightRow
                 key={c.id}
                 className="transition-all"
-                style={{ borderBottom: '1px solid var(--border)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.03)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                style={{ borderBottom: '1px solid #1F1F23' }}
               >
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
                     <ClienteAvatar nombre={c.nombre} />
-                    <span className="font-semibold text-white text-sm">{c.nombre}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 500, color: '#F4F4F5' }}>{c.nombre}</span>
                   </div>
                 </td>
                 <td className="px-5 py-4">
-                  <p className="text-sm font-mono" style={{ color: 'var(--text-2)' }}>{c.rut || '—'}</p>
-                  <span className={`text-[10px] font-bold uppercase flex items-center gap-1 mt-0.5 ${c.tipo_cliente==='empresa' ? 'text-blue-400' : 'text-zinc-500'}`}>
+                  <p style={{ fontSize: '13px', fontFamily: 'monospace', color: '#A1A1AA' }}>{c.rut || '—'}</p>
+                  <span
+                    className={`flex items-center gap-1 mt-1 ${c.tipo_cliente === 'empresa' ? 'text-blue-400' : ''}`}
+                    style={c.tipo_cliente === 'persona' ? {
+                      display: 'inline-flex',
+                      background: '#1C1C1F',
+                      border: '1px solid #27272A',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      fontSize: '10px',
+                      color: '#71717A',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                    } : { fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}
+                  >
                     {c.tipo_cliente==='empresa' ? <><Building2 size={10}/>Empresa</> : 'Persona'}
                   </span>
                 </td>
                 <td className="px-5 py-4">
-                  <p className="text-sm" style={{ color: 'var(--text-2)' }}>{c.email || '—'}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>{c.telefono || ''}</p>
+                  <p style={{ fontSize: '13px', color: '#818CF8' }}>{c.email || '—'}</p>
+                  <p style={{ fontSize: '12px', color: '#52525B', marginTop: '2px' }}>{c.telefono || ''}</p>
                 </td>
-                <td className="px-5 py-4 text-center">
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-black" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-2)' }}>
-                    {c.visitas}
+                <td className="px-5 py-4">
+                  <div className="flex flex-col items-center gap-1">
+                    <span style={{ fontSize: '15px', fontWeight: 500, color: '#F4F4F5' }}>
+                      {c.visitas}
+                    </span>
+                    <VisitaBadge visitas={c.visitas} />
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: Number(c.total_gastado) > 0 ? '#4ADE80' : '#3F3F46',
+                  }}>
+                    ${Number(c.total_gastado).toFixed(2)}
                   </span>
                 </td>
-                <td className="px-5 py-4 font-black text-white">${Number(c.total_gastado).toFixed(2)}</td>
                 <td className="px-5 py-4">
                   <EstadoBadge estado={c.estado} />
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex gap-2 items-center justify-end">
                     <button
                       onClick={() => setSelectedCustomer(c)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-2)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--purple)'; e.currentTarget.style.color = 'white'; e.currentTarget.style.border = '1px solid var(--purple)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-surface)'; e.currentTarget.style.color = 'var(--text-2)'; e.currentTarget.style.border = '1px solid var(--border)'; }}
+                      className="transition-all"
+                      style={{ background: 'transparent', border: '1px solid #27272A', borderRadius: '6px', padding: '4px 12px', fontSize: '12px', color: '#A1A1AA', cursor: 'pointer' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#1A0D2E'; e.currentTarget.style.borderColor = '#7C3AED'; e.currentTarget.style.color = '#A78BFA'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#27272A'; e.currentTarget.style.color = '#A1A1AA'; }}
                     >
                       Historial
                     </button>
                     <button
                       onClick={() => { setClienteForm({...c}); setClienteFormOpen(true); }}
                       className="p-1.5 rounded-lg transition-colors"
-                      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-3)' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'white'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-3)'; }}
+                      style={{ background: 'transparent', border: 'none', color: '#3F3F46', cursor: 'pointer' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#A78BFA'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = '#3F3F46'; }}
                     >
-                      <FileText size={14}/>
+                      <FileText size={15}/>
                     </button>
                     {isAdmin && (
                       <button
                         onClick={() => deleteCliente(c)}
                         className="p-1.5 rounded-lg transition-colors"
-                        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', color: 'var(--text-3)' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.border = '1px solid rgba(239,68,68,0.4)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-3)'; e.currentTarget.style.border = '1px solid var(--border)'; }}
+                        style={{ background: 'transparent', border: 'none', color: '#3F3F46', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#F87171'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = '#3F3F46'; }}
                         title="Eliminar cliente"
                       >
-                        <Trash2 size={14}/>
+                        <Trash2 size={15}/>
                       </button>
                     )}
                   </div>
                 </td>
-              </tr>
+              </SpotlightRow>
             ))}
           </tbody>
         </table>

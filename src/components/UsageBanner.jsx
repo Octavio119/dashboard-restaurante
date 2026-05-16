@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
+import { ShineBorder } from './ui/shine-border';
+import { PlanUpgradeModal } from './ui/PlanUpgradeModal';
 
 export default function UsageBanner() {
-  const [usage, setUsage] = useState(null);
+  const [usage, setUsage]         = useState(null);
+  const [limitModal, setLimitModal] = useState(false);
 
   useEffect(() => {
     api.getBillingUsage().then(setUsage).catch(() => {});
   }, []);
+
+  // Auto-open blocking modal when the limit is reached
+  useEffect(() => {
+    if (usage && usage.porcentaje >= 100) setLimitModal(true);
+  }, [usage]);
 
   if (!usage || usage.plan !== 'free' || usage.ordenes_limite === null) return null;
 
@@ -17,8 +25,19 @@ export default function UsageBanner() {
   const bgColor    = pct >= 90 ? 'rgba(239,68,68,.08)' : pct >= 70 ? 'rgba(245,158,11,.08)' : 'rgba(139,92,246,.08)';
 
   return (
+    <>
+    <PlanUpgradeModal
+      open={limitModal}
+      detail={{ type: 'ORDER_LIMIT_REACHED', used: usage.ordenes_usadas, limit: usage.ordenes_limite }}
+      onClose={() => setLimitModal(false)}
+    />
+    <ShineBorder
+      color={["#7C3AED", "#4F46E5", "#818CF8"]}
+      borderWidth={1}
+      className="mx-4 mb-3 rounded-[10px]"
+    >
     <div
-      className="mx-4 mb-3 rounded-[10px] border px-4 py-3 text-sm"
+      className="rounded-[10px] border px-4 py-3 text-sm w-full"
       style={{ background: bgColor, borderColor }}
     >
       <div className="flex items-center justify-between mb-1.5">
@@ -44,5 +63,7 @@ export default function UsageBanner() {
         </p>
       )}
     </div>
+    </ShineBorder>
+    </>
   );
 }

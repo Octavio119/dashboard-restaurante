@@ -1,31 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { api } from '../api';
 import PayPalButton from '../components/PayPalButton';
-
-// ─── Google Font ──────────────────────────────────────────────────────────────
-function useFont() {
-  useEffect(() => {
-    if (document.getElementById('pjs-font')) return;
-    const link = document.createElement('link');
-    link.id   = 'pjs-font';
-    link.rel  = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
-    document.head.appendChild(link);
-  }, []);
-}
+import { PLANS as PLAN_CFG } from '../config/plans';
+import AuthBackground, { useAuthFonts } from '../components/AuthBackground';
 
 // ─── Plan config ──────────────────────────────────────────────────────────────
-// formColor: contraste ≥ 4.5:1 sobre blanco (WCAG AA) — distinto de accent del panel izquierdo
 const PLANS = {
   free: {
     badge:     'Plan Starter',
-    badgeBg:   'rgba(0,102,204,0.12)',
-    badgeColor:'#0066CC',
+    badgeBg:   'rgba(108,99,255,0.15)',
+    badgeColor:'#9B93FF',
+    badgeBorder:'rgba(108,99,255,0.30)',
     headline:  'Empieza hoy,',
     sub:       'sin gastar nada',
-    emColor:   '#5ba8f5',
+    emColor:   '#6C63FF',
     price:     '$0',
     priceSub:  'Para siempre gratis',
+    priceShadow: '0 0 40px rgba(108,99,255,0.4)',
     features: [
       '50 órdenes / mes',
       '2 usuarios incluidos',
@@ -33,16 +24,17 @@ const PLANS = {
       'Acceso desde cualquier dispositivo',
     ],
     guarantee: { icon: '✦', text: 'Sin compromisos · Cambia de plan cuando quieras' },
-    bg:        'linear-gradient(160deg, #071525 0%, #0D1B3E 55%, #003060 100%)',
-    accent:    '#0066CC',
+    guaranteeBg:     '#1A1830',
+    guaranteeBorder: 'rgba(108,99,255,0.20)',
+    bg:        'linear-gradient(160deg, #0F0E1A 0%, #13112A 55%, #1A1830 100%)',
+    accent:    '#6C63FF',
     btnLabel:  'Crear cuenta gratis',
-    btnBg:     '#0066CC',
-    btnHover:  '#0052a3',
-    btnShadow: '0 4px 16px rgba(0,102,204,0.40)',
+    btnBg:     '#6C63FF',
+    btnHover:  '#5B52E5',
+    btnShadow: '0 4px 24px rgba(108,99,255,0.35)',
     payNote:   null,
-    // Panel derecho — color que pasa AA sobre blanco
-    formColor: '#0066CC',
-    formRgba:  'rgba(0,102,204,0.12)',
+    formColor: '#6C63FF',
+    formRgba:  'rgba(108,99,255,0.20)',
   },
   pro: {
     badge:     'Más popular',
@@ -51,7 +43,7 @@ const PLANS = {
     headline:  'El sistema que',
     sub:       'trabaja por ti',
     emColor:   '#5ba8f5',
-    price:     '$29',
+    price:     `$${PLAN_CFG.pro.price}`,
     priceSub:  '/ mes · cancela cuando quieras',
     features: [
       'Órdenes ilimitadas',
@@ -64,13 +56,12 @@ const PLANS = {
     bg:        'linear-gradient(155deg, #071525 0%, #0D1B3E 45%, #003060 100%)',
     accent:    '#5ba8f5',
     btnLabel:  'Continuar al pago',
-    btnBg:     '#0066CC',
-    btnHover:  '#0052a3',
-    btnShadow: '0 4px 16px rgba(0,102,204,0.40)',
+    btnBg:     '#6C63FF',
+    btnHover:  '#5B52E5',
+    btnShadow: '0 4px 24px rgba(108,99,255,0.35)',
     payNote:   'Serás redirigido a PayPal de forma segura',
-    // Panel derecho — azul oscuro para contraste AA (5.0:1 sobre blanco)
-    formColor: '#2563eb',
-    formRgba:  'rgba(37,99,235,0.12)',
+    formColor: '#6C63FF',
+    formRgba:  'rgba(108,99,255,0.20)',
   },
   business: {
     badge:     'Plan Business',
@@ -79,7 +70,7 @@ const PLANS = {
     headline:  'Escala tu cadena',
     sub:       'sin límites',
     emColor:   '#c084fc',
-    price:     '$79',
+    price:     `$${PLAN_CFG.business.price}`,
     priceSub:  '/ mes · multi-local incluido',
     features: [
       'Todo lo del Plan Pro',
@@ -96,7 +87,6 @@ const PLANS = {
     btnHover:  '#6d28d9',
     btnShadow: '0 4px 16px rgba(124,58,237,0.45)',
     payNote:   'Serás redirigido a PayPal de forma segura',
-    // Panel derecho — púrpura oscuro para contraste AA (4.7:1 sobre blanco)
     formColor: '#7c3aed',
     formRgba:  'rgba(124,58,237,0.12)',
   },
@@ -161,12 +151,11 @@ function BuildingIcon({ color }) {
   );
 }
 
-// ─── Field component ──────────────────────────────────────────────────────────
-// accentColor/accentRgba son el color del plan activo (contraste AA garantizado)
-function Field({ label, optional, type = 'text', value, onChange, placeholder, error, autoComplete, suffix, accentColor = '#0066CC', accentRgba = 'rgba(0,102,204,0.12)' }) {
+// ─── Field component — dark theme ─────────────────────────────────────────────
+function Field({ label, optional, type = 'text', value, onChange, placeholder, error, autoComplete, suffix, accentColor = '#6C63FF', accentRgba = 'rgba(108,99,255,0.15)' }) {
   const [focused, setFocused] = useState(false);
 
-  const borderColor = error ? '#ef4444' : focused ? accentColor : '#E2EAF4';
+  const borderColor = error ? '#ef4444' : focused ? accentColor : 'rgba(255,255,255,0.10)';
   const shadowStyle = focused && !error
     ? `0 0 0 3px ${accentRgba}`
     : error ? '0 0 0 3px rgba(239,68,68,0.10)' : 'none';
@@ -174,11 +163,11 @@ function Field({ label, optional, type = 'text', value, onChange, placeholder, e
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <label style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', letterSpacing: '-0.01em' }}>
+        <label style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.01em' }}>
           {label}
         </label>
         {optional && (
-          <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500 }}>Opcional</span>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.30)', fontWeight: 500 }}>Opcional</span>
         )}
       </div>
       <div style={{ position: 'relative' }}>
@@ -196,8 +185,8 @@ function Field({ label, optional, type = 'text', value, onChange, placeholder, e
             padding: suffix ? '0 42px 0 14px' : '0 14px',
             border: `1.5px solid ${borderColor}`,
             borderRadius: '10px',
-            background: error ? '#fff5f5' : '#fff',
-            color: '#0f172a',
+            background: error ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.04)',
+            color: '#fff',
             fontSize: '14px',
             fontFamily: 'inherit',
             outline: 'none',
@@ -207,13 +196,13 @@ function Field({ label, optional, type = 'text', value, onChange, placeholder, e
           }}
         />
         {suffix && (
-          <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', cursor: 'pointer' }}>
+          <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.30)', cursor: 'pointer' }}>
             {suffix}
           </div>
         )}
       </div>
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#ef4444', fontSize: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#fca5a5', fontSize: '12px' }}>
           <WarnIcon />
           {error}
         </div>
@@ -224,7 +213,7 @@ function Field({ label, optional, type = 'text', value, onChange, placeholder, e
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Register() {
-  useFont();
+  useAuthFonts();
   const planKey = getPlan();
   const plan    = PLANS[planKey];
 
@@ -237,7 +226,6 @@ export default function Register() {
   const [errors,      setErrors]      = useState({});
   const [submitErr,   setSubmitErr]   = useState('');
   const [loading,     setLoading]     = useState(false);
-  // Flujo de pago: 'form' → usuario llena el form | 'payment' → muestra PayPal SDK
   const [payStep,     setPayStep]     = useState('form');
   const [payError,    setPayError]    = useState('');
 
@@ -273,7 +261,6 @@ export default function Register() {
       localStorage.setItem('user',          JSON.stringify(data.user));
 
       if (planKey !== 'free') {
-        // Cuenta creada — mostrar PayPal SDK en lugar de redirigir
         setPayStep('payment');
         return;
       }
@@ -305,12 +292,13 @@ export default function Register() {
     ? [{ n: 1, label: 'Cuenta' }, { n: 2, label: 'Dashboard' }]
     : [{ n: 1, label: 'Cuenta' }, { n: 2, label: 'Pago' }, { n: 3, label: 'Dashboard' }];
 
-  const font   = "'Plus Jakarta Sans', -apple-system, sans-serif";
-  const fColor = plan.formColor;  // color primario del plan en panel derecho
-  const fRgba  = plan.formRgba;   // versión rgba para focus rings
+  const font   = "'DM Sans', 'Inter', sans-serif";
+  const titleFont = "'Syne', sans-serif";
+  const fColor = plan.formColor;
+  const fRgba  = plan.formRgba;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: font }}>
+    <AuthBackground style={{ display: 'flex', alignItems: 'stretch', overflow: 'auto', fontFamily: font }}>
 
       {/* ── Panel izquierdo ── */}
       <div style={{
@@ -339,7 +327,6 @@ export default function Register() {
           background: `radial-gradient(circle, ${plan.accent}18 0%, transparent 70%)`,
           pointerEvents: 'none',
         }} />
-        {/* Barrido de luz */}
         <div className="lp-shimmer" />
 
         {/* Logo */}
@@ -374,7 +361,7 @@ export default function Register() {
           {/* Badge */}
           <div className="lp-badge" style={{
             display: 'inline-flex', alignItems: 'center', gap: '6px',
-            background: plan.badgeBg, border: `1px solid ${plan.accent}33`,
+            background: plan.badgeBg, border: `1px solid ${plan.badgeBorder || `${plan.accent}33`}`,
             borderRadius: '20px', padding: '4px 12px', marginBottom: '20px',
             width: 'fit-content',
           }}>
@@ -403,7 +390,7 @@ export default function Register() {
 
           {/* Precio */}
           <div className="lp-price" style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '28px' }}>
-            <span className="lp-price-num" style={{ fontSize: '52px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+            <span className="lp-price-num" style={{ fontSize: '52px', fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: plan.priceShadow || 'none' }}>
               {plan.price}
             </span>
             <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.50)', maxWidth: '120px', lineHeight: 1.3 }}>
@@ -423,8 +410,8 @@ export default function Register() {
 
           {/* Guarantee */}
           <div className="lp-guarantee" style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: plan.guaranteeBg || 'rgba(255,255,255,0.06)',
+            border: `1px solid ${plan.guaranteeBorder || 'rgba(255,255,255,0.10)'}`,
             borderRadius: '10px',
             padding: '12px 14px',
             display: 'flex', gap: '10px', alignItems: 'flex-start',
@@ -446,10 +433,8 @@ export default function Register() {
         @media (min-width: 1024px) { .lg-panel { display: flex !important; } }
         @media (min-width: 1024px) { .mobile-logo { display: none !important; } }
 
-        /* Spinner del botón */
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Panel izquierdo — orbs flotantes */
         @keyframes floatA {
           0%,100% { transform: translate(0,0) scale(1); }
           33%      { transform: translate(-14px,-20px) scale(1.06); }
@@ -461,25 +446,16 @@ export default function Register() {
           75%      { transform: translate(-8px,8px) scale(1.04); }
         }
 
-        /* Entrada de contenido del panel izquierdo */
-        @keyframes fadeUp {
-          from { opacity:0; transform:translateY(20px); }
-          to   { opacity:1; transform:translateY(0); }
-        }
-
-        /* Pulso suave del precio */
         @keyframes pricePulse {
           0%,100% { opacity:1; }
           50%      { opacity:0.82; }
         }
 
-        /* Barrido de luz sobre el panel */
         @keyframes shimmerPanel {
           0%   { transform: translateX(-120%) skewX(-20deg); }
           100% { transform: translateX(250%) skewX(-20deg); }
         }
 
-        /* Aplica animaciones al panel izquierdo */
         .lp-orb-a { animation: floatA 9s ease-in-out infinite; }
         .lp-orb-b { animation: floatB 11s ease-in-out infinite; }
         .lp-badge  { animation: fadeUp 0.55s ease 0.05s both; }
@@ -500,6 +476,17 @@ export default function Register() {
           animation: shimmerPanel 6s ease-in-out infinite;
         }
 
+        /* Animaciones de entrada — panel derecho */
+        .anim-reg-logo   { animation: fadeUp 0.5s ease 0.10s both; }
+        .anim-reg-steps  { animation: fadeUp 0.5s ease 0.20s both; }
+        .anim-reg-social { animation: fadeUp 0.5s ease 0.30s both; }
+        .anim-reg-header { animation: fadeUp 0.5s ease 0.35s both; }
+        .anim-reg-form   { animation: fadeUp 0.5s ease 0.45s both; }
+        .anim-reg-footer { animation: fadeUp 0.5s ease 0.60s both; }
+
+        /* Placeholder color en inputs oscuros */
+        .reg-panel input::placeholder { color: rgba(255,255,255,0.25); }
+
         @media (prefers-reduced-motion: reduce) {
           @keyframes spin         { to { transform: rotate(0deg); } }
           .lp-orb-a, .lp-orb-b   { animation: none; }
@@ -508,31 +495,31 @@ export default function Register() {
         }
       `}</style>
 
-      {/* ── Panel derecho ── */}
-      <div style={{
+      {/* ── Panel derecho — dark ── */}
+      <div className="reg-panel" style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#fff', padding: '40px 24px', overflowY: 'auto',
+        padding: '40px 24px', overflowY: 'auto',
       }}>
         <div style={{ width: '100%', maxWidth: '420px' }}>
 
           {/* Logo móvil */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px' }} className="mobile-logo">
-            <img
-              src="/logo.png"
-              alt="MastexoPOS"
-              style={{ height: '32px', width: 'auto', objectFit: 'contain', maxWidth: '120px' }}
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'inline';
-              }}
-            />
-            <span style={{ display: 'none', fontWeight: 700, fontSize: '17px', color: '#0D1B3E' }}>
+          <div className="anim-reg-logo mobile-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: '#6C63FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              boxShadow: '0 0 16px rgba(108,99,255,0.35)',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 11l19-9-9 19-2-8-8-2z" />
+              </svg>
+            </div>
+            <span style={{ fontWeight: 700, fontSize: '17px', color: '#fff', fontFamily: titleFont }}>
               Mastexo<span style={{ color: fColor }}>POS</span>
             </span>
           </div>
 
           {/* Steps indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '28px' }}>
+          <div className="anim-reg-steps" style={{ display: 'flex', alignItems: 'center', marginBottom: '28px' }}>
             {steps.map((s, i) => {
               const isActive = payStep === 'payment' ? s.n === 2 : s.n === 1;
               const isDone   = payStep === 'payment' && s.n === 1;
@@ -541,8 +528,8 @@ export default function Register() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div style={{
                       width: '22px', height: '22px', borderRadius: '50%',
-                      background: isActive ? fColor : isDone ? '#22c55e' : '#f1f5f9',
-                      color: (isActive || isDone) ? '#fff' : '#94a3b8',
+                      background: isActive ? fColor : isDone ? '#22c55e' : 'rgba(255,255,255,0.08)',
+                      color: (isActive || isDone) ? '#fff' : 'rgba(255,255,255,0.30)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '11px', fontWeight: 700, flexShrink: 0,
                     }}>
@@ -551,14 +538,14 @@ export default function Register() {
                     <span style={{
                       fontSize: '12px',
                       fontWeight: isActive ? 600 : 400,
-                      color: isActive ? fColor : isDone ? '#16a34a' : '#94a3b8',
+                      color: isActive ? fColor : isDone ? '#4ade80' : 'rgba(255,255,255,0.30)',
                       whiteSpace: 'nowrap',
                     }}>
                       {s.label}
                     </span>
                   </div>
                   {i < steps.length - 1 && (
-                    <div style={{ flex: 1, height: '1px', background: '#e2e8f0', margin: '0 8px' }} />
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.10)', margin: '0 8px' }} />
                   )}
                 </div>
               );
@@ -568,47 +555,44 @@ export default function Register() {
           {/* ── Pantalla de pago PayPal (step 2) ── */}
           {payStep === 'payment' && (
             <div>
-              {/* Resumen de lo que están pagando */}
               <div style={{
-                background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.10)',
                 borderRadius: '12px', padding: '16px 20px', marginBottom: '20px',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div>
-                    <p style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a', margin: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: '15px', color: '#fff', margin: 0 }}>
                       Plan {planKey === 'pro' ? 'Pro' : 'Business'}
                     </p>
-                    <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0' }}>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', margin: '2px 0 0' }}>
                       Facturación mensual · sin contrato
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontWeight: 800, fontSize: '22px', color: '#0f172a', margin: 0 }}>
-                      {planKey === 'pro' ? '$29' : '$79'}
+                    <p style={{ fontWeight: 800, fontSize: '22px', color: '#fff', margin: 0 }}>
+                      {planKey === 'pro' ? `$${PLAN_CFG.pro.price}` : `$${PLAN_CFG.business.price}`}
                     </p>
-                    <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>USD / mes</p>
+                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.30)', margin: 0 }}>USD / mes</p>
                   </div>
                 </div>
-                <div style={{ height: '1px', background: '#e2e8f0', margin: '12px 0' }} />
-                <p style={{ fontSize: '12px', color: '#475569', margin: 0 }}>
-                  ✓ Cuenta creada para <strong>{email}</strong>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.10)', margin: '12px 0' }} />
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', margin: 0 }}>
+                  ✓ Cuenta creada para <strong style={{ color: '#fff' }}>{email}</strong>
                 </p>
               </div>
 
-              {/* Error de pago */}
               {payError && (
                 <div style={{
                   display: 'flex', alignItems: 'flex-start', gap: '8px',
-                  background: '#fff5f5', border: '1.5px solid #fca5a5',
+                  background: 'rgba(239,68,68,0.10)', border: '1.5px solid rgba(239,68,68,0.30)',
                   borderRadius: '10px', padding: '12px 14px', marginBottom: '16px',
-                  color: '#dc2626', fontSize: '13px',
+                  color: '#fca5a5', fontSize: '13px',
                 }}>
                   <WarnIcon />
                   <span>{payError}</span>
                 </div>
               )}
 
-              {/* Botón PayPal SDK real */}
               <PayPalButton
                 plan={planKey}
                 onSuccess={handlePaySuccess}
@@ -616,7 +600,7 @@ export default function Register() {
               />
 
               <p style={{
-                textAlign: 'center', fontSize: '11.5px', color: '#94a3b8',
+                textAlign: 'center', fontSize: '11.5px', color: 'rgba(255,255,255,0.30)',
                 marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
               }}>
                 <LockIcon /> Pago seguro via PayPal · Tu información nunca toca nuestros servidores
@@ -625,30 +609,30 @@ export default function Register() {
           )}
 
           {/* Social proof — solo en step 1 */}
-          <div style={{
+          <div className="anim-reg-social" style={{
             display: payStep === 'payment' ? 'none' : 'flex', alignItems: 'center', gap: '10px',
-            background: '#fff', border: '1px solid #e2e8f0',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '10px', padding: '10px 14px', marginBottom: '28px',
           }}>
             <div style={{ display: 'flex', marginRight: '2px' }}>
               {[
-                { bg: '#0066CC', letter: 'J' },
+                { bg: '#6C63FF', letter: 'J' },
                 { bg: '#059669', letter: 'A' },
                 { bg: '#7c3aed', letter: 'C' },
               ].map((av, i) => (
                 <div key={i} style={{
                   width: '28px', height: '28px', borderRadius: '50%',
-                  background: av.bg, border: '2px solid #fff',
+                  background: av.bg, border: '2px solid rgba(255,255,255,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '10px', fontWeight: 700, color: '#fff',
                   marginLeft: i > 0 ? '-8px' : 0,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.30)',
                 }}>
                   {av.letter}
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: '12.5px', color: '#475569', fontWeight: 500, margin: 0 }}>
+            <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.55)', fontWeight: 500, margin: 0 }}>
               {planKey === 'free'     && '200+ restaurantes ya en el plan gratuito'}
               {planKey === 'pro'      && 'El plan preferido por restaurantes en crecimiento'}
               {planKey === 'business' && 'Cadenas con 3+ locales eligen Business'}
@@ -656,26 +640,25 @@ export default function Register() {
           </div>
 
           {/* Encabezado — solo en step 1 */}
-          {payStep !== 'payment' && <p style={{ fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.08em', color: fColor, textTransform: 'uppercase', marginBottom: '6px' }}>
-            Crear cuenta
-          </p>}
           {payStep !== 'payment' && (
-            <>
-              <h2 style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontSize: '26px', fontWeight: 700, color: '#0D1B3E', marginBottom: '4px', lineHeight: 1.2 }}>
+            <div className="anim-reg-header">
+              <p style={{ fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.08em', color: fColor, textTransform: 'uppercase', marginBottom: '6px' }}>
+                Crear cuenta
+              </p>
+              <h2 style={{ fontFamily: titleFont, fontSize: '26px', fontWeight: 700, color: '#fff', marginBottom: '4px', lineHeight: 1.2 }}>
                 {planKey === 'free'     ? 'Empieza gratis hoy'     : ''}
                 {planKey === 'pro'      ? 'Activa el Plan Pro'      : ''}
                 {planKey === 'business' ? 'Activa el Plan Business' : ''}
               </h2>
-              <p style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '24px' }}>
+              <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', marginBottom: '24px' }}>
                 {planKey === 'free' ? 'Sin tarjeta de crédito, sin compromisos.' : 'Completa el registro y configura el pago.'}
               </p>
-            </>
+            </div>
           )}
 
           {/* ── Formulario (solo en step 1) ── */}
-          <form onSubmit={handleSubmit} noValidate style={{ display: payStep === 'payment' ? 'none' : 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleSubmit} noValidate style={{ display: payStep === 'payment' ? 'none' : 'flex', flexDirection: 'column', gap: '16px' }} className="anim-reg-form">
 
-            {/* 1. Nombre del restaurante */}
             <Field
               label="Nombre del restaurante"
               value={restaurante}
@@ -687,7 +670,6 @@ export default function Register() {
               accentRgba={fRgba}
             />
 
-            {/* 2. Email */}
             <Field
               label="Email"
               type="email"
@@ -700,7 +682,6 @@ export default function Register() {
               accentRgba={fRgba}
             />
 
-            {/* 3. Tu nombre — opcional, después del email para reducir fricción */}
             <Field
               label="Tu nombre"
               optional
@@ -713,7 +694,6 @@ export default function Register() {
               accentRgba={fRgba}
             />
 
-            {/* 4. Contraseña */}
             <Field
               label="Contraseña"
               type={showPwd ? 'text' : 'password'}
@@ -729,7 +709,7 @@ export default function Register() {
                   type="button"
                   tabIndex={-1}
                   onClick={() => setShowPwd((v) => !v)}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#94a3b8', display: 'flex' }}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'rgba(255,255,255,0.30)', display: 'flex' }}
                 >
                   <EyeIcon open={showPwd} />
                 </button>
@@ -745,7 +725,7 @@ export default function Register() {
                   onChange={(e) => { setTerms(e.target.checked); clearFieldErr('terms'); }}
                   style={{ width: '16px', height: '16px', marginTop: '2px', cursor: 'pointer', accentColor: fColor, flexShrink: 0 }}
                 />
-                <span style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.50)', lineHeight: 1.5 }}>
                   Acepto los{' '}
                   <a href="/terminos" target="_blank" style={{ color: fColor, textDecoration: 'underline', fontWeight: 600 }}>Términos de servicio</a>
                   {' '}y la{' '}
@@ -753,7 +733,7 @@ export default function Register() {
                 </span>
               </label>
               {errors.terms && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#ef4444', fontSize: '12px', marginTop: '5px', paddingLeft: '26px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#fca5a5', fontSize: '12px', marginTop: '5px', paddingLeft: '26px' }}>
                   <WarnIcon />
                   {errors.terms}
                 </div>
@@ -764,15 +744,15 @@ export default function Register() {
             {submitErr && (
               <div style={{
                 display: 'flex', alignItems: 'flex-start', gap: '8px',
-                background: '#fff5f5', border: '1.5px solid #fca5a5',
+                background: 'rgba(239,68,68,0.10)', border: '1.5px solid rgba(239,68,68,0.30)',
                 borderRadius: '10px', padding: '12px 14px',
-                color: '#dc2626', fontSize: '13px',
+                color: '#fca5a5', fontSize: '13px',
               }}>
                 <WarnIcon />
                 <span>
                   {submitErr === '__login__' ? (
                     <>Este email ya tiene una cuenta.{' '}
-                      <a href="/login" style={{ color: '#dc2626', fontWeight: 700, textDecoration: 'underline' }}>
+                      <a href="/login" style={{ color: '#fca5a5', fontWeight: 700, textDecoration: 'underline' }}>
                         ¿Iniciar sesión?
                       </a>
                     </>
@@ -789,7 +769,7 @@ export default function Register() {
                 width: '100%',
                 height: '48px',
                 borderRadius: '10px',
-                background: loading ? '#94a3b8' : plan.btnBg,
+                background: loading ? 'rgba(108,99,255,0.50)' : plan.btnBg,
                 color: '#fff',
                 fontFamily: font,
                 fontWeight: 700,
@@ -804,7 +784,7 @@ export default function Register() {
                 transition: 'transform 0.15s, box-shadow 0.15s, background 0.15s',
                 letterSpacing: '-0.01em',
               }}
-              onMouseOver={(e) => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = plan.btnShadow.replace('16px', '22px'); } }}
+              onMouseOver={(e) => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = plan.btnShadow.replace('16px', '22px').replace('24px', '32px'); } }}
               onMouseOut={(e)  => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = loading ? 'none' : plan.btnShadow; }}
             >
               {loading ? (
@@ -818,16 +798,15 @@ export default function Register() {
               ) : plan.btnLabel}
             </button>
 
-            {/* Nota de seguridad */}
             {plan.payNote && !loading && (
-              <p style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+              <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.30)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                 <LockIcon /> {plan.payNote}
               </p>
             )}
           </form>
 
           {/* Footer */}
-          <p style={{ textAlign: 'center', fontSize: '13.5px', color: '#64748b', marginTop: '24px' }}>
+          <p className="anim-reg-footer" style={{ textAlign: 'center', fontSize: '13.5px', color: 'rgba(255,255,255,0.40)', marginTop: '24px' }}>
             ¿Ya tienes cuenta?{' '}
             <a
               href="/login"
@@ -840,6 +819,6 @@ export default function Register() {
           </p>
         </div>
       </div>
-    </div>
+    </AuthBackground>
   );
 }

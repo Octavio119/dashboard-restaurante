@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Check, Zap, Building2, Star, ArrowLeft } from 'lucide-react';
+import { PLANS as PLAN_CFG } from '../config/plans';
 
 const PLANES = [
   {
@@ -21,7 +22,7 @@ const PLANES = [
   {
     key:      'pro',
     nombre:   'Pro',
-    precio:   '$29',
+    precio:   `$${PLAN_CFG.pro.price}`,
     periodo:  '/ mes',
     color:    'border-[#0066CC] ring-2 ring-[#0066CC]/30',
     badge:    'bg-blue-50 text-blue-700',
@@ -40,7 +41,7 @@ const PLANES = [
   {
     key:      'business',
     nombre:   'Business',
-    precio:   '$79',
+    precio:   `$${PLAN_CFG.business.price}`,
     periodo:  '/ mes',
     color:    'border-purple-400',
     badge:    'bg-purple-50 text-purple-700',

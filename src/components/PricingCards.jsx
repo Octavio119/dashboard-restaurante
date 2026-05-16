@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PLANS as PLAN_CFG } from '../config/plans';
 
 const CHECK = 'M5 13l4 4L19 7';
 const font  = "'Plus Jakarta Sans', -apple-system, sans-serif";
@@ -47,7 +48,7 @@ const PLANS = [
     nombre:   'Pro',
     tagline:  'Para restaurantes en operación',
     badge:    'Más popular',
-    precio:   { mensual: 29, anual: 23 },
+    precio:   { mensual: PLAN_CFG.pro.price, anual: PLAN_CFG.pro.priceAnual },
     esGratis: false,
     popular:  true,
     features: [
@@ -79,7 +80,7 @@ const PLANS = [
     nombre:   'Business',
     tagline:  'Para cadenas y grupos gastronómicos',
     badge:    'Multi-local',
-    precio:   { mensual: 79, anual: 63 },
+    precio:   { mensual: PLAN_CFG.business.price, anual: PLAN_CFG.business.priceAnual },
     esGratis: false,
     features: [
       'Todo lo de Pro',

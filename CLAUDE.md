@@ -355,3 +355,42 @@ Key routing rules:
 - Review what gstack has learned → invoke /learn
 - Tune question sensitivity → invoke /plan-tune
 - Code quality dashboard → invoke /health
+
+---
+
+## Project Learnings
+
+Patrones, trampas y decisiones de arquitectura capturadas automáticamente por gstack.
+Última actualización: 2026-05-14.
+
+### Patterns
+
+- **cult-ui-effects-pattern**: Cult UI effects (BorderBeam, ShineBorder, Ripple, DotPattern, RetroGrid) se instalan manualmente en `src/components/ui/` — no hay paquete npm. Cada uno necesita su `@keyframes` en `index.css`. `motion/react` no existe: usar `framer-motion` directamente. (confianza: 10/10)
+  > Archivos: `src/components/ui/border-beam.jsx`, `shine-border.jsx`, `ripple.jsx`, `dot-pattern.jsx`, `retro-grid.jsx`, `src/index.css`
+
+### Pitfalls
+
+- **mesa-ocupada-post-venta**: Nunca mostrar una mesa como ocupada después de que la venta fue cobrada. Al completar una venta: cerrar el pedido (`estado=CERRADO`), liberar la mesa (`estado=LIBRE`), y conservar el historial en ventas. Si uno falla el mozo ve la mesa ocupada con la venta ya cobrada. (confianza: 9/10)
+  > Archivos: `src/pages/PedidosPage.jsx`, `server/routes/pedidos.js`, `server/routes/ventas.js`
+
+- **plan-gate-silent-zeros**: Cuando `checkPlanFeature` retorna 403, `api.js` lanza y el error se traga silenciosamente, mostrando ceros que parecen datos reales. Fix: listener `upgrade_required` en `App.jsx` + estado locked en la página del feature. (confianza: 9/10)
+  > Archivos: `src/pages/AnalyticsPage.jsx`, `src/App.jsx`, `server/lib/planLimits.js`, `src/api.js`
+
+- **ventas-3-query-invalidation**: `venta:realizada` por socket debe invalidar **tres** queries separadas: `ventasDia`, `ventasResumen-by-period`, `ventasResumen-dia`. Un solo `queryKey.ventas` no alcanza. El factory de queryKeys debe exponer las tres claves más un helper `invalidateAll`. (confianza: 9/10)
+  > Archivos: `src/App.jsx`
+
+- **reservas-selectedDate-filter**: `addReservation` optimista agrega a `reservas[]` pero `dailyReservations` filtra por `selectedDate`. Si el calendario está en otra fecha, la reserva nueva es invisible. Fix: `setSelectedDate(normalized.fecha)` después de la creación. (confianza: 9/10)
+  > Archivos: `src/App.jsx`, `src/pages/ReservasPage.jsx`
+
+- **prisma-interactive-tx-utf8-null-byte**: Mover `pedido.create()` dentro de un `$transaction` interactivo en Prisma 5.x + PostgreSQL puede lanzar error `22021` (null byte) en tests. Los tests de `pedidos.test.js` ya fallaban en la codebase original — no es regresión. (confianza: 8/10)
+  > Archivos: `server/routes/pedidos.js`, `server/tests/unit/pedidos.test.js`
+
+### Architecture
+
+- **tanstack-query-god-component-path**: Cuando `App.jsx` es un God Component (3000+ líneas), la integración correcta de TanStack Query es: queries en `App.jsx` primero (beneficio inmediato, diff mínimo), luego refactor de páginas en sesión separada. Hacerlo simultáneo es alto riesgo. (confianza: 9/10)
+  > Archivos: `src/App.jsx`, `src/api.js`
+
+### Operational
+
+- **railway-port-healthcheck**: Railway inyecta `PORT` dinámicamente. `EXPOSE` y `HEALTHCHECK` deben usar `${PORT:-3000}`, no `9000` hardcodeado. `start-period` mínimo 60s. `validateEnv()` con `process.exit(1)` puede matar el servidor antes del healthcheck si las env vars no están en el dashboard de Railway. (confianza: 9/10)
+  > Archivos: `Dockerfile`, `server/Dockerfile`, `server/config.js`, `server/lib/validateEnv.js`

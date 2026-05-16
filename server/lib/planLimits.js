@@ -76,4 +76,4 @@ function checkPlanFeature(featureKey) {
   };
 }
 
-module.exports = { PLAN_LIMITS, checkPlanFeature };
+module.exports = { PLAN_LIMITS, PLAN_REQUERIDO, checkPlanFeature };

@@ -10,9 +10,11 @@ module.exports = function requireAuth(req, res, next) {
   const token = header.slice(7);
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    req.user     = decoded;
+    req.tenantId = decoded.restaurante_id ?? null;
 
-    // Envolvemos el resto de la cadena de middleware/rutas en el contexto del restaurante
+    // Envuelve el resto de la cadena en el contexto del restaurante.
+    // Esto activa la inyección automática de restaurante_id en lib/prisma.js.
     if (decoded.restaurante_id) {
       runWithContext(decoded.restaurante_id, () => {
         next();

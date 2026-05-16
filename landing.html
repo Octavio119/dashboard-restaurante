@@ -799,7 +799,7 @@ button{cursor:pointer;border:none;background:none;font:inherit}
         <div class="plan-badge">Más popular</div>
         <div class="plan-name">Pro</div>
         <div class="plan-price">
-          <span class="plan-amount" id="pro-price">$29</span>
+          <span class="plan-amount" id="pro-price">$22</span>
           <span class="plan-period">/ mes</span>
         </div>
         <p class="plan-tagline">Para restaurantes en operación</p>
@@ -822,7 +822,7 @@ button{cursor:pointer;border:none;background:none;font:inherit}
         <div class="plan-badge">Multi-local</div>
         <div class="plan-name">Business</div>
         <div class="plan-price">
-          <span class="plan-amount" id="biz-price">$79</span>
+          <span class="plan-amount" id="biz-price">$49</span>
           <span class="plan-period">/ mes</span>
         </div>
         <p class="plan-tagline">Para cadenas y grupos gastronómicos</p>
@@ -994,8 +994,8 @@ function setToggle(annual) {
   tM.classList.toggle('active', !annual); tA.classList.toggle('active', annual);
   tM.setAttribute('aria-pressed', String(!annual));
   tA.setAttribute('aria-pressed', String(annual));
-  pP.textContent = annual ? '$23' : '$29';
-  bP.textContent = annual ? '$63' : '$79';
+  pP.textContent = annual ? '$18' : '$22';
+  bP.textContent = annual ? '$39' : '$49';
 }
 tM.addEventListener('click', () => setToggle(false));
 tA.addEventListener('click', () => setToggle(true));

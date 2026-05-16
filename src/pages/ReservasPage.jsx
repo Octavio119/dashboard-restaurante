@@ -1,19 +1,148 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CosmicButton } from '../components/ui/cosmic-button';
+import { DotPattern } from '../components/ui/dot-pattern';
 import {
-  ChevronRight, Zap, Clock, Users, Utensils, ChefHat,
-  ShoppingBag, Check, UserCheck, X, MessageCircle, Trash2, Calendar, AlertCircle
+  ChevronLeft, ChevronRight, Plus, Users, Phone, Utensils,
+  Check, X, RefreshCw, MessageCircle, Trash2, ShoppingBag,
+  ChefHat, AlertCircle, Clock, UserCheck, MapPin, LayoutGrid,
+  Calendar, List
 } from 'lucide-react';
-import StatusBadge from '../components/ui/StatusBadge';
 
+// ─── Theme tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg:        '#0D0D0F',
+  card:      '#161618',
+  card2:     '#1A1A1D',
+  border:    '#27272A',
+  borderDim: '#1E1E22',
+  text:      '#E8E8EA',
+  textMuted: '#888',
+  textDim:   '#52525B',
+  textGhost: '#3F3F46',
+  purple:    '#7C3AED',
+  purpleDim: 'rgba(124,58,237,0.12)',
+  purpleBdr: 'rgba(124,58,237,0.25)',
+  // Green — border accent vs label vs capacity text
+  greenBorder:   '#16A34A',
+  green:         '#4ADE80',
+  greenCapacity: '#86EFAC',
+  greenDim:      '#052912',
+  greenBdr:      'rgba(22,163,74,0.15)',
+  // Orange
+  orangeBorder:   '#D97706',
+  orange:         '#FCD34D',
+  orangeCapacity: '#FDE68A',
+  orangeDim:      '#1C1007',
+  orangeBdr:      'rgba(217,119,6,0.15)',
+  // Red
+  redBorder:   '#DC2626',
+  red:         '#F87171',
+  redCapacity: '#FECACA',
+  redDim:      '#1A0707',
+  redBdr:      'rgba(220,38,38,0.15)',
+  // Blue
+  blueBorder:   '#2563EB',
+  blue:         '#60A5FA',
+  blueCapacity: '#BFDBFE',
+  blueDim:      '#050E1F',
+  blueBdr:      'rgba(37,99,235,0.15)',
+  whatsapp:  '#25D366',
+};
+
+// ─── Status config ────────────────────────────────────────────────────────────
+const STATUS = {
+  confirmada: { label: 'Confirmada', color: T.green,  bg: T.greenDim,  border: T.greenBorder,  borderAlpha: T.greenBdr  },
+  pendiente:  { label: 'Pendiente',  color: T.orange, bg: T.orangeDim, border: T.orangeBorder, borderAlpha: T.orangeBdr },
+  cancelada:  { label: 'Cancelada',  color: T.red,    bg: T.redDim,    border: T.redBorder,    borderAlpha: T.redBdr    },
+  'asistió':  { label: 'Asistió',    color: T.blue,   bg: T.blueDim,   border: T.blueBorder,   borderAlpha: T.blueBdr   },
+};
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
+const MOCK_RESERVAS = [
+  { id: 1, nombre: 'Isabella Moreno', telefono: '+56912345678', mesa: 'Mesa 4', personas: 4, hora: '12:30', fecha: '2026-05-13', estado: 'confirmada', notas: 'Cumpleaños, mesa junto a ventana' },
+  { id: 2, nombre: 'Carlos Vega',     telefono: '+56987654321', mesa: 'Mesa 7', personas: 2, hora: '13:00', fecha: '2026-05-13', estado: 'pendiente',  notas: '' },
+  { id: 3, nombre: 'Ana Pérez',       telefono: '+56911223344', mesa: 'Mesa 2', personas: 6, hora: '14:00', fecha: '2026-05-13', estado: 'confirmada', notas: 'Alergia al gluten' },
+  { id: 4, nombre: 'Roberto Silva',   telefono: '+56955443322', mesa: 'Mesa 1', personas: 3, hora: '15:30', fecha: '2026-05-13', estado: 'cancelada',  notas: '' },
+  { id: 5, nombre: 'Valentina Cruz',  telefono: '+56933221100', mesa: 'Mesa 5', personas: 5, hora: '19:00', fecha: '2026-05-13', estado: 'confirmada', notas: 'Aniversario, vino cortesía' },
+  { id: 6, nombre: 'Diego Fuentes',   telefono: '+56944556677', mesa: 'Mesa 3', personas: 2, hora: '20:00', fecha: '2026-05-13', estado: 'pendiente',  notas: '' },
+  { id: 7, nombre: 'Sofía Mendoza',   telefono: '+56922334455', mesa: 'Mesa 6', personas: 8, hora: '21:00', fecha: '2026-05-13', estado: 'confirmada', notas: 'Reunión de empresa' },
+];
+
+const MESAS = [
+  { id: 1, nombre: 'Mesa 1', capacidad: 4 },
+  { id: 2, nombre: 'Mesa 2', capacidad: 6 },
+  { id: 3, nombre: 'Mesa 3', capacidad: 2 },
+  { id: 4, nombre: 'Mesa 4', capacidad: 4 },
+  { id: 5, nombre: 'Mesa 5', capacidad: 6 },
+  { id: 6, nombre: 'Mesa 6', capacidad: 8 },
+  { id: 7, nombre: 'Mesa 7', capacidad: 2 },
+  { id: 8, nombre: 'Mesa 8', capacidad: 4 },
+  { id: 9, nombre: 'Mesa 9', capacidad: 4 },
+];
+
+const HOURS = Array.from({ length: 12 }, (_, i) => i + 12);
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function pad2(n) { return String(n).padStart(2, '0'); }
+function dateStr(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }
+function timeToFraction(hora) { const [h, m] = hora.split(':').map(Number); return (h - 12) + m / 60; }
+function getDaysInMonthGrid(year, month) {
+  const first = new Date(year, month, 1).getDay();
+  const days  = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < first; i++) cells.push(null);
+  for (let d = 1; d <= days; d++) cells.push(d);
+  return cells;
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function StatusPill({ estado }) {
+  const s = STATUS[estado] ?? STATUS.pendiente;
+  return (
+    <span style={{ fontSize: 11, fontWeight: 500, borderRadius: 4, padding: '2px 8px', background: `${s.color}18`, border: `1px solid ${s.borderAlpha}`, color: s.color, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+      {s.label}
+    </span>
+  );
+}
+
+// Animated progress bar for occupancy
+function OccupancyBar({ value }) {
+  return (
+    <div style={{ height: 4, background: '#1E1E22', borderRadius: 2, overflow: 'hidden', marginTop: 8 }}>
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${value}%` }}
+        transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
+        style={{
+          height: '100%', borderRadius: 2,
+          background: value > 80 ? T.red : value > 50 ? T.orange : T.green,
+        }}
+      />
+    </div>
+  );
+}
+
+// Pulsing status dot
+function PulseDot({ color }) {
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+      <span className="animate-ping" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: color, opacity: 0.4 }} />
+      <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
+    </span>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function ReservasPage({
-  getDaysInMonth,
-  reservas,
-  selectedDate, setSelectedDate,
+  getDaysInMonth: _getDaysInMonth,
+  reservas: reservasReal,
+  selectedDate: selectedDateProp, setSelectedDate: setSelectedDateProp,
   reservasPeriodo, setReservasPeriodo,
   autoReminder, setAutoReminder,
   autoWhatsApp, setAutoWhatsApp,
-  dailyReservations,
+  dailyReservations: dailyReal,
   reservaPedidoMap,
   loadProductos, openPedidoDetalle,
   crearPedidoRes, setCrearPedidoRes,
@@ -25,71 +154,244 @@ export default function ReservasPage({
   handleCrearPedidoDesdeReserva,
   setIsNewResModalOpen,
 }) {
+  const today = new Date();
+  const [calYear, setCalYear]         = useState(today.getFullYear());
+  const [calMonth, setCalMonth]       = useState(today.getMonth());
+  const [selectedDay, setSelectedDay] = useState(today.getDate());
+  const [filterEstado, setFilterEstado] = useState('all');
+  const [view, setView]               = useState('mapa');
+  const [selectedRes, setSelectedRes] = useState(null);
+  const [hoveredMesa, setHoveredMesa] = useState(null);
+
+  const selDateStr = dateStr(calYear, calMonth, selectedDay);
+  const allReservas = (reservasReal && reservasReal.length > 0) ? reservasReal : MOCK_RESERVAS;
+  const dayReservas = allReservas.filter(r => r.fecha === selDateStr);
+  const filtered = filterEstado === 'all' ? dayReservas : dayReservas.filter(r => r.estado === filterEstado);
+
+  const stats = useMemo(() => {
+    const activas    = dayReservas.filter(r => r.estado !== 'cancelada');
+    const totalP     = activas.reduce((s, r) => s + (r.personas || 0), 0);
+    const ocupacion  = Math.round((activas.length / MESAS.length) * 100);
+    const nowStr     = `${pad2(today.getHours())}:${pad2(today.getMinutes())}`;
+    const proxima    = activas.find(r => r.hora > nowStr);
+    return { total: activas.length, totalPersonas: totalP, ocupacion, proxima };
+  }, [dayReservas]);
+
+  const dotsMap = useMemo(() => {
+    const m = {};
+    allReservas.forEach(r => {
+      const d  = parseInt(r.fecha.split('-')[2]);
+      const mo = parseInt(r.fecha.split('-')[1]) - 1;
+      const yr = parseInt(r.fecha.split('-')[0]);
+      if (yr === calYear && mo === calMonth) m[d] = true;
+    });
+    return m;
+  }, [allReservas, calYear, calMonth]);
+
+  function prevMonth() {
+    if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
+    else setCalMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
+    else setCalMonth(m => m + 1);
+  }
+
+  const cells     = getDaysInMonthGrid(calYear, calMonth);
+  const monthLabel = new Date(calYear, calMonth, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+  // Mesa state helpers
+  function getMesaState(mesa) {
+    const r = dayReservas.find(res => res.mesa === mesa.nombre && res.estado !== 'cancelada');
+    if (!r) return { estado: 'disponible', reserva: null };
+    return { estado: r.estado, reserva: r };
+  }
+
+  function getMesaStyle(estado) {
+    const TR = 'border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease';
+    switch (estado) {
+      case 'confirmada': return {
+        bg: T.greenDim, border: T.greenBorder,
+        shadow: '0 0 0 1px #16A34A22, 0 0 12px #16A34A18',
+        labelColor: T.green, capacityColor: T.greenCapacity,
+        dotColor: '#4ADE80', opacity: 1, transition: TR,
+      };
+      case 'pendiente': return {
+        bg: T.orangeDim, border: T.orangeBorder,
+        shadow: '0 0 0 1px #D9770622, 0 0 12px #D9770618',
+        labelColor: T.orange, capacityColor: T.orangeCapacity,
+        dotColor: '#FBBF24', opacity: 1, transition: TR,
+      };
+      case 'cancelada': return {
+        bg: T.redDim, border: T.redBorder,
+        shadow: 'none',
+        labelColor: T.red, capacityColor: T.redCapacity,
+        dotColor: T.redBorder, opacity: 0.65, transition: TR,
+      };
+      case 'asistió': return {
+        bg: T.blueDim, border: T.blueBorder,
+        shadow: '0 0 0 1px #2563EB22, 0 0 12px #2563EB18',
+        labelColor: T.blue, capacityColor: T.blueCapacity,
+        dotColor: T.blueBorder, opacity: 1, transition: TR,
+      };
+      default: return {
+        bg: '#111113', border: '#27272A',
+        shadow: 'none',
+        labelColor: '#A1A1AA', capacityColor: T.textDim,
+        dotColor: 'transparent', opacity: 1, transition: TR,
+      };
+    }
+  }
+
+  // Stagger variants for mesa grid
+  const gridVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.05 } },
+  };
+  const cardVariants = {
+    hidden:  { opacity: 0, y: 14 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+  };
+
+  const FILTER_OPTIONS = [
+    { key: 'all',        label: 'Todas',       color: '#F4F4F5', border: '#3F3F46', borderLeft: null,      badgeBg: '#18181B',  badgeColor: '#A1A1AA' },
+    { key: 'confirmada', label: 'Confirmadas',  color: T.green,  border: T.greenBorder, borderLeft: T.greenBorder, badgeBg: T.greenDim,  badgeColor: T.green  },
+    { key: 'pendiente',  label: 'Pendientes',   color: T.orange, border: T.orangeBorder, borderLeft: T.orangeBorder, badgeBg: T.orangeDim, badgeColor: T.orange },
+    { key: 'cancelada',  label: 'Canceladas',   color: T.red,    border: T.redBorder, borderLeft: T.redBorder, badgeBg: T.redDim,   badgeColor: T.red   },
+  ];
+
+  const LEGEND_ITEMS = [
+    { estado: 'disponible', label: 'Disponible', color: '#3F3F46' },
+    { estado: 'confirmada', label: 'Confirmada', color: '#16A34A' },
+    { estado: 'pendiente',  label: 'Pendiente',  color: '#D97706' },
+    { estado: 'cancelada',  label: 'Cancelada',  color: '#DC2626' },
+    { estado: 'asistió',    label: 'Asistió',    color: '#2563EB' },
+  ];
+
   return (
-    <motion.div key="reservas" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1400px] w-full mx-auto">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+    <motion.div
+      key="reservas"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{ background: T.bg, minHeight: '100vh', fontFamily: "'Inter', 'Geist', system-ui, sans-serif" }}
+      className="flex flex-col h-full"
+    >
+      {/* ── Header ── */}
+      <div style={{ borderBottom: `1px solid ${T.purpleBdr}`, padding: '16px 24px', background: 'linear-gradient(to right, rgba(124,58,237,.04), transparent)' }}
+        className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Módulo de <span style={{ color: 'var(--primary)' }}>Reservas</span></h2>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Calendario y gestión de disponibilidad</p>
+          <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: T.purple, background: T.purpleDim, border: `1px solid ${T.purpleBdr}`, borderRadius: 4, padding: '2px 8px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Reservas
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: T.text, letterSpacing: '-0.02em', margin: 0 }}>Gestión de <span style={{ color: T.purple }}>Mesas</span></h1>
+            {/* Header badges */}
+            <span style={{ fontSize: 11, fontWeight: 500, color: T.purple, background: T.purpleDim, border: `1px solid ${T.purpleBdr}`, borderRadius: 4, padding: '2px 8px' }}>
+              {dayReservas.filter(r => r.estado !== 'cancelada').length} activas hoy
+            </span>
+            <span style={{ fontSize: 11, color: T.textDim, background: '#161618', border: `1px solid ${T.border}`, borderRadius: 4, padding: '2px 8px' }}>
+              12:00 – 24:00
+            </span>
+            <span style={{
+              fontSize: 11, fontWeight: 500, borderRadius: 4, padding: '2px 8px',
+              color: stats.ocupacion > 80 ? T.red : stats.ocupacion > 50 ? T.orange : T.green,
+              background: stats.ocupacion > 80 ? T.redDim : stats.ocupacion > 50 ? T.orangeDim : T.greenDim,
+              border: `1px solid ${stats.ocupacion > 80 ? T.redBdr : stats.ocupacion > 50 ? T.orangeBdr : T.greenBdr}`,
+            }}>
+              Ocupación {stats.ocupacion}%
+            </span>
+          </div>
         </div>
-        {setIsNewResModalOpen && (
-          <button
-            onClick={() => setIsNewResModalOpen(true)}
-            style={{
-              background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)',
-              color: 'white', border: 'none',
-              padding: '9px 18px', fontSize: '13px', fontWeight: 600,
-              borderRadius: '9px', cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(139,92,246,.3)',
-              display: 'flex', alignItems: 'center', gap: '6px',
-            }}
-          >
-            <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span> Nueva reserva
-          </button>
-        )}
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View toggle */}
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, padding: 3, display: 'flex', gap: 2 }}>
+            {[
+              { key: 'mapa',     label: 'Mapa',       icon: <LayoutGrid size={13} /> },
+              { key: 'timeline', label: 'Línea tiempo', icon: <List size={13} /> },
+            ].map(({ key, label, icon }) => (
+              <button key={key} onClick={() => setView(key)}
+                style={{
+                  background: view === key ? T.purple : 'transparent',
+                  color: view === key ? '#fff' : T.textDim,
+                  border: 'none', borderRadius: 4, cursor: 'pointer',
+                  padding: '5px 10px', fontSize: 12, fontWeight: 500,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  transition: 'all 150ms',
+                }}>
+                {icon}{label}
+              </button>
+            ))}
+          </div>
+
+          {setIsNewResModalOpen && (
+            <CosmicButton onClick={() => setIsNewResModalOpen(true)}>
+              <Plus size={14} /> Nueva reserva
+            </CosmicButton>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6">
-        {/* Calendario */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="card p-5 flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-[11px] font-black text-white uppercase tracking-[0.12em]">
-                {new Date(selectedDate+'T12:00:00').toLocaleDateString('es-ES', { month:'long', year:'numeric' }).toUpperCase()}
-              </h3>
-              <div className="flex gap-1">
-                <button className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[rgba(139,92,246,.4)] hover:text-[#8B5CF6]" style={{ background: 'var(--bg-card-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}>
-                  <ChevronRight className="rotate-180" size={13}/>
-                </button>
-                <button className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:border-[rgba(139,92,246,.4)] hover:text-[#8B5CF6]" style={{ background: 'var(--bg-card-2)', border: '1px solid var(--border)', color: 'var(--text-2)' }}>
-                  <ChevronRight size={13}/>
-                </button>
-              </div>
+      {/* ── Body 3-panel ── */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', height: 'calc(100vh - 73px)' }}>
+
+        {/* ── LEFT PANEL ── */}
+        <div style={{ width: '25%', minWidth: 240, maxWidth: 300, borderRight: `1px solid ${T.borderDim}`, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Mini calendar */}
+          <div style={{ background: 'rgba(124,58,237,.03)', border: `1px solid rgba(124,58,237,.22)`, borderRadius: 8, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <button onClick={prevMonth}
+                style={{ background: '#1E1E22', border: `1px solid ${T.border}`, borderRadius: 4, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textDim, transition: 'all 150ms' }}
+                onMouseEnter={e => { e.currentTarget.style.color = T.purple; e.currentTarget.style.borderColor = T.purple; }}
+                onMouseLeave={e => { e.currentTarget.style.color = T.textDim; e.currentTarget.style.borderColor = T.border; }}>
+                <ChevronLeft size={13} />
+              </button>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#C4B5FD', textTransform: 'capitalize' }}>{monthLabel}</span>
+              <button onClick={nextMonth}
+                style={{ background: '#1E1E22', border: `1px solid ${T.border}`, borderRadius: 4, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textDim, transition: 'all 150ms' }}
+                onMouseEnter={e => { e.currentTarget.style.color = T.purple; e.currentTarget.style.borderColor = T.purple; }}
+                onMouseLeave={e => { e.currentTarget.style.color = T.textDim; e.currentTarget.style.borderColor = T.border; }}>
+                <ChevronRight size={13} />
+              </button>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-zinc-600 mb-1 tracking-wider">
-              {['D','L','M','M','J','V','S'].map((d,i) => <div key={`dow-${i}`}>{d}</div>)}
+
+            {/* Day-of-week header */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 6 }}>
+              {['L','M','X','J','V','S','D'].map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'rgba(124,58,237,.5)', paddingBottom: 4 }}>{d}</div>
+              ))}
             </div>
-            <div className="grid grid-cols-7 gap-1">
-              {getDaysInMonth().map((day,i) => {
-                const isSelected = selectedDate===day && reservasPeriodo==='dia';
-                const hasRes = day && reservas.some(r => r.fecha===day && r.estado!=='cancelada');
+
+            {/* Day cells */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+              {cells.map((d, i) => {
+                const isToday = d && d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+                const isSel   = d && d === selectedDay;
+                const hasDot  = d && dotsMap[d];
                 return (
-                  <div key={i} className="aspect-square flex items-center justify-center">
-                    {day ? (
-                      <button
-                        onClick={() => { setSelectedDate(day); setReservasPeriodo('dia'); }}
-                        className="w-full h-full rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5"
-                        style={isSelected ? {
-                          background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-                          color: 'white',
-                          boxShadow: '0 4px 14px rgba(139,92,246,0.45)',
-                        } : { color: 'var(--text-2)' }}
-                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(139,92,246,.1)'; }}
-                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        {new Date(day+'T12:00:00').getDate()}
-                        {hasRes && (
-                          <span className="w-1 h-1 rounded-full" style={{ background: isSelected ? 'white' : '#8B5CF6' }} />
+                  <div key={i} style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {d ? (
+                      <button onClick={() => setSelectedDay(d)}
+                        style={{
+                          width: '100%', height: '100%', border: 'none', cursor: 'pointer',
+                          borderRadius: isSel ? 8 : 4,
+                          background: isSel ? '#7C3AED' : isToday ? 'rgba(124,58,237,0.15)' : 'transparent',
+                          color: isSel ? '#fff' : isToday ? '#7C3AED' : '#888',
+                          fontSize: 11, fontWeight: isSel ? 500 : 400,
+                          boxShadow: isSel ? '0 0 0 2px #7C3AED44' : 'none',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                          transition: 'background 0.15s, color 0.15s, box-shadow 0.15s, border-radius 0.15s',
+                        }}
+                        onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = '#27272A'; }}
+                        onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = isToday ? 'rgba(124,58,237,0.15)' : 'transparent'; }}>
+                        {d}
+                        {/* Dot for days with reservations */}
+                        {hasDot && (
+                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,0.7)' : '#7C3AED', display: 'block' }} />
                         )}
                       </button>
                     ) : <div />}
@@ -99,224 +401,497 @@ export default function ReservasPage({
             </div>
           </div>
 
-          {/* Automatizaciones */}
-          <div className="card p-5 flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2"><Zap size={13} /> Automatizaciones</h4>
-            {[
-              { label:'Recordatorio automático', sub:'2h antes', val:autoReminder, set:setAutoReminder, color:'bg-amber-500' },
-              { label:'Confirmar por WhatsApp', sub:'Al crear', val:autoWhatsApp, set:setAutoWhatsApp, color:'bg-[#25D366]' },
-            ].map(({ label, sub, val, set:s, color }) => (
-              <div key={label} className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">{label}</p>
-                  <p className="text-[11px] text-zinc-500">{sub}</p>
-                </div>
-                <button onClick={() => s(v => !v)}
-                  className={`w-10 h-5.5 rounded-full relative border transition-all ${val ? `${color} border-transparent` : 'bg-zinc-800 border-zinc-700'}`}
-                  style={{ height:'22px', width:'40px' }}>
-                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${val ? 'left-5' : 'left-0.5'}`} />
-                </button>
-              </div>
-            ))}
+          {/* Filtros de estado */}
+          <div style={{ background: T.card, border: `1px solid rgba(124,58,237,.18)`, borderRadius: 8, padding: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(124,58,237,.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Filtrar por estado</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {FILTER_OPTIONS.map(({ key, label, color, border, borderLeft, badgeBg, badgeColor }) => {
+                const count  = key === 'all' ? dayReservas.length : dayReservas.filter(r => r.estado === key).length;
+                const active = filterEstado === key;
+                return (
+                  <motion.button key={key}
+                    onClick={() => setFilterEstado(key)}
+                    whileTap={{ scale: 0.97 }}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      background: active ? (key === 'all' ? '#18181B' : `${color}12`) : 'transparent',
+                      border: `1px solid ${active ? border : 'transparent'}`,
+                      borderLeft: active && borderLeft ? `3px solid ${borderLeft}` : active ? `1px solid ${border}` : '1px solid transparent',
+                      borderRadius: 6, padding: active && borderLeft ? '7px 10px 7px 8px' : '7px 10px',
+                      cursor: 'pointer', transition: 'background 120ms, border-color 120ms', width: '100%',
+                    }}>
+                    <span style={{ fontSize: 12, fontWeight: 400, color: active ? color : '#71717A' }}>{label}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 500, borderRadius: 4, padding: '1px 6px',
+                      color: active ? badgeColor : '#555',
+                      background: active ? badgeBg : '#1E1E22',
+                      border: `1px solid ${active ? `${badgeColor}30` : T.border}`,
+                    }}>
+                      {count}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ocupación hoy — stat-card con barra animada */}
+          <div style={{
+            background: stats.ocupacion > 80 ? 'rgba(248,113,113,.04)' : stats.ocupacion > 50 ? 'rgba(252,211,77,.04)' : 'rgba(74,222,128,.04)',
+            border: `1px solid ${stats.ocupacion > 80 ? 'rgba(248,113,113,.25)' : stats.ocupacion > 50 ? 'rgba(252,211,77,.22)' : 'rgba(74,222,128,.22)'}`,
+            borderRadius: 8, padding: 16,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em',
+                color: stats.ocupacion > 80 ? 'rgba(248,113,113,.7)' : stats.ocupacion > 50 ? 'rgba(252,211,77,.7)' : 'rgba(74,222,128,.7)',
+              }}>Ocupación hoy</span>
+              <span style={{
+                fontSize: 15, fontWeight: 700,
+                color: stats.ocupacion > 80 ? T.red : stats.ocupacion > 50 ? T.orange : T.green,
+              }}>
+                {stats.ocupacion}%
+              </span>
+            </div>
+            <OccupancyBar value={stats.ocupacion} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+              <span style={{ fontSize: 11, color: '#5A5A62' }}>{stats.total} mesas activas</span>
+              <span style={{ fontSize: 11, color: '#5A5A62' }}>{MESAS.length} total</span>
+            </div>
+          </div>
+
+          {/* Stats rápidas */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ background: 'rgba(74,222,128,.04)', border: '1px solid rgba(74,222,128,.2)', borderRadius: 6, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(74,222,128,.6)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Comensales</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: T.green }}>{stats.totalPersonas}</span>
+            </div>
+            <div style={{ background: T.purpleDim, border: `1px solid ${T.purpleBdr}`, borderRadius: 6, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(124,58,237,.7)', textTransform: 'uppercase', letterSpacing: '0.07em', flexShrink: 0 }}>Próxima</span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: T.purple, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {stats.proxima ? `${stats.proxima.hora} — ${stats.proxima.nombre}` : '—'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Lista reservas */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-zinc-300">
-              {reservasPeriodo==='dia'
-                ? `Reservas del ${new Date(selectedDate+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long'})}`
-                : `Reservas — ${reservasPeriodo==='semana'?'esta semana':'este mes'}`}
-            </h3>
-            <span className="text-xs font-bold text-zinc-500 bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-lg">{dailyReservations.length} total</span>
+        {/* ── CENTER PANEL ── */}
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {/* Date bar */}
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.borderDim}`, borderLeft: `3px solid rgba(124,58,237,.5)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'rgba(124,58,237,.03)', zIndex: 10, backdropFilter: 'blur(8px)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#D4D4DC', textTransform: 'capitalize' }}>
+              {new Date(selDateStr + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </span>
+            <span style={{ fontSize: 11, color: '#5A5A62', background: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.15)', borderRadius: 4, padding: '2px 8px' }}>{filtered.length} reservas</span>
           </div>
 
-          <AnimatePresence>
-            {dailyReservations.length > 0 ? dailyReservations.map(res => (
-              <motion.div key={res.id} layout initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
-                className="card p-5 flex items-center justify-between gap-4 hover:border-zinc-700 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-zinc-800 border border-zinc-700 flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-black">{res.hora}</span>
-                    <Clock size={12} className="text-zinc-600 mt-0.5" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">{res.nombre}</p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-xs text-zinc-500 flex items-center gap-1"><Users size={11}/> {res.personas} personas</span>
-                      <span className="text-xs text-amber-400 flex items-center gap-1"><Utensils size={11}/> {res.mesa}</span>
-                      {res.fecha !== selectedDate && <span className="text-[10px] text-zinc-600">{res.fecha}</span>}
-                    </div>
-                  </div>
-                </div>
+          {view === 'mapa' ? (
+            /* ── Mesa map ── */
+            <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <motion.div
+                variants={gridVariants}
+                initial="hidden"
+                animate="visible"
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}
+              >
+                {MESAS.map(mesa => {
+                  const { estado, reserva } = getMesaState(mesa);
+                  const ms = getMesaStyle(estado);
+                  const isOcupada = estado !== 'disponible';
+                  const isPending = estado === 'cancelada';
+                  const isHovered = hoveredMesa === mesa.id;
 
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  <StatusBadge status={res.estado} />
-                  {/* Pedido activo vinculado a esta reserva */}
-                  {res.estado !== 'cancelada' && reservaPedidoMap[res.id] ? (
-                    <button
-                      onClick={() => { loadProductos(); openPedidoDetalle(reservaPedidoMap[res.id]); }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-colors text-xs font-bold
-                        bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500 hover:text-white"
-                      title="Gestionar pedido activo">
-                      <ChefHat size={13}/>
-                      <span>Pedido · </span>
-                      <StatusBadge status={reservaPedidoMap[res.id].estado} />
-                    </button>
-                  ) : res.estado !== 'cancelada' && (
-                    <button onClick={() => { setCrearPedidoRes(res); }}
-                      className="p-2 rounded-lg bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 hover:bg-[#8B5CF6] hover:text-white transition-colors flex items-center gap-1.5 px-3 text-xs font-bold" title="Crear pedido desde reserva">
-                      <ShoppingBag size={13}/> Crear Pedido
-                    </button>
-                  )}
-                  {res.estado==='asistió' && (
-                    <button onClick={() => { setSelectedReservaConsumo(res); setReservaConsumoModal(res); loadReservaConsumos(res.id); }}
-                      className="p-2 rounded-lg bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 hover:bg-[#8B5CF6] hover:text-white transition-colors" title="Gestionar Consumo">
-                      <Utensils size={14}/>
-                    </button>
-                  )}
-                  {res.estado==='pendiente' && (
-                    <button onClick={() => updateReservaEstado(res.id,'confirmada')}
-                      className="p-2 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500 hover:text-black transition-colors" title="Confirmar">
-                      <Check size={14}/>
-                    </button>
-                  )}
-                  {res.estado==='confirmada' && (
-                    <button onClick={() => updateReservaEstado(res.id,'asistió')}
-                      className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-colors" title="Asistió">
-                      <UserCheck size={14}/>
-                    </button>
-                  )}
-                  {res.estado !== 'cancelada' && res.estado !== 'asistió' && (
-                    <button onClick={() => updateReservaEstado(res.id,'cancelada')}
-                      className="p-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition-colors" title="Cancelar">
-                      <X size={14}/>
-                    </button>
-                  )}
-                  {res.telefono && (
-                    <button onClick={() => sendWhatsApp(res.telefono, res.nombre, res.fecha, res.hora)}
-                      className="p-2 rounded-lg bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20 hover:bg-[#25D366] hover:text-white transition-colors" title="WhatsApp">
-                      <MessageCircle size={14}/>
-                    </button>
-                  )}
-                  <button onClick={() => deleteReserva(res)}
-                    className="p-2 rounded-lg bg-zinc-800 text-zinc-500 border border-zinc-700 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-colors" title="Eliminar">
-                    <Trash2 size={14}/>
+                  return (
+                    <motion.div
+                      key={mesa.id}
+                      variants={cardVariants}
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      onMouseEnter={e => {
+                        setHoveredMesa(mesa.id);
+                        if (estado === 'disponible') {
+                          e.currentTarget.style.borderColor = 'rgba(124,58,237,.4)';
+                          e.currentTarget.style.background = 'rgba(124,58,237,.06)';
+                          e.currentTarget.style.boxShadow = '0 0 0 1px rgba(124,58,237,.15), 0 0 16px rgba(124,58,237,.08)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        setHoveredMesa(null);
+                        if (estado === 'disponible') {
+                          e.currentTarget.style.borderColor = '#27272A';
+                          e.currentTarget.style.background = '#111113';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }
+                      }}
+                      onClick={() => reserva && setSelectedRes(reserva.id === selectedRes?.id ? null : reserva)}
+                      style={{
+                        position: 'relative',
+                        background: ms.bg,
+                        border: `1px solid ${ms.border}`,
+                        borderRadius: 8,
+                        padding: '16px 14px',
+                        cursor: reserva ? 'pointer' : 'default',
+                        opacity: ms.opacity,
+                        minHeight: 90,
+                        boxShadow: selectedRes?.id === reserva?.id ? `0 0 0 2px ${ms.border}` : ms.shadow,
+                        transition: ms.transition,
+                      }}>
+
+                      {/* Pulsing dot for active reservations */}
+                      {isOcupada && !isPending && (
+                        <span style={{ position: 'absolute', top: 10, right: 10 }}>
+                          <PulseDot color={ms.dotColor} />
+                        </span>
+                      )}
+
+                      <div style={{ fontSize: 12, fontWeight: 500, color: ms.labelColor, marginBottom: 4 }}>{mesa.nombre}</div>
+                      <div style={{ fontSize: 10, color: ms.capacityColor }}>{mesa.capacidad} pers. máx.</div>
+
+                      {reserva && (
+                        <div style={{ marginTop: 8 }}>
+                          <div style={{ fontSize: 11, color: ms.labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, opacity: 0.9 }}>
+                            {reserva.nombre}
+                          </div>
+                          <div style={{ fontSize: 10, color: ms.capacityColor, marginTop: 2, opacity: 0.7 }}>{reserva.hora} · {reserva.personas}p</div>
+                        </div>
+                      )}
+
+                      {/* Tooltip */}
+                      <AnimatePresence>
+                        {isHovered && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 4 }}
+                            transition={{ duration: 0.12 }}
+                            style={{
+                              position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
+                              transform: 'translateX(-50%)',
+                              background: '#1E1E22', border: `1px solid ${T.border}`, borderRadius: 6,
+                              padding: '8px 12px', zIndex: 50, whiteSpace: 'nowrap',
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                              pointerEvents: 'none',
+                            }}>
+                            {reserva ? (
+                              <>
+                                <div style={{ fontSize: 12, color: T.text, fontWeight: 500 }}>{reserva.nombre}</div>
+                                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 3 }}>
+                                  {reserva.hora} · {reserva.personas} personas
+                                </div>
+                                <StatusPill estado={reserva.estado} />
+                              </>
+                            ) : (
+                              <div style={{ fontSize: 11, color: T.textDim }}>Mesa disponible · Click para asignar</div>
+                            )}
+                            {/* Tooltip arrow */}
+                            <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#1E1E22', border: `1px solid ${T.border}`, borderTop: 'none', borderLeft: 'none', rotate: '45deg' }} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+
+              {/* Legend */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.4 }}
+                style={{ display: 'flex', gap: 16, flexWrap: 'wrap', paddingTop: 4, borderTop: `1px solid ${T.borderDim}` }}>
+                {LEGEND_ITEMS.map(({ estado, label, color }) => (
+                  <div key={estado} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 2, background: color, display: 'inline-block', flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, color: '#71717A' }}>{label}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          ) : (
+            /* ── Timeline / Gantt ── */
+            <div style={{ padding: 20, flex: 1 }}>
+              {/* Hour ruler */}
+              <div style={{ display: 'flex', marginBottom: 8, paddingLeft: 80 }}>
+                {HOURS.map(h => (
+                  <div key={h} style={{ flex: 1, fontSize: 10, color: '#3A3A40', textAlign: 'left', borderLeft: `1px solid ${T.borderDim}`, paddingLeft: 4, paddingBottom: 4 }}>
+                    {h}:00
+                  </div>
+                ))}
+              </div>
+
+              {/* Mesa rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {MESAS.map(mesa => {
+                  const mesaRes = filtered.filter(r => r.mesa === mesa.nombre);
+                  return (
+                    <div key={mesa.id} style={{ display: 'flex', alignItems: 'center', minHeight: 40 }}>
+                      <div style={{ width: 80, flexShrink: 0, fontSize: 11, color: T.textDim, paddingRight: 12, textAlign: 'right' }}>{mesa.nombre}</div>
+                      <div style={{ flex: 1, position: 'relative', height: 36, background: '#111113', borderRadius: 4, overflow: 'visible' }}>
+                        {HOURS.map((_, i) => (
+                          <div key={i} style={{ position: 'absolute', left: `${(i / HOURS.length) * 100}%`, top: 0, bottom: 0, borderLeft: `1px solid ${T.borderDim}` }} />
+                        ))}
+                        {mesaRes.map(res => {
+                          const s = STATUS[res.estado] ?? STATUS.pendiente;
+                          const startFrac = timeToFraction(res.hora) / HOURS.length;
+                          const durFrac   = 1.5 / HOURS.length;
+                          return (
+                            <motion.div key={res.id}
+                              initial={{ opacity: 0, scaleX: 0.8 }}
+                              animate={{ opacity: 1, scaleX: 1 }}
+                              style={{
+                                position: 'absolute', left: `${startFrac * 100}%`, width: `${durFrac * 100}%`,
+                                top: 3, bottom: 3, background: `${s.color}18`, border: `1px solid ${s.borderAlpha}`,
+                                borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                padding: '0 8px', gap: 5, overflow: 'hidden', whiteSpace: 'nowrap',
+                                boxShadow: selectedRes?.id === res.id ? `0 0 0 1px ${s.color}` : 'none',
+                                zIndex: selectedRes?.id === res.id ? 5 : 1, transition: 'box-shadow 150ms',
+                              }}
+                              onClick={() => setSelectedRes(res.id === selectedRes?.id ? null : res)}>
+                              <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                              <span style={{ fontSize: 11, color: s.color, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis' }}>{res.nombre}</span>
+                              <span style={{ fontSize: 10, color: '#555', flexShrink: 0 }}>· {res.personas}p</span>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filtered.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0', color: '#333', gap: 10 }}>
+                  <Calendar size={32} style={{ opacity: 0.4 }} />
+                  <span style={{ fontSize: 13 }}>Sin reservas para este período</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT PANEL ── */}
+        <div style={{ width: '25%', minWidth: 240, maxWidth: 300, borderLeft: `1px solid ${T.borderDim}`, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <AnimatePresence mode="wait">
+            {selectedRes ? (
+              /* Detail panel */
+              <motion.div key={`detail-${selectedRes.id}`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: T.purple, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, opacity: 0.7 }}>Detalle de reserva</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: T.text, letterSpacing: '-0.02em' }}>{selectedRes.nombre}</div>
+                  </div>
+                  <button onClick={() => setSelectedRes(null)}
+                    style={{ background: '#1E1E22', border: `1px solid ${T.border}`, borderRadius: 4, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textDim, flexShrink: 0, transition: 'all 120ms' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = T.text; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = T.textDim; }}>
+                    <X size={12} />
                   </button>
                 </div>
+
+                <StatusPill estado={selectedRes.estado} />
+
+                {/* Info rows */}
+                <div style={{ background: 'rgba(124,58,237,.03)', border: `1px solid rgba(124,58,237,.2)`, borderRadius: 8, overflow: 'hidden' }}>
+                  {[
+                    { icon: <Clock size={13} />,   label: 'Hora',     value: selectedRes.hora },
+                    { icon: <Users size={13} />,   label: 'Personas', value: `${selectedRes.personas} personas` },
+                    { icon: <Utensils size={13} />,label: 'Mesa',     value: selectedRes.mesa || '—' },
+                    { icon: <Phone size={13} />,   label: 'Teléfono', value: selectedRes.telefono || '—' },
+                  ].map(({ icon, label, value }, i, arr) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: i < arr.length - 1 ? `1px solid rgba(124,58,237,.1)` : 'none' }}>
+                      <span style={{ color: 'rgba(124,58,237,.6)', flexShrink: 0 }}>{icon}</span>
+                      <span style={{ fontSize: 11, color: T.textDim, width: 60, flexShrink: 0 }}>{label}</span>
+                      <span style={{ fontSize: 12, color: '#C8C8D0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedRes.notas && (
+                  <div style={{ background: T.purpleDim, border: `1px solid ${T.purpleBdr}`, borderRadius: 6, padding: '10px 12px' }}>
+                    <div style={{ fontSize: 10, color: T.purple, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>Notas</div>
+                    <p style={{ fontSize: 12, color: T.textMuted, margin: 0, lineHeight: 1.5 }}>{selectedRes.notas}</p>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {selectedRes.estado === 'pendiente' && (
+                    <button onClick={() => updateReservaEstado?.(selectedRes.id, 'confirmada')}
+                      style={{ background: `${T.green}18`, border: `1px solid ${T.greenBdr}`, color: T.green, borderRadius: 6, padding: '9px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', transition: 'opacity 120ms', minHeight: 44 }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                      <Check size={13} /> Confirmar reserva
+                    </button>
+                  )}
+                  {selectedRes.estado === 'confirmada' && (
+                    <button onClick={() => updateReservaEstado?.(selectedRes.id, 'asistió')}
+                      style={{ background: T.purpleDim, border: `1px solid ${T.purpleBdr}`, color: T.purple, borderRadius: 6, padding: '9px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', transition: 'opacity 120ms', minHeight: 44 }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                      <UserCheck size={13} /> Marcar asistencia
+                    </button>
+                  )}
+                  <button style={{ background: T.card, border: `1px solid ${T.border}`, color: T.textMuted, borderRadius: 6, padding: '9px 14px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', transition: 'all 120ms', minHeight: 44 }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#3A3A40'; e.currentTarget.style.color = '#CCC'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; }}>
+                    <RefreshCw size={12} /> Reasignar mesa
+                  </button>
+                  {selectedRes.estado !== 'cancelada' && !reservaPedidoMap?.[selectedRes.id] && (
+                    <button onClick={() => setCrearPedidoRes?.(selectedRes)}
+                      style={{ background: T.card, border: `1px solid ${T.border}`, color: T.textMuted, borderRadius: 6, padding: '9px 14px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', transition: 'all 120ms', minHeight: 44 }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#3A3A40'; e.currentTarget.style.color = '#CCC'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; }}>
+                      <ShoppingBag size={12} /> Crear pedido
+                    </button>
+                  )}
+                  {selectedRes.telefono && (
+                    <button onClick={() => sendWhatsApp?.(selectedRes.telefono, selectedRes.nombre, selectedRes.fecha, selectedRes.hora)}
+                      style={{ background: `rgba(37,211,102,0.08)`, border: `1px solid rgba(37,211,102,0.2)`, color: T.whatsapp, borderRadius: 6, padding: '9px 14px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', transition: 'opacity 120ms', minHeight: 44 }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                      <MessageCircle size={12} /> Enviar WhatsApp
+                    </button>
+                  )}
+                </div>
+
+                {/* Danger zone */}
+                {selectedRes.estado !== 'cancelada' && (
+                  <div style={{ borderTop: `1px solid ${T.borderDim}`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <button onClick={() => updateReservaEstado?.(selectedRes.id, 'cancelada')}
+                      style={{ background: 'transparent', border: `1px solid rgba(231,76,60,0.2)`, color: T.red, borderRadius: 6, padding: '8px 14px', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', transition: 'all 120ms', opacity: 0.7, minHeight: 44 }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = `${T.red}10`; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.background = 'transparent'; }}>
+                      <X size={12} /> Cancelar reserva
+                    </button>
+                    <button onClick={() => deleteReserva?.(selectedRes)}
+                      style={{ background: 'transparent', border: `1px solid ${T.borderDim}`, color: T.textDim, borderRadius: 6, padding: '8px 14px', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', transition: 'all 120ms', opacity: 0.6, minHeight: 44 }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.borderColor = `rgba(231,76,60,0.25)`; e.currentTarget.style.color = T.red; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = '0.6'; e.currentTarget.style.borderColor = T.borderDim; e.currentTarget.style.color = T.textDim; }}>
+                      <Trash2 size={12} /> Eliminar reserva
+                    </button>
+                  </div>
+                )}
               </motion.div>
-            )) : (
-              <div className="py-16 flex flex-col items-center justify-center text-zinc-600 border border-dashed border-zinc-800 rounded-xl">
-                <Calendar size={40} className="mb-3 opacity-30" />
-                <p className="font-semibold text-sm">Sin reservas para este período</p>
-              </div>
+            ) : (
+              /* Elegant empty state */
+              <motion.div key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12, textAlign: 'center', position: 'relative' }}>
+
+                <DotPattern color="#7C3AED" size={20} opacity={0.15} style={{ zIndex: 0 }} />
+
+                {/* Floating calendar icon */}
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{ color: 'rgba(124,58,237,.35)', position: 'relative', zIndex: 1 }}>
+                  <Calendar size={36} />
+                </motion.div>
+
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <p style={{ fontSize: 13, color: '#5A5A70', margin: '0 0 4px', fontWeight: 500 }}>
+                    Selecciona una mesa para ver el detalle
+                  </p>
+                  <p style={{ fontSize: 11, color: '#3E3E50', margin: 0 }}>
+                    o crea una nueva reserva
+                  </p>
+                </div>
+
+                {setIsNewResModalOpen && (
+                  <button onClick={() => setIsNewResModalOpen(true)}
+                    style={{ background: 'transparent', border: `1px solid ${T.border}`, color: T.textDim, borderRadius: 6, padding: '7px 14px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, transition: 'all 150ms', minHeight: 44, position: 'relative', zIndex: 1 }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = T.purple; e.currentTarget.style.color = T.purple; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textDim; }}>
+                    <Plus size={13} /> Nueva reserva
+                  </button>
+                )}
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Modal crear pedido desde reserva */}
-      {crearPedidoRes && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-            className="absolute inset-0 bg-black/75 backdrop-blur-md"
-            onClick={() => !crearPedidoLoading && setCrearPedidoRes(null)} />
+      {/* ── Modal crear pedido desde reserva ── */}
+      <AnimatePresence>
+        {crearPedidoRes && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+              onClick={() => !crearPedidoLoading && setCrearPedidoRes(null)} />
 
-          <motion.div
-            initial={{ opacity:0, scale:0.93, y:16 }}
-            animate={{ opacity:1, scale:1, y:0 }}
-            exit={{ opacity:0, scale:0.93, y:16 }}
-            transition={{ duration:0.25, ease:[0.16,1,0.3,1] }}
-            className="relative w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
-            style={{ background:'#0f0f13', border:'1px solid rgba(139,92,246,.25)', boxShadow:'0 0 0 1px rgba(139,92,246,.1), 0 32px 64px rgba(0,0,0,.6)' }}
-          >
-            {/* Header con gradiente */}
-            <div className="relative px-6 pt-6 pb-5 overflow-hidden"
-              style={{ background:'linear-gradient(135deg,rgba(139,92,246,.18) 0%,rgba(109,40,217,.08) 100%)', borderBottom:'1px solid rgba(139,92,246,.15)' }}>
-              <div className="absolute inset-0 opacity-[0.03]"
-                style={{ backgroundImage:'radial-gradient(circle at 70% 50%, #8B5CF6 0%, transparent 60%)' }} />
-              <div className="relative flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                    style={{ background:'linear-gradient(135deg,#8B5CF6,#6D28D9)', boxShadow:'0 8px 20px rgba(139,92,246,.4)' }}>
-                    <ShoppingBag size={20} className="text-white" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              style={{ position: 'relative', width: '100%', maxWidth: 360, background: '#0F0F13', border: `1px solid ${T.purpleBdr}`, borderRadius: 10, boxShadow: '0 32px 64px rgba(0,0,0,0.6)' }}>
+
+              <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid rgba(124,111,224,0.1)` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 34, height: 34, background: `linear-gradient(135deg, ${T.purple}, #5A4FC8)`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ShoppingBag size={16} style={{ color: '#fff' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: T.text }}>Abrir pedido</div>
+                      <div style={{ fontSize: 11, color: T.purple, marginTop: 1 }}>desde reserva</div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-black text-white text-base leading-tight">Abrir Pedido</h3>
-                    <p className="text-[11px] font-medium mt-0.5" style={{ color:'rgba(139,92,246,.8)' }}>
-                      desde reserva · vinculado automático
-                    </p>
-                  </div>
+                  <button onClick={() => setCrearPedidoRes(null)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.textDim, padding: 4 }}>
+                    <X size={14} />
+                  </button>
                 </div>
-                <button onClick={() => setCrearPedidoRes(null)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/10 transition-all">
-                  <X size={15}/>
+              </div>
+
+              <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {[
+                  { label: 'Cliente',  value: crearPedidoRes.nombre },
+                  { label: 'Mesa',     value: crearPedidoRes.mesa || '—' },
+                  { label: 'Personas', value: `${crearPedidoRes.personas}` },
+                  { label: 'Horario',  value: `${crearPedidoRes.fecha} · ${crearPedidoRes.hora}` },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: `1px solid ${T.borderDim}` }}>
+                    <span style={{ fontSize: 12, color: T.textDim }}>{label}</span>
+                    <span style={{ fontSize: 12, color: '#AAAAAC' }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ margin: '0 20px 16px', background: 'rgba(243,156,18,0.07)', border: '1px solid rgba(243,156,18,0.15)', borderRadius: 6, padding: '9px 12px', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <AlertCircle size={12} style={{ color: T.orange, marginTop: 1, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: 'rgba(243,156,18,0.85)', lineHeight: 1.5 }}>El pedido se crea vacío. Agrega productos desde <strong>Pedidos</strong>.</span>
+              </div>
+
+              <div style={{ padding: '0 20px 20px', display: 'flex', gap: 8 }}>
+                <button disabled={crearPedidoLoading} onClick={() => setCrearPedidoRes(null)}
+                  style={{ flex: 1, padding: '9px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#666', fontSize: 13, cursor: 'pointer', minHeight: 44 }}>
+                  Cancelar
+                </button>
+                <button disabled={crearPedidoLoading} onClick={() => handleCrearPedidoDesdeReserva?.(crearPedidoRes)}
+                  style={{ flex: 1, padding: '9px', background: crearPedidoLoading ? `${T.purple}80` : T.purple, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 500, cursor: crearPedidoLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'opacity 120ms', minHeight: 44 }}
+                  onMouseEnter={e => { if (!crearPedidoLoading) e.currentTarget.style.opacity = '0.85'; }}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                  {crearPedidoLoading
+                    ? <><span style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} /> Creando...</>
+                    : <><ShoppingBag size={13} /> Abrir pedido</>}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-              {/* Avatar cliente */}
-              <div className="relative mt-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white flex-shrink-0"
-                  style={{ background:'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow:'0 4px 12px rgba(245,158,11,.35)' }}>
-                  {crearPedidoRes.nombre?.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-white font-black text-sm">{crearPedidoRes.nombre}</p>
-                  <p className="text-[11px] text-zinc-500">{crearPedidoRes.personas} {crearPedidoRes.personas === 1 ? 'persona' : 'personas'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Info rows */}
-            <div className="px-6 py-4 flex flex-col gap-1">
-              {[
-                { icon: <Utensils size={13}/>, label:'Mesa', value: crearPedidoRes.mesa || '—', color:'#F59E0B', show: true },
-                { icon: <Users size={13}/>, label:'Comensales', value:`${crearPedidoRes.personas} personas`, color:'#8B5CF6', show: true },
-                { icon: <Clock size={13}/>, label:'Horario', value:`${crearPedidoRes.fecha} · ${crearPedidoRes.hora}`, color:'#3B82F6', show: true },
-              ].filter(r => r.show).map(({ icon, label, value, color }) => (
-                <div key={label} className="flex items-center gap-3 py-2.5 border-b last:border-0"
-                  style={{ borderColor:'rgba(255,255,255,.05)' }}>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background:`${color}18`, color }}>
-                    {icon}
-                  </div>
-                  <span className="text-zinc-500 text-xs flex-1">{label}</span>
-                  <span className="text-white text-xs font-bold">{value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Nota */}
-            <div className="mx-6 mb-5 rounded-xl px-3.5 py-2.5 flex items-start gap-2.5"
-              style={{ background:'rgba(245,158,11,.07)', border:'1px solid rgba(245,158,11,.15)' }}>
-              <AlertCircle size={12} className="flex-shrink-0 mt-0.5" style={{ color:'#F59E0B' }}/>
-              <p className="text-[11px] leading-relaxed" style={{ color:'rgba(245,158,11,.85)' }}>
-                El pedido se crea vacío. Agrega productos desde el panel de <strong>Pedidos</strong>.
-              </p>
-            </div>
-
-            {/* Botones */}
-            <div className="px-6 pb-6 flex gap-2.5">
-              <button disabled={crearPedidoLoading} onClick={() => setCrearPedidoRes(null)}
-                className="flex-1 py-2.5 rounded-xl text-zinc-400 hover:text-white font-semibold text-sm transition-all disabled:opacity-40"
-                style={{ background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.08)' }}>
-                Cancelar
-              </button>
-              <button
-                disabled={crearPedidoLoading}
-                onClick={() => handleCrearPedidoDesdeReserva(crearPedidoRes)}
-                className="flex-1 py-2.5 rounded-xl text-white font-black text-sm transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: crearPedidoLoading ? 'rgba(139,92,246,.5)' : 'linear-gradient(135deg,#8B5CF6,#6D28D9)', boxShadow: crearPedidoLoading ? 'none' : '0 8px 20px rgba(139,92,246,.35)' }}>
-                {crearPedidoLoading
-                  ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Creando...</>
-                  : <><ShoppingBag size={14}/> Abrir Pedido</>
-                }
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </motion.div>
   );
 }

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { Key, Copy, Trash2, Plus, AlertTriangle, ArrowLeft } from 'lucide-react';
+import FeatureGate from '../components/FeatureGate';
+import { usePlan } from '../hooks/usePlan';
 
 export default function ApiKeysPage({ user }) {
+  const { can, isBusiness } = usePlan();
   const plan = user?.restaurante?.plan;
 
   const [keys, setKeys] = useState([]);
@@ -15,7 +18,7 @@ export default function ApiKeysPage({ user }) {
   const [revoking, setRevoking] = useState(null); // id being revoked
 
   useEffect(() => {
-    if (plan !== 'business') {
+    if (!isBusiness) {
       setLoading(false);
       return;
     }
@@ -79,32 +82,14 @@ export default function ApiKeysPage({ user }) {
     });
   }
 
-  // Plan gate
-  if (plan !== 'business') {
+  // Plan gate — use FeatureGate so UI is consistent across the app
+  if (!can('apiKeys')) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ maxWidth: '420px', width: '100%', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '40px 32px', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: '#faf5ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <Key size={26} color="#7c3aed" />
-          </div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '0 0 10px' }}>
-            Solo disponible en Business
-          </h2>
-          <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 28px', lineHeight: 1.6 }}>
-            Las API Keys para acceso programático solo están disponibles en el plan Business. Actualiza tu plan para integrar con sistemas externos.
-          </p>
-          <a
-            href="/billing"
-            style={{
-              display: 'inline-block', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
-              color: '#fff', fontWeight: 700, fontSize: '14px', padding: '11px 28px',
-              borderRadius: '8px', textDecoration: 'none', fontFamily: 'inherit',
-            }}
-          >
-            Ver planes
-          </a>
+      <FeatureGate feature="apiKeys">
+        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Key size={40} color="#7c3aed" />
         </div>
-      </div>
+      </FeatureGate>
     );
   }
 

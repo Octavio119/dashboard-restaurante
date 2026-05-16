@@ -3,3 +3,5 @@ process.env.DATABASE_URL = 'postgresql://postgres:Bazez@localhost:5432/dashboard
 process.env.JWT_SECRET   = 'test-secret-key-for-jest-2026';
 process.env.JWT_EXPIRES  = '1h';
 process.env.PORT         = '9001';
+process.env.ADMIN_CODE   = 'test-admin-code-2026';
+process.env.DIRECT_URL   = process.env.DATABASE_URL;

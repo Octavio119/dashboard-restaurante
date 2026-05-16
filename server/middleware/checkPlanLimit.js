@@ -10,9 +10,21 @@ async function checkOrderLimit(req, res, next) {
 
     const restaurante = await prisma.restaurante.findUnique({
       where:  { id: rid },
-      select: { plan: true, ordenes_mes_actual: true, billing_ciclo_inicio: true },
+      select: { plan: true, plan_status: true, ordenes_mes_actual: true, billing_ciclo_inicio: true },
     });
     if (!restaurante) return res.status(404).json({ error: 'Restaurante no encontrado' });
+
+    const plan_status = restaurante.plan_status || 'active';
+    if (plan_status === 'past_due' || plan_status === 'cancelled') {
+      return res.status(402).json({
+        error:       'PAYMENT_REQUIRED',
+        plan_status,
+        message:     plan_status === 'past_due'
+          ? 'Tu suscripción tiene un pago vencido.'
+          : 'Tu suscripción fue cancelada.',
+        upgrade_url: '/billing',
+      });
+    }
 
     const plan   = restaurante.plan || 'free';
     const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
@@ -33,9 +45,10 @@ async function checkOrderLimit(req, res, next) {
     }
 
     if (ordenesMes >= limits.ordenes_mes) {
-      return res.status(403).json({
-        error:       'limite_alcanzado',
-        mensaje:     `Has alcanzado el límite de ${limits.ordenes_mes} órdenes/mes del plan ${plan}.`,
+      return res.status(429).json({
+        error:       'ORDER_LIMIT_REACHED',
+        used:        ordenesMes,
+        limit:       limits.ordenes_mes,
         plan_actual: plan,
         upgrade_url: '/billing',
       });

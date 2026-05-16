@@ -1,14 +1,15 @@
 'use strict';
-const { Server } = require('socket.io');
-const { createClient } = require('redis');
+const { Server }        = require('socket.io');
+const { createClient }  = require('redis');
 const { createAdapter } = require('@socket.io/redis-adapter');
-const logger = require('./logger');
-const prisma = require('./prisma');
-const { PLAN_LIMITS } = require('./planLimits');
+const logger            = require('./logger');
+const prisma            = require('./prisma');
+const { PLAN_LIMITS }   = require('./planLimits');
+const socketAuth        = require('../middleware/socketAuth');
 
 let _io = null;
 
-// Mapeo rol → salas que debe unirse
+// Mapeo rol → sub-salas que debe unirse además de la sala general del restaurante
 const ROL_ROOMS = {
   chef:    ['cocina'],
   staff:   ['meseros'],
@@ -17,7 +18,7 @@ const ROL_ROOMS = {
   cajero:  ['caja'],
 };
 
-// Salas que reciben cada evento
+// Salas destino para cada evento de negocio
 const EVENT_ROOMS = {
   'pedido:creado':      ['cocina', 'meseros'],
   'pedido:actualizado': ['cocina', 'caja', 'meseros'],
@@ -41,10 +42,11 @@ async function init(httpServer) {
     pingInterval: 25000,
   });
 
+  // ── Redis Adapter ─────────────────────────────────────────────────────────────
+  // Requerido en modo cluster PM2: sin él los broadcasts solo llegan a los sockets
+  // conectados al mismo worker, no a todos los workers del proceso.
   if (process.env.REDIS_URL) {
     try {
-      // Upstash requiere rediss:// (TLS). Node redis v5 lo maneja automático
-      // si la URL empieza con rediss://.
       const socketOptions = process.env.REDIS_URL.startsWith('rediss://')
         ? { socket: { tls: true, rejectUnauthorized: false } }
         : {};
@@ -59,16 +61,29 @@ async function init(httpServer) {
       _io.adapter(createAdapter(pubClient, subClient));
       logger.info({ url: process.env.REDIS_URL.split('@').pop() }, 'Socket.io Redis Adapter conectado');
     } catch (err) {
-      logger.error({ err }, 'Error conectando Redis Adapter (modo local)');
-      // Continúa sin adapter — funciona con un solo servidor
+      logger.error({ err }, 'Error conectando Redis Adapter — modo local (single worker)');
     }
+  } else {
+    logger.warn('Socket.io sin REDIS_URL — broadcasts no cruzarán workers en modo cluster');
   }
 
-  _io.on('connection', async socket => {
-    const rid = socket.handshake.auth?.restaurante_id;
-    const rol = socket.handshake.auth?.rol;
-    if (!rid) return socket.disconnect(true);
+  // ── Middleware de autenticación JWT ───────────────────────────────────────────
+  // Corre antes del evento 'connection'. Si falla, el cliente recibe connect_error
+  // con message 'AUTH_MISSING' o 'AUTH_INVALID' y la conexión se rechaza.
+  _io.use(socketAuth);
 
+  // ── Handler de conexión ───────────────────────────────────────────────────────
+  _io.on('connection', async socket => {
+    // restaurante_id y rol vienen verificados del JWT (seteados por socketAuth)
+    const rid = socket.data.restaurante_id;
+    const rol = socket.data.rol;
+
+    if (!rid) {
+      logger.warn({ socketId: socket.id }, 'socket sin restaurante_id tras auth — rechazando');
+      return socket.disconnect(true);
+    }
+
+    // Verificar plan en DB — el JWT puede estar vigente pero el plan pudo haber cambiado
     try {
       const restaurante = await prisma.restaurante.findUnique({
         where:  { id: Number(rid) },
@@ -91,12 +106,22 @@ async function init(httpServer) {
       return socket.disconnect(true);
     }
 
-    // Sala general del restaurante
+    // ── Aislamiento por restaurante ───────────────────────────────────────────
+    // Sala general: todos los eventos del restaurante
     socket.join(`rest_${rid}`);
 
-    // Salas por rol
+    // Sub-salas por rol: filtra qué eventos recibe cada persona
     const salas = ROL_ROOMS[rol] || ['meseros'];
     for (const sala of salas) socket.join(`rest_${rid}:${sala}`);
+
+    logger.info(
+      { socketId: socket.id, rid, rol, rooms: [`rest_${rid}`, ...salas.map(s => `rest_${rid}:${s}`)] },
+      'socket conectado'
+    );
+
+    socket.on('disconnect', reason => {
+      logger.info({ socketId: socket.id, rid, rol, reason }, 'socket desconectado');
+    });
   });
 
   return _io;
@@ -107,6 +132,7 @@ function getIO() { return _io; }
 /**
  * Emite un evento a las salas correctas según EVENT_ROOMS.
  * Si el evento no está en el mapa, emite a la sala general del restaurante.
+ * Cada restaurante es un tenant aislado — nunca hay broadcast global.
  */
 function emit(rid, event, data) {
   if (!_io || !rid) return;

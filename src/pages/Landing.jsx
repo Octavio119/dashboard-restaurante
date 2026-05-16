@@ -3,6 +3,8 @@ import logo from '../../assets/logo.png';
 import './landing.css';
 import PayPalButton from '../components/PayPalButton';
 import { api } from '../api';
+import { PLANS as PLAN_CFG } from '../config/plans';
+import Footer from '../components/Footer';
 
 const STAR = (
   <svg className="star-svg" viewBox="0 0 20 20">
@@ -31,7 +33,7 @@ const X_ICON = (
 );
 
 // ─── Modal de pago rápido desde la landing ───────────────────────────────────
-const PLAN_PRICES = { pro: '$29', business: '$79' };
+const PLAN_PRICES = { pro: `$${PLAN_CFG.pro.price}`, business: `$${PLAN_CFG.business.price}` };
 const PLAN_LABELS = { pro: 'Pro', business: 'Business' };
 
 function QuickPayModal({ plan, onClose }) {
@@ -223,6 +225,33 @@ export default function Landing() {
     return () => counterObs.disconnect();
   }, []);
 
+  // Scroll shadow on nav pill
+  useEffect(() => {
+    const pill = document.querySelector('.nav-pill');
+    if (!pill) return;
+    const onScroll = () => pill.classList.toggle('scrolled', window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Scroll reveal for sections below hero
+  useEffect(() => {
+    const targets = document.querySelectorAll('#social, #features, #pricing, #faq, #footer-cta');
+    const obs = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+    );
+    targets.forEach(el => { if (el) { el.classList.add('reveal'); obs.observe(el); } });
+    return () => obs.disconnect();
+  }, []);
+
   // Close mobile menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
@@ -288,7 +317,8 @@ export default function Landing() {
       <nav id="nav" role="navigation" aria-label="Principal">
         <div className="nav-pill">
           <a href="#" className="nav-logo" aria-label="MastexoPOS inicio">
-            <img src={logo} alt="MastexoPOS" style={{ height: '40px', width: 'auto', display: 'block', objectFit: 'contain' }} />
+            <img src={logo} alt="MastexoPOS" style={{ height: '32px', width: 'auto', display: 'block', objectFit: 'contain' }} />
+            <span className="nav-logo-text">MastexoPOS</span>
           </a>
 
           <ul className="nav-links">
@@ -339,7 +369,7 @@ export default function Landing() {
           <div className="hero-copy">
             <div className="hero-badge">
               <span className="live-dot" aria-hidden="true" />
-              +200 restaurantes activos · Chile y LatAm
+              NUEVO · ALERTAS DE STOCK EN TIEMPO REAL
             </div>
 
             <h1 className="hero-h1">
@@ -649,7 +679,7 @@ export default function Landing() {
             <div className="pcard-price-row">
               <div className="pcard-price">
                 <span className="price-sym">$</span>
-                <span className="price-amount">29</span>
+                <span className="price-amount">{PLAN_CFG.pro.price}</span>
               </div>
               <div className="price-period">USD / mes · sin contrato</div>
             </div>
@@ -680,7 +710,7 @@ export default function Landing() {
             <div className="pcard-price-row">
               <div className="pcard-price">
                 <span className="price-sym">$</span>
-                <span className="price-amount">79</span>
+                <span className="price-amount">{PLAN_CFG.business.price}</span>
               </div>
               <div className="price-period">USD / mes · sin contrato</div>
             </div>
@@ -767,21 +797,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FOOTER BAR ── */}
-      <footer className="footer-bar" role="contentinfo">
-        <a href="/" className="footer-logo"><span className="g">Mastexo</span>POS</a>
-        <ul className="footer-links">
-          <li><a href="#features">Funciones</a></li>
-          <li><a href="#pricing">Precios</a></li>
-          <li><a href="#faq">FAQ</a></li>
-          <li><a href="/login">Iniciar sesión</a></li>
-          <li><a href="/register">Registro</a></li>
-          <li><a href="mailto:hola@mastexopos.com">Contacto</a></li>
-          <li><a href="/privacidad">Privacidad</a></li>
-          <li><a href="/terminos">Términos</a></li>
-        </ul>
-        <p className="footer-copy">© 2026 MastexoPOS · Todos los derechos reservados</p>
-      </footer>
+      {/* ── FOOTER ── */}
+      <Footer />
     </>
   );
 }

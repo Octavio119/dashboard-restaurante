@@ -36,6 +36,14 @@ async function clearRefreshToken(prisma, userId) {
   await prisma.metadata.deleteMany({ where: { key: `refresh:${userId}` } });
 }
 
+async function getRestaurantePlan(prisma, restaurante_id) {
+  const rest = await prisma.restaurante.findUnique({
+    where:  { id: restaurante_id },
+    select: { plan: true, plan_status: true },
+  });
+  return { plan: rest?.plan || 'free', plan_status: rest?.plan_status || 'active' };
+}
+
 // POST /api/auth/login
 router.post('/login', loginLimiter, async (req, res) => {
   try {
@@ -49,7 +57,8 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!user || !bcrypt.compareSync(password, user.password_hash))
       return res.status(401).json({ error: 'Credenciales inválidas' });
 
-    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id };
+    const { plan, plan_status } = await getRestaurantePlan(req.prisma, user.restaurante_id);
+    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status };
     const accessToken  = signAccess(payload);
     const refreshToken = signRefresh(payload);
     await storeRefreshToken(req.prisma, user.id, refreshToken);
@@ -57,7 +66,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       token: accessToken,
       refresh_token: refreshToken,
-      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id },
+      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status },
     });
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
@@ -78,7 +87,8 @@ router.post('/refresh', async (req, res) => {
     const user = await req.prisma.usuario.findFirst({ where: { id: decoded.id, activo: true } });
     if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
 
-    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id };
+    const { plan, plan_status } = await getRestaurantePlan(req.prisma, user.restaurante_id);
+    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status };
     const newAccess  = signAccess(payload);
     const newRefresh = signRefresh(payload);
     await storeRefreshToken(req.prisma, user.id, newRefresh);
@@ -165,7 +175,7 @@ router.post('/signup', async (req, res) => {
       return { restaurante, usuario };
     });
 
-    const payload     = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, restaurante_id: restaurante.id };
+    const payload     = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, restaurante_id: restaurante.id, plan: restaurante.plan, plan_status: 'active' };
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
     await storeRefreshToken(req.prisma, usuario.id, refreshToken);

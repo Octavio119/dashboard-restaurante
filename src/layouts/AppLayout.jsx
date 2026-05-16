@@ -8,6 +8,48 @@ import {
 import SidebarItem from '../components/layout/SidebarItem';
 import UsageBanner from '../components/UsageBanner';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { PlanUpgradeModal, showOrderLimit } from '../components/ui/PlanUpgradeModal';
+import { usePlan } from '../hooks/usePlan';
+import { api } from '../api';
+
+/** Compact order-limit pill shown in the header for Starter plan users. */
+function OrderLimitPill() {
+  const [usage, setUsage] = React.useState(null);
+
+  React.useEffect(() => {
+    api.getBillingUsage().then(setUsage).catch(() => {});
+  }, []);
+
+  if (!usage || usage.ordenes_limite === null) return null;
+
+  const pct   = usage.porcentaje ?? 0;
+  const color = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#8B5CF6';
+
+  const handleClick = () => {
+    if (pct >= 100) {
+      showOrderLimit({ used: usage.ordenes_usadas, limit: usage.ordenes_limite });
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-opacity hover:opacity-80 cursor-pointer"
+      style={{ background: `${color}12`, border: `1px solid ${color}25` }}
+      title={`${usage.ordenes_usadas}/${usage.ordenes_limite} órdenes este mes`}
+    >
+      <div className="w-16 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <div
+          className="h-1.5 rounded-full transition-all"
+          style={{ width: `${Math.min(pct, 100)}%`, background: color }}
+        />
+      </div>
+      <span className="text-[11px] font-bold tabular-nums" style={{ color }}>
+        {usage.ordenes_usadas}/{usage.ordenes_limite}
+      </span>
+    </button>
+  );
+}
 
 const rolColor = {
   admin:       'bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/30',
@@ -35,6 +77,7 @@ export default function AppLayout({
   children,
 }) {
   const { t } = useTranslation('common');
+  const { isStarter, can } = usePlan();
   const pendingBadge = (pedidos || []).filter(p => p.estado === 'pendiente').length || null;
 
   const NAV_ITEMS = [
@@ -44,7 +87,12 @@ export default function AppLayout({
     { icon: Calendar,       key: 'Reservas',      roles: null },
     { icon: Users,          key: 'Clientes',      roles: null },
     { icon: Package,        key: 'Inventario',    roles: ['admin', 'gerente', 'super_admin'] },
-    { icon: BarChart3,      key: 'Analytics',     roles: ['admin', 'gerente', 'super_admin'] },
+    {
+      icon: BarChart3,
+      key: 'Analytics',
+      roles: ['admin', 'gerente', 'super_admin'],
+      planBadge: can('analytics') ? null : 'PRO',
+    },
   ];
 
   return (
@@ -113,13 +161,14 @@ export default function AppLayout({
         <nav className="flex flex-col gap-0.5 flex-grow">
           {NAV_ITEMS
             .filter(({ roles }) => !roles || roles.includes(user?.rol))
-            .map(({ icon, key, badge }) => (
+            .map(({ icon, key, badge, planBadge }) => (
               <SidebarItem
                 key={key}
                 icon={icon}
                 label={t(`nav.${key}`)}
                 active={activeTab === key}
                 badge={badge}
+                planBadge={planBadge}
                 collapsed={sidebarCollapsed}
                 onClick={() => { setActiveTab(key); setSidebarOpen(false); }}
               />
@@ -193,6 +242,8 @@ export default function AppLayout({
           <div className="flex items-center gap-2.5">
             {/* Language switcher */}
             <LanguageSwitcher />
+            {/* Order limit pill — starter plan only, managed by UsageBanner hook */}
+            {isStarter && <OrderLimitPill />}
 
             {/* Notifications bell */}
             <div className="relative">
@@ -294,6 +345,9 @@ export default function AppLayout({
           </button>
         ))}
       </nav>
+
+      {/* Global plan upgrade modal — listens to window events from api.js */}
+      <PlanUpgradeModal />
     </div>
   );
 }

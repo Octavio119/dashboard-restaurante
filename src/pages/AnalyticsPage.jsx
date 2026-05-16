@@ -1,5 +1,9 @@
 import React from 'react';
+import { PLANS as PLAN_CFG } from '../config/plans';
 import { motion } from 'framer-motion';
+import { usePlan } from '../hooks/usePlan';
+import { ShineBorder } from '../components/ui/shine-border';
+import { CosmicButton } from '../components/ui/cosmic-button';
 import {
   Activity, DollarSign, TrendingUp, Receipt, ShoppingBag, Flame, BarChart2, Lock, Zap,
 } from 'lucide-react';
@@ -7,13 +11,17 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie,
 } from 'recharts';
+import { DotPattern } from '../components/ui/dot-pattern';
+import { RetroGrid } from '../components/ui/retro-grid';
 
 const PIE_COLORS = ['#3B82F6', '#6366F1', '#8B5CF6', '#14B8A6', '#0EA5E9'];
 
 const NUM_STYLE = { fontVariantNumeric: 'tabular-nums' };
 
 export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError }) {
-  const isPlanLocked = analyticsError?.message === 'plan_required';
+  const { can } = usePlan();
+  // Lock if plan doesn't allow analytics OR if backend returns any plan error
+  const isPlanLocked = !can('analytics') || analyticsError?.message === 'plan_required' || analyticsError?.message === 'PLAN_LIMIT';
   const pct = analytics?.comparacion_pct;
 
   const deltaColor  = pct == null ? '#64748B' : pct >= 0 ? '#10B981' : '#EF4444';
@@ -40,27 +48,32 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
           Centro de <span style={{ color: '#3B82F6' }}>Analytics</span>
         </h2>
 
-        <div className="card flex flex-col items-center justify-center gap-6 py-20 px-8 text-center"
-          style={{ border: '1px solid rgba(139,92,246,.2)', background: 'linear-gradient(160deg, rgba(139,92,246,.06) 0%, rgba(18,18,30,1) 60%)' }}>
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+        <ShineBorder
+          color={["#7C3AED", "#4F46E5", "#C4B5FD"]}
+          borderWidth={1.5}
+          className="rounded-2xl w-full"
+        >
+        <div className="relative overflow-hidden flex flex-col items-center justify-center gap-6 py-20 px-8 text-center w-full rounded-2xl"
+          style={{ background: 'linear-gradient(160deg, rgba(139,92,246,.06) 0%, rgba(18,18,30,1) 60%)' }}>
+          <RetroGrid opacity={0.2} angle={65} />
+          <div className="relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{ background: 'rgba(139,92,246,.12)', border: '1px solid rgba(139,92,246,.2)' }}>
             <Lock size={28} style={{ color: '#8B5CF6' }} />
           </div>
-          <div className="flex flex-col gap-2 max-w-sm">
+          <div className="relative z-10 flex flex-col gap-2 max-w-sm">
             <p className="text-xl font-black" style={{ color: '#F0F0FF' }}>Analytics requiere plan Pro</p>
             <p className="text-sm" style={{ color: '#9090B0' }}>
               Desbloquea métricas de ventas por hora, ranking de productos, comparativas semana a semana y más.
             </p>
           </div>
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('nav:billing'))}
-            className="btn-primary flex items-center gap-2">
+          <CosmicButton className="relative z-10" onClick={() => window.dispatchEvent(new CustomEvent('nav:billing'))}>
             <Zap size={14} /> Actualizar a Pro
-          </button>
-          <p className="text-xs" style={{ color: '#50506A' }}>
-            Plan Pro · $29/mes · Sin límite de órdenes
+          </CosmicButton>
+          <p className="relative z-10 text-xs" style={{ color: '#50506A' }}>
+            {`Plan Pro · $${PLAN_CFG.pro.price}/mes · Sin límite de órdenes`}
           </p>
         </div>
+        </ShineBorder>
       </motion.div>
     );
   }
@@ -213,8 +226,9 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-sm" style={{ color: '#475569' }}>
-              Sin ventas registradas hoy
+            <div className="h-[300px] flex items-center justify-center text-sm relative" style={{ color: '#475569' }}>
+              <DotPattern color="#7C3AED" size={20} opacity={0.15} style={{ zIndex: 0 }} />
+              <span style={{ position: 'relative', zIndex: 1 }}>Sin ventas registradas hoy</span>
             </div>
           )}
         </div>
