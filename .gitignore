@@ -7,3 +7,6 @@ dist/
 .worktrees/
 vite.config.js.timestamp-*.mjs
 assets/
+.claude/settings.local.json
+the-architect
+UsersMasterOneDriveDesktopthe-architect

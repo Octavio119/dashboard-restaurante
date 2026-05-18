@@ -27,7 +27,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
     const { orderId, approvalUrl } = await crearOrden({
       plan,
       restauranteId: rid,
-      returnUrl:     `${backendUrl}/api/billing/success?plan=${plan}`,
+      returnUrl:     `${backendUrl}/api/billing/success`,
       cancelUrl:     `${backendUrl}/api/billing/cancel`,
     });
 
@@ -42,10 +42,10 @@ router.post('/checkout', requireAuth, async (req, res) => {
 // GET /api/billing/success — PayPal redirige aquí tras aprobación del pago
 router.get('/success', async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const { token, plan } = req.query; // token = PayPal order ID; PayerID viene en query también
+  const { token } = req.query; // token = PayPal order ID
 
-  if (!token || !VALID_PLANS.includes(plan)) {
-    logger.warn({ token, plan }, 'billing success: parámetros inválidos');
+  if (!token) {
+    logger.warn({ token }, 'billing success: token faltante');
     return res.redirect(`${frontendUrl}/dashboard?error=invalid_params`);
   }
 
@@ -57,11 +57,21 @@ router.get('/success', async (req, res) => {
       return res.redirect(`${frontendUrl}/dashboard?error=payment_incomplete`);
     }
 
+    // plan and rid come from the verified PayPal order — never from user-controlled query params
     const customId = capture.purchase_units?.[0]?.custom_id;
-    const rid      = customId ? parseInt(customId, 10) : null;
+    let rid, plan;
+    try {
+      const parsed = JSON.parse(customId || '{}');
+      rid  = parsed.rid  ? parseInt(parsed.rid, 10) : null;
+      plan = parsed.plan || null;
+    } catch {
+      // backward compat: old orders stored only restaurante_id as string
+      rid  = customId ? parseInt(customId, 10) : null;
+      plan = null;
+    }
 
-    if (!rid) {
-      logger.error({ token, customId }, 'billing success: restaurante_id no encontrado en la orden');
+    if (!rid || !VALID_PLANS.includes(plan)) {
+      logger.error({ token, customId }, 'billing success: datos de orden inválidos o plan desconocido');
       return res.redirect(`${frontendUrl}/dashboard?error=order_data_missing`);
     }
 
