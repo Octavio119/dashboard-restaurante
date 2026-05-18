@@ -1,5 +1,6 @@
 node_modules
 server/node_modules
+server/generated
 dist
 coverage
 server/coverage
