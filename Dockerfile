@@ -18,8 +18,8 @@ ENV NODE_ENV=production
 RUN npm install -g pm2
 
 COPY server/ .
-RUN npm ci --omit=dev       ← instala DESPUÉS del copy
-RUN npx prisma generate
+RUN npm ci --omit=dev --ignore-scripts
+RUN npx prisma generate --schema=./prisma/schema.prisma
 # Directorio de logs para PM2 (montar como volumen en producción)
 RUN mkdir -p /logs
 
