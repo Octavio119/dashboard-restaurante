@@ -12,3 +12,5 @@ server/.env
 .env*
 !.env.example
 server/uploads
+
+server/generated
