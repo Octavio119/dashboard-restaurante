@@ -95,7 +95,14 @@ async function cancelarSuscripcion(subscriptionId) {
   return true;
 }
 
+const PAYPAL_CERT_PATTERN = /^https:\/\/([a-z0-9-]+\.)*paypal\.com\//i;
+
 async function verificarWebhook({ headers, body, webhookId }) {
+  const certUrl = headers['paypal-cert-url'];
+  if (certUrl && !PAYPAL_CERT_PATTERN.test(certUrl)) {
+    throw new Error(`PayPal webhook: certUrl fuera de dominio paypal.com — ${certUrl}`);
+  }
+
   const base  = getBaseUrl();
   const token = await getPayPalToken();
 

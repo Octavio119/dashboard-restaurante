@@ -172,9 +172,14 @@ async function handleWebhook(req, res) {
     const transmissionSig  = req.headers['paypal-transmission-sig'];
     const authAlgo         = req.headers['paypal-auth-algo'];
 
+    const PAYPAL_CERT_PATTERN = /^https:\/\/([a-z0-9-]+\.)*paypal\.com\//i;
     if (!transmissionId || !certUrl || !transmissionSig) {
       logger.warn('PayPal webhook: cabeceras de firma faltantes');
       return res.status(400).json({ error: 'Cabeceras de firma PayPal faltantes' });
+    }
+    if (!PAYPAL_CERT_PATTERN.test(certUrl)) {
+      logger.warn({ certUrl }, 'PayPal webhook: certUrl fuera de dominio paypal.com');
+      return res.status(400).json({ error: 'certUrl de webhook PayPal inválido' });
     }
 
     const token = await _getAccessToken();
