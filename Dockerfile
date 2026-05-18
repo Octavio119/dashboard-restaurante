@@ -17,19 +17,9 @@ ENV NODE_ENV=production
 # PM2 para modo cluster — gestiona workers, reenvía señales y hace graceful restart
 RUN npm install -g pm2
 
-# Instalar dependencias de producción del backend
-COPY server/package*.json ./
-RUN npm ci --omit=dev
-
-# Copiar código del servidor (incluye ecosystem.config.cjs)
 COPY server/ .
-
-# Copiar frontend compilado al directorio público del servidor
-COPY --from=frontend-builder /app/dist ./public
-
-# Generar Prisma client
+RUN npm ci --omit=dev       ← instala DESPUÉS del copy
 RUN npx prisma generate
-
 # Directorio de logs para PM2 (montar como volumen en producción)
 RUN mkdir -p /logs
 
