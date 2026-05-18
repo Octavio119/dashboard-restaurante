@@ -24,12 +24,16 @@ RUN npm install -g pm2
 
 COPY server/ .
 
-# npm ci sin --ignore-scripts para que @prisma/client/postinstall inicialice
-# node_modules/.prisma/client con los stubs correctos
-RUN npm ci --omit=dev
+# --ignore-scripts: evita que @prisma/client/postinstall corra "prisma generate"
+# antes de que podamos limpiar artefactos obsoletos. El path C:/prisma-gen viene
+# de un output custom que existió en versiones previas del schema; con --ignore-scripts
+# nos aseguramos de que @prisma/client/default.js nunca sea parchado con ese path.
+RUN npm ci --omit=dev --ignore-scripts
 
-# Regenerar el cliente Prisma para la plataforma Linux del contenedor.
-# Usamos la ruta explícita para garantizar el binario correcto (no npx global).
+# Purgar cualquier cliente Prisma anterior (Windows o Linux desactualizado).
+RUN rm -rf node_modules/.prisma
+
+# Generar el cliente Prisma limpio para Linux Alpine (linux-musl-openssl-3.0.x).
 RUN node_modules/.bin/prisma generate --schema=./prisma/schema.prisma
 
 # Copiar frontend compilado al directorio público del servidor
