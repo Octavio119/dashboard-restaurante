@@ -3,7 +3,7 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 COPY . .
 RUN npm run build
@@ -20,6 +20,8 @@ RUN npm install -g pm2
 COPY server/ .
 RUN npm ci --omit=dev --ignore-scripts
 RUN npx prisma generate --schema=./prisma/schema.prisma
+# Copiar frontend compilado al directorio público del servidor
+COPY --from=frontend-builder /app/dist ./public
 # Directorio de logs para PM2 (montar como volumen en producción)
 RUN mkdir -p /logs
 
