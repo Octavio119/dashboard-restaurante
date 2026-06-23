@@ -1,5 +1,19 @@
 const { PrismaClient } = require('@prisma/client');
+const { Decimal } = require('@prisma/client/runtime/library');
 const { getRestaurantId } = require('./context');
+
+// Los campos @db.Decimal (montos, precios, tax_rate) llegan de Prisma como
+// instancias de Decimal, no `number`. Por diseño, decimal.js NO castea
+// implícitamente a número (valueOf/toJSON devuelven string) para evitar
+// pérdida de precisión silenciosa — pero eso rompe `+` (concatena strings),
+// JSON.stringify/res.json (serializa como string) y comparaciones.
+// Como ya truncamos a 2 decimales en la BD (Decimal(12,2)), no hay precisión
+// extra que perder: parcheamos el prototipo una sola vez para que el resto
+// de la app (rutas, sockets, exports) siga tratando estos campos como number,
+// igual que antes de migrar de Float a Decimal. toFixed() no se toca: ya
+// funciona igual que en Number.
+Decimal.prototype.valueOf = function () { return Number(this.toString()); };
+Decimal.prototype.toJSON  = function () { return Number(this.toString()); };
 
 const basePrisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
@@ -10,7 +24,7 @@ const TENANT_MODELS = new Set([
   'Usuario', 'Cliente', 'Categoria', 'Producto',
   'Pedido', 'PedidoItem', 'Reserva', 'ReservaConsumo',
   'Venta', 'VentaItem', 'Caja', 'ConfigNegocio',
-  'Proveedor', 'InventarioMovimiento', 'ApiKey', 'AuditLog',
+  'Proveedor', 'InventarioMovimiento', 'ApiKey', 'AuditLog', 'TicketSecuencia',
 ]);
 
 // Operaciones donde se puede inyectar restaurante_id en args.where sin romper Prisma.

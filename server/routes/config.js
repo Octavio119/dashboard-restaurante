@@ -21,12 +21,6 @@ router.use(require('../middleware/requireTenant'));
 
 const RID = (req) => req.user.restaurante_id;
 
-function parseRow(row) {
-  if (!row) return null;
-  try { row.payment_methods = JSON.parse(row.payment_methods); } catch { row.payment_methods = {}; }
-  return row;
-}
-
 // GET /api/config
 router.get('/', async (req, res) => {
   try {
@@ -35,7 +29,7 @@ router.get('/', async (req, res) => {
     if (!row) {
       row = await req.prisma.configNegocio.create({ data: { restaurante_id: rid } });
     }
-    res.json(parseRow({ ...row }));
+    res.json({ ...row });
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
@@ -62,7 +56,7 @@ router.put('/', verifyRole('admin', 'gerente'), async (req, res) => {
     if (open_time     != null) data.open_time     = open_time;
     if (close_time    != null) data.close_time    = close_time;
     if (tax_rate      != null) data.tax_rate      = parseFloat(tax_rate);
-    if (payment_methods != null) data.payment_methods = JSON.stringify(payment_methods);
+    if (payment_methods != null) data.payment_methods = payment_methods;
     if (timezone      != null) data.timezone      = timezone;
     if (idioma        != null) data.idioma        = idioma;
     if (formato_fecha != null) data.formato_fecha = formato_fecha;
@@ -76,7 +70,7 @@ router.put('/', verifyRole('admin', 'gerente'), async (req, res) => {
       update: data,
       create: { restaurante_id: rid, ...data },
     });
-    res.json(parseRow({ ...row }));
+    res.json({ ...row });
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 

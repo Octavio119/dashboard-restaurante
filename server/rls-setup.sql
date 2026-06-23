@@ -16,6 +16,7 @@ ALTER TABLE "Caja" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "ConfigNegocio" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Proveedor" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "InventarioMovimiento" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "TicketSecuencia" ENABLE ROW LEVEL SECURITY;
 
 -- 2. Crear políticas de aislamiento por cada tabla
 -- La política asegura que el restaurante_id de la fila coincida con el contexto de la sesión.
@@ -23,9 +24,10 @@ DO $$
 DECLARE 
     t text;
     tables_to_protect text[] := ARRAY[
-        'Usuario', 'Cliente', 'Categoria', 'Producto', 'Pedido', 
-        'PedidoItem', 'Reserva', 'ReservaConsumo', 'Venta', 
-        'Caja', 'ConfigNegocio', 'Proveedor', 'InventarioMovimiento'
+        'Usuario', 'Cliente', 'Categoria', 'Producto', 'Pedido',
+        'PedidoItem', 'Reserva', 'ReservaConsumo', 'Venta',
+        'Caja', 'ConfigNegocio', 'Proveedor', 'InventarioMovimiento',
+        'TicketSecuencia'
     ];
 BEGIN
     FOREACH t IN ARRAY tables_to_protect

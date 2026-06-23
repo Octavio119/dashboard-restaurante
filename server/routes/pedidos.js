@@ -1,4 +1,5 @@
 const logger = require('../lib/logger');
+const { Prisma } = require('@prisma/client');
 const router = require('express').Router();
 const requireAuth     = require('../middleware/auth');
 const verifyRole      = require('../middleware/verifyRole');
@@ -103,21 +104,45 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), checkOrderLimi
       const totalCalc = items.reduce((s, i) => s + (parseFloat(i.precio_unitario) * parseInt(i.cantidad)), 0);
       const resumen   = items.map(i => `${i.nombre} x${i.cantidad}`).join(', ');
 
-      // Pedido creation + stock decrement son atómicos — stock puede quedar negativo, pedido siempre se crea
+      // Pedido creation + stock decrement son atómicos — stock puede quedar negativo, pedido siempre se crea.
+      // El registro de inventarioMovimiento (línea de auditoría, no afecta el stock) se hace después,
+      // fuera de la transacción — así la transacción hace 1 round-trip por paso en vez de 1 por ítem,
+      // que era lo que agotaba el timeout con latencia alta a Supabase ("Transaction already closed").
+      const itemsConProducto = items.filter(i => i.producto_id);
+      const stockSnap = {};
       let pedido;
-      let createdItems;
+
       try {
         await req.prisma.$transaction(async (tx) => {
-          const stockSnap = {};
-          for (const i of items.filter(i => i.producto_id)) {
-            const prod = await tx.producto.findFirst({ where: { id: parseInt(i.producto_id), restaurante_id: rid } });
-            if (!prod) throw Object.assign(new Error(`Producto "${i.nombre}" no encontrado`), { status: 404 });
-            stockSnap[i.producto_id] = prod.stock;
-            // Descontar stock siempre — sin bloqueo por stock insuficiente
-            await tx.producto.update({
-              where: { id: parseInt(i.producto_id) },
-              data: { stock: { decrement: parseInt(i.cantidad) } },
-            });
+          if (itemsConProducto.length > 0) {
+            const ids = itemsConProducto.map(i => parseInt(i.producto_id));
+            const productos = await tx.producto.findMany({ where: { id: { in: ids }, restaurante_id: rid } });
+            const stockPorId = new Map(productos.map(p => [p.id, p.stock]));
+            for (const i of itemsConProducto) {
+              const pid = parseInt(i.producto_id);
+              if (!stockPorId.has(pid)) throw Object.assign(new Error(`Producto "${i.nombre}" no encontrado`), { status: 404 });
+              stockSnap[pid] = stockPorId.get(pid);
+            }
+
+            // Descontar stock siempre, en un solo UPDATE para todos los ítems — sin bloqueo por stock insuficiente.
+            // Se suman cantidades por producto_id antes de armar el VALUES: un UPDATE...FROM con dos filas
+            // del mismo id en el source solo aplica una de ellas, así que un pedido con el mismo producto
+            // en dos líneas distintas perdería un decremento si no se agrupa antes.
+            const cantidadPorId = new Map();
+            for (const i of itemsConProducto) {
+              const pid = parseInt(i.producto_id);
+              cantidadPorId.set(pid, (cantidadPorId.get(pid) || 0) + parseInt(i.cantidad));
+            }
+            const valores = Prisma.join(
+              [...cantidadPorId.entries()].map(([pid, cant]) => Prisma.sql`(${pid}, ${cant})`),
+              ', ',
+            );
+            await tx.$executeRaw`
+              UPDATE "Producto" AS p
+              SET stock = p.stock - v.cantidad
+              FROM (VALUES ${valores}) AS v(id, cantidad)
+              WHERE p.id = v.id AND p.restaurante_id = ${rid}
+            `;
           }
 
           pedido = await tx.pedido.create({
@@ -125,20 +150,26 @@ router.post('/', verifyRole('admin', 'staff', 'chef', 'gerente'), checkOrderLimi
           });
           await incrementarOrden(tx, rid);
 
-          for (const i of items.filter(i => i.producto_id)) {
-            await tx.inventarioMovimiento.create({
-              data: { producto_id: parseInt(i.producto_id), usuario_id: req.user.id, tipo: 'salida', cantidad: parseInt(i.cantidad), motivo: `Pedido ${pedido.numero}`, restaurante_id: rid, stock_anterior: stockSnap[i.producto_id] ?? 0 },
-            });
-          }
-
-          createdItems = await Promise.all(items.map(i => tx.pedidoItem.create({
-            data: { pedido_id: pedido.id, producto_id: i.producto_id ? parseInt(i.producto_id) : null, nombre: i.nombre, cantidad: parseInt(i.cantidad), precio_unitario: parseFloat(i.precio_unitario), restaurante_id: rid },
-          })));
-        }, { timeout: 15000 });
+          await tx.pedidoItem.createMany({
+            data: items.map(i => ({ pedido_id: pedido.id, producto_id: i.producto_id ? parseInt(i.producto_id) : null, nombre: i.nombre, cantidad: parseInt(i.cantidad), precio_unitario: parseFloat(i.precio_unitario), restaurante_id: rid })),
+          });
+        }, { timeout: 20000 });
       } catch (e) {
         if (e.status) return res.status(e.status).json({ error: e.message });
         throw e;
       }
+
+      if (itemsConProducto.length > 0) {
+        await req.prisma.inventarioMovimiento.createMany({
+          data: itemsConProducto.map(i => ({
+            producto_id: parseInt(i.producto_id), usuario_id: req.user.id, tipo: 'salida',
+            cantidad: parseInt(i.cantidad), motivo: `Pedido ${pedido.numero}`,
+            restaurante_id: rid, stock_anterior: stockSnap[parseInt(i.producto_id)] ?? 0,
+          })),
+        });
+      }
+
+      const createdItems = await req.prisma.pedidoItem.findMany({ where: { pedido_id: pedido.id } });
 
       socketEmit(rid, 'pedido:creado', { id: pedido.id, numero: pedido.numero, cliente_nombre, mesa: mesa || '', total: totalCalc });
       return res.status(201).json({ ...pedido, items: createdItems });

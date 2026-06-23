@@ -46,7 +46,7 @@ function AnimatedValue({ value }) {
   return (
     <span
       ref={ref}
-      className="text-[28px] font-bold leading-none tracking-tight tabular-nums"
+      className="block truncate text-[28px] font-bold leading-none tracking-tight tabular-nums"
       style={{ color: "var(--text-1)" }}
     >
       {value}
@@ -64,7 +64,7 @@ export default function MetricCard({
   return (
     <MagicCard
       gradientColor={`rgba(${r},${g},${b},0.06)`}
-      className="cursor-default p-5"
+      className="min-w-0 cursor-default p-5"
     >
       {beamFrom && beamTo && (
         <BorderBeam
@@ -79,19 +79,19 @@ export default function MetricCard({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.28, ease: "easeOut" }}
-        className="flex flex-col gap-4"
+        className="flex min-w-0 flex-col gap-4"
       >
         {/* Icon + trend */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
             style={{ background: `rgba(${r},${g},${b},0.10)` }}
           >
             <Icon size={14} style={{ color: iconColor }} />
           </div>
 
           <span
-            className="flex items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-semibold"
+            className="flex shrink-0 items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-semibold"
             style={{
               background: positive ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
               color: positive ? "#10B981" : "#EF4444",
@@ -105,9 +105,9 @@ export default function MetricCard({
         </div>
 
         {/* Label + value */}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <p
-            className="text-[11px] font-medium uppercase tracking-[0.09em]"
+            className="truncate text-[11px] font-medium uppercase tracking-[0.09em]"
             style={{ color: "var(--text-3)" }}
           >
             {title}

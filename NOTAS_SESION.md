@@ -1,0 +1,5 @@
+## Sesión 2026-06-23 — Verificación end-to-end de los 10 puntos
+
+1. **Qué quedó funcionando**: los 10 puntos de corrección verificados end-to-end contra Supabase real (signup → login → pedido → confirmar → venta con ticket_id atómico → caja → clientes). Además se encontraron y corrigieron 4 bugs de drift previo (plan_status/plan_expires_at, columnas payment_* de Pedido, tabla AuditLog faltante, tipos de parámetro de next_ticket_numero) — todos aplicados ya en la BD real.
+2. **Qué quedó pendiente**: aplicar el CHECK `Restaurante_plan_status_check` (migración 20260623040000, comentado al final del archivo) ahora que la columna `plan_status` ya existe. Tabla `ApiKey` sigue sin existir (no se usa, sin UI todavía). Validar los `NOT VALID` CHECK constraints del Punto 10 con `VALIDATE CONSTRAINT` después de revisar los `SELECT DISTINCT`.
+3. **Próximo comando exacto**: `cd server && npx prisma migrate status` (desde una red donde resuelva `db.grvgvazwxyphladeydqi.supabase.co:5432`) para confirmar que el historial de migraciones de Prisma quedó consistente con lo aplicado manualmente.

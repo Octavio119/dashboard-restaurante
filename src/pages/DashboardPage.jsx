@@ -297,7 +297,7 @@ export default function DashboardPage({
                   beamFrom: "#D97706", beamTo: "#7C3AED", beamDuration: 9, beamDelay: 6,
                 },
               ].map((card, i) => (
-                <motion.div key={i} variants={stagger.item} ref={kpiRefs[i]}>
+                <motion.div key={i} variants={stagger.item} ref={kpiRefs[i]} className="min-w-0">
                   <MetricCard {...card} />
                 </motion.div>
               ))

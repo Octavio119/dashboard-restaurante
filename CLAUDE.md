@@ -394,3 +394,117 @@ Patrones, trampas y decisiones de arquitectura capturadas automáticamente por g
 
 - **railway-port-healthcheck**: Railway inyecta `PORT` dinámicamente. `EXPOSE` y `HEALTHCHECK` deben usar `${PORT:-3000}`, no `9000` hardcodeado. `start-period` mínimo 60s. `validateEnv()` con `process.exit(1)` puede matar el servidor antes del healthcheck si las env vars no están en el dashboard de Railway. (confianza: 9/10)
   > Archivos: `Dockerfile`, `server/Dockerfile`, `server/config.js`, `server/lib/validateEnv.js`
+Correcciones de seguridad y arquitectura en curso
+
+Análisis completado por revisión externa. Atacar en orden — no saltar puntos.
+
+⚠️ Punto 1 — RLS + transacciones (el doc decía COMPLETADO, pero no lo estaba del todo)
+
+
+server/lib/prisma.js: set_config corre dentro de cada operación vía la extensión $allOperations, no en transacción paralela — esto sí está.
+Corregido 2026-06-23: este punto decía "se exporta withTenant(req, fn) para transacciones con callback" — **eso nunca existió en el código**. El patrón real en cada ruta sigue siendo req.prisma.$transaction(async (tx) => {...}, { timeout }) con restaurante_id agregado a mano en cada query de tx (porque tx no hereda la extensión multi-tenant — ver nota en server/lib/prisma.js). No hay ningún withTenant que reemplazar.
+Corregido 2026-06-23: "FK reales en AuditLog" tampoco era cierto — AuditLog no tenía @relation a Restaurante, y la tabla ni existía en la BD real hasta hoy (ver sección de verificación end-to-end más abajo).
+rls-setup.sql sí tiene VentaItem y AuditLog en la lista de tablas protegidas, pero NO tiene FORCE ROW LEVEL SECURITY en ninguna tabla — solo ENABLE ROW LEVEL SECURITY. Pendiente real: decidir si hace falta FORCE (afecta incluso al owner de la tabla) y aplicarlo si corresponde.
+
+
+✅ Punto 2 — Quitar @default(1) (COMPLETADO EN SCHEMA)
+
+
+Eliminado @default(1) de restaurante_id en todos los modelos.
+Migración SQL pendiente de aplicar en Supabase: ALTER TABLE ... ALTER COLUMN restaurante_id DROP DEFAULT.
+
+
+✅ Punto 3 — AuditLog sin FK (RESUELTO en Punto 1)
+
+⏳ Punto 4 — Producto.categoria es String libre sin FK a Categoria
+
+
+Problema: renombrar una categoría deja productos con nombre viejo — la BD no puede evitarlo.
+Solución: agregar categoria_id Int? con FK a Categoria, migrar datos, deprecar el campo categoria string.
+Archivos a tocar: server/prisma/schema.prisma, nueva migración, server/routes/productos.js.
+
+
+✅ Punto 5 — ticket_id: cuello de botella serializado (COMPLETADO)
+
+
+server/prisma/schema.prisma: nuevo modelo TicketSecuencia (restaurante_id, fecha, ultimo_numero, @@unique([restaurante_id, fecha])) + relación en Restaurante.
+server/prisma/migrations/20260623000000_add_ticket_secuencia/migration.sql: CREATE TABLE + función next_ticket_numero(rid, fecha, inicial) con INSERT ... ON CONFLICT DO UPDATE RETURNING ultimo_numero. Aplicada manualmente en Supabase vía SQL Editor (este entorno no tenía salida de red hacia la DB); registro insertado a mano en `_prisma_migrations` para que coincida con el historial de Prisma.
+server/lib/ventaHelper.js: reemplazado el findFirst + create con hasta 8 reintentos por una sola llamada SELECT next_ticket_numero(...) dentro de $transaction — atómico sin retries ni locks en el lado de la app.
+TicketSecuencia agregado a TENANT_MODELS en server/lib/prisma.js y a rls-setup.sql.
+
+
+✅ Punto 6 — Float → Decimal en campos monetarios (COMPLETADO)
+
+
+server/prisma/schema.prisma: Float → Decimal @db.Decimal(12,2) en Cliente.total_gastado, Producto.precio, Pedido.total, PedidoItem.precio_unitario, Reserva.consumo_base, ReservaConsumo.precio_unitario, Venta.subtotal, Venta.total, VentaItem.precio_unitario, Caja.monto_inicial/monto_final/total_ventas/total_efectivo/diferencia, ConfigNegocio.tax_rate.
+server/prisma/migrations/20260623010000_float_to_decimal_monetary/migration.sql: ALTER COLUMN ... TYPE DECIMAL(12,2) USING ...::numeric(12,2) para cada campo. Aplicada manualmente en Supabase vía SQL Editor (sin salida de red a la DB desde este entorno); registro insertado a mano en `_prisma_migrations`.
+Riesgo real (no el que dice el punto original): Decimal de Prisma (decimal.js) NO castea implícito a number — `valueOf`/`toJSON` devuelven string, así que `0 + decimal` concatena strings y `JSON.stringify`/`res.json()` serializa `"19.99"` como string, no número. `*`, `/`, comparaciones y `.toFixed()` sí funcionan bien porque fuerzan conversión numérica.
+Fix centralizado en server/lib/prisma.js: se parchea `Decimal.prototype.valueOf` y `.toJSON` una sola vez (`Number(this.toString())`) antes de instanciar PrismaClient. Aplica a toda instancia de Decimal en el proceso — incluida la generada dentro de `$transaction(async tx => {...})`, que NO hereda la extensión `$allOperations` de prisma.js (ver nota arriba de Punto 1). Cero cambios en routes/ ni en frontend: las respuestas JSON siguen llegando como `number` igual que con Float.
+Verificado con node -e: `1 + Decimal('123.45')` → `124.45` (no string), `JSON.stringify({d})` → `{"d":123.45}` (number), `toFixed(2)` sigue funcionando.
+
+
+✅ Punto 7 — Pedido.numero y Venta.ticket_id son @unique globales (COMPLETADO)
+
+
+server/prisma/schema.prisma: quitado @unique de Pedido.numero y Venta.ticket_id; agregado @@unique([numero, restaurante_id]) en Pedido y @@unique([ticket_id, restaurante_id]) en Venta.
+server/prisma/migrations/20260623020000_scope_numero_ticket_id_to_tenant/migration.sql: DROP INDEX de los unique antiguos (Pedido_numero_key, Venta_ticket_id_key) + CREATE UNIQUE INDEX compuesto. Pendiente aplicar en Supabase (mismo flujo manual de los puntos 5 y 6: pegar en SQL Editor + registrar en `_prisma_migrations`).
+Verificado: ningún route hace findUnique/upsert por numero o ticket_id solos (solo lectura/auditoría) — el cambio no rompe ningún lookup existente.
+
+
+✅ Punto 8 — Sin onDelete explícito en relaciones hacia Restaurante (COMPLETADO)
+
+
+server/prisma/schema.prisma: las 16 relaciones hacia Restaurante (ApiKey, Usuario, Cliente, Categoria, Producto, Pedido, PedidoItem, Reserva, ReservaConsumo, Venta, TicketSecuencia, VentaItem, Caja, ConfigNegocio, Proveedor, InventarioMovimiento) ahora declaran onDelete: Cascade explícito — antes usaban el default implícito (RESTRICT), que es justo lo que bloqueaba dar de baja un tenant.
+server/prisma/migrations/20260623030000_cascade_delete_restaurante/migration.sql: DROP CONSTRAINT + ADD CONSTRAINT ... ON DELETE CASCADE en cada FK. Pendiente aplicar en Supabase (mismo flujo manual de los puntos 5-7).
+Nota: no existe todavía un endpoint que borre un Restaurante — este punto es preparación de schema, no agrega la ruta de offboarding.
+Hallazgo aparte (no corregido, fuera de alcance de hoy): AuditLog.restaurante_id sigue siendo un Int suelto sin @relation a Restaurante — el Punto 1 lo marca como COMPLETADO pero el schema no lo refleja. Revisar en una sesión futura.
+
+
+❌ Punto 9 — Índices de analytics faltantes (COMPLETADO)
+
+
+Ya agregados en migración del Punto 1: PedidoItem(restaurante_id, producto_id) y VentaItem(restaurante_id, producto_id).
+
+
+✅ Punto 10 — Enums como String y payment_methods como JSON en string (COMPLETADO)
+
+
+server/prisma/schema.prisma: ConfigNegocio.payment_methods cambiado de String a Json.
+server/routes/config.js: quitado JSON.parse/JSON.stringify manual sobre payment_methods (ya no hace falta con Json nativo) — eliminada la función parseRow que solo hacía ese parse.
+server/prisma/migrations/20260623040000_json_payment_methods_and_enum_checks/migration.sql: ALTER COLUMN payment_methods a JSONB (cast directo, el texto guardado ya era JSON válido) + 9 CHECK constraints con NOT VALID (Cliente.estado, Cliente.tipo_cliente, Usuario.rol, Pedido.estado, Pedido.metodo_pago, Venta.metodo_pago, Reserva.estado, Caja.estado, Restaurante.plan_status). Pendiente aplicar en Supabase (mismo flujo manual de los puntos 5-8) — antes de correr los VALIDATE CONSTRAINT que quedan comentados al final del archivo, revisar con los SELECT DISTINCT incluidos que no haya filas legadas fuera de rango.
+Confirmado: Prisma 5.22 no soporta @@check en schema.prisma (error "Attribute not known: @check") — el constraint vive solo en la BD, no en schema.prisma.
+'super_admin' (rol de Usuario, usado en middleware/verifyRole.js pero nunca asignado por ninguna ruta) se incluyó en el CHECK para no romper esa funcionalidad si algún día se usa.
+
+✅ Verificación end-to-end de los 10 puntos contra la BD real (COMPLETADO — 2026-06-23)
+
+
+Se levantó el servidor local y se confirmó que DATABASE_URL (pooler, puerto 6543) SÍ es alcanzable desde este entorno para queries normales — solo `prisma migrate`/`DIRECT_URL` (puerto 5432, host directo) está bloqueado. Esto permitió probar todo contra Supabase real y aplicar fixes directos con `$executeRawUnsafe` + INSERT manual en `_prisma_migrations`.
+
+Verificado funcionando end-to-end (signup → login → crear pedido → confirmar pedido → venta con ticket_id → caja → clientes):
+- Punto 5: ticket_id atómico, ej. "TKT-20260623-000001".
+- Punto 6: montos llegan como number plano (19.98, 100, 0), no Decimal/string.
+- Punto 7: confirmado en BD `Pedido_numero_restaurante_id_key` y `Venta_ticket_id_restaurante_id_key`.
+- Punto 8: confirmado en BD las 15 FK existentes en CASCADE; probado en vivo — un DELETE de Restaurante limpió usuarios/clientes/pedidos/ventas/caja en cascada.
+- Punto 10: payment_methods llega como objeto real; CHECK de Cliente.estado bloqueó correctamente un valor inválido (Postgres 23514, confirmado en logs).
+
+Bugs nuevos encontrados y corregidos en esta sesión (NO eran de los 10 puntos — drift previo entre schema.prisma y la BD real, nunca migrado):
+- Restaurante.plan_status y plan_expires_at no existían → signup roto (500 en restaurante.findFirst). Fix aplicado: migración 20260623050000_add_missing_plan_status_columns. Con esto ya se puede aplicar también el CHECK Restaurante_plan_status_check pendiente de la migración 20260623040000.
+- Pedido.payment_status/payment_provider/payment_transaction_id/payment_captured_at no existían → crear pedido roto (500 en pedido.create, columna usada en el RETURNING implícito aunque ninguna ruta los lea/escriba hoy). Fix aplicado: migración 20260623060000_add_missing_pedido_payment_columns.
+- AuditLog no existía como tabla → audit() fallaba en silencio (ya tenía try/catch en lib/audit.js, no rompía requests, pero el audit trail nunca se guardaba). Fix aplicado: migración 20260623070000_create_auditlog_table.
+- next_ticket_numero (Punto 5) tenía los parámetros p_rid/p_inicial como INTEGER, pero Prisma los envía como BIGINT desde $queryRaw — bigint→integer es cast de "assignment" no "implicit", Postgres no resolvía la llamada. Fix aplicado: migración 20260623080000_fix_next_ticket_numero_arg_types (función recreada con BIGINT).
+
+Las 4 migraciones de fixes nuevos (050000-080000) y los ALTER directos correspondientes ya se aplicaron en Supabase real (no solo escritas — se ejecutaron con $executeRawUnsafe y se registraron en _prisma_migrations). ApiKey sigue sin existir como tabla — no se usa todavía (sin UI), queda pendiente para cuando se implemente esa feature.
+
+
+✅ Fix — "Transaction already closed" al crear pedidos con timeout 15000ms (COMPLETADO — 2026-06-23)
+
+
+Causa real: el bloque POST /api/pedidos (con items[]) hacía ~4 round-trips a la BD por cada ítem dentro de una sola transacción interactiva (findFirst + update de stock, create de inventarioMovimiento, create de pedidoItem) — con latencia alta hacia Supabase (pooler), un pedido de varios ítems agotaba el timeout de 15s antes de terminar.
+server/routes/pedidos.js: reescrito el bloque para que la transacción haga un número constante de round-trips sin importar cuántos ítems tenga el pedido:
+  - 1 findMany para validar todos los productos a la vez (antes: 1 findFirst por ítem).
+  - 1 UPDATE...FROM (VALUES ...) por raw SQL para descontar stock de todos los productos en un solo statement (antes: 1 update por ítem). Las cantidades se agrupan por producto_id antes de armar el VALUES — un UPDATE...FROM con dos filas del mismo id en el source solo aplica una, así que sin agrupar se perdía un decremento si el mismo producto aparecía en dos líneas del pedido.
+  - 1 pedidoItem.createMany (antes: N creates en paralelo, pero igual N round-trips sobre la misma conexión de tx).
+  - inventarioMovimiento (auditoría, no afecta el stock) se sacó de la transacción — se hace después con un solo createMany sobre req.prisma. Si falla, no revierte el pedido (igual que el resto de los audit() del proyecto, que ya tragan errores).
+  - timeout subido de 15000 a 20000ms como margen adicional, no como fix principal.
+Verificado contra Supabase real: pedido con 2 líneas del mismo producto (3+2) descontó stock correctamente (50→45, no se perdió el decremento). Pedido con 6 líneas tardó prácticamente lo mismo que con 2 (~10-11s en este entorno, que tiene latencia mala hacia el pooler) — confirma que el tiempo ya no escala con la cantidad de ítems.
+Corregido también una referencia desactualizada en el Punto 1: no existe ningún `withTenant(req, fn)` en el código — ver nota arriba.

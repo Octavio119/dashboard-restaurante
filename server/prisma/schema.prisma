@@ -40,6 +40,7 @@ model Restaurante {
   proveedores            Proveedor[]
   inventario_movimientos InventarioMovimiento[]
   api_keys               ApiKey[]
+  ticket_secuencias      TicketSecuencia[]
 }
 
 model ApiKey {
@@ -50,7 +51,7 @@ model ApiKey {
   activo         Boolean  @default(true)
   creado_at      DateTime @default(now())
 
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 
   @@index([restaurante_id])
 }
@@ -65,7 +66,7 @@ model Usuario {
   restaurante_id Int         @default(1)
   created_at     DateTime    @default(now())
 
-  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id])
+  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   inventario_movimientos InventarioMovimiento[]
 
   @@unique([email, restaurante_id])
@@ -81,12 +82,12 @@ model Cliente {
   tipo_cliente   String   @default("persona")
   razon_social   String   @default("")
   visitas        Int      @default(0)
-  total_gastado  Float    @default(0)
+  total_gastado  Decimal  @default(0) @db.Decimal(12, 2)
   estado         String   @default("Nuevo")
   restaurante_id Int      @default(1)
   created_at     DateTime @default(now())
 
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   reservas    Reserva[]
 
   @@index([restaurante_id])
@@ -97,7 +98,7 @@ model Categoria {
   nombre         String
   restaurante_id Int    @default(1)
 
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 
   @@unique([nombre, restaurante_id])
   @@index([restaurante_id])
@@ -107,14 +108,14 @@ model Producto {
   id             Int     @id @default(autoincrement())
   nombre         String
   categoria      String
-  precio         Float
+  precio         Decimal @db.Decimal(12, 2)
   stock          Int     @default(0)
   stock_minimo   Int     @default(10)
   unidad         String  @default("unidades")
   activo         Boolean @default(true)
   restaurante_id Int     @default(1)
 
-  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id])
+  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   inventario_movimientos InventarioMovimiento[]
   reserva_consumos       ReservaConsumo[]
   pedido_items           PedidoItem[]
@@ -124,10 +125,10 @@ model Producto {
 
 model Pedido {
   id                     Int       @id @default(autoincrement())
-  numero                 String    @unique
+  numero                 String
   cliente_nombre         String
   item                   String
-  total                  Float
+  total                  Decimal   @db.Decimal(12, 2)
   estado                 String    @default("pendiente")
   metodo_pago            String    @default("efectivo")
   mesa                   String    @default("")
@@ -141,10 +142,11 @@ model Pedido {
   payment_transaction_id String?
   payment_captured_at    DateTime?
 
-  restaurante  Restaurante  @relation(fields: [restaurante_id], references: [id])
+  restaurante  Restaurante  @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   pedido_items PedidoItem[]
   venta        Venta?
 
+  @@unique([numero, restaurante_id])
   @@index([restaurante_id])
   @@index([restaurante_id, fecha])
   @@index([restaurante_id, estado])
@@ -156,13 +158,13 @@ model PedidoItem {
   producto_id     Int?
   nombre          String
   cantidad        Int      @default(1)
-  precio_unitario Float    @default(0)
+  precio_unitario Decimal  @default(0) @db.Decimal(12, 2)
   restaurante_id  Int      @default(1)
   created_at      DateTime @default(now())
 
   pedido      Pedido      @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
   producto    Producto?   @relation(fields: [producto_id], references: [id])
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 
   @@index([pedido_id])
   @@index([restaurante_id])
@@ -178,12 +180,12 @@ model Reserva {
   mesa           String   @default("")
   estado         String   @default("pendiente")
   fecha          DateTime
-  consumo_base   Float    @default(0)
+  consumo_base   Decimal  @default(0) @db.Decimal(12, 2)
   cliente_id     Int?
   restaurante_id Int      @default(1)
   created_at     DateTime @default(now())
 
-  restaurante      Restaurante      @relation(fields: [restaurante_id], references: [id])
+  restaurante      Restaurante      @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   cliente          Cliente?         @relation(fields: [cliente_id], references: [id])
   reserva_consumos ReservaConsumo[]
 
@@ -198,13 +200,13 @@ model ReservaConsumo {
   producto_id     Int?
   nombre          String
   cantidad        Int      @default(1)
-  precio_unitario Float    @default(0)
+  precio_unitario Decimal  @default(0) @db.Decimal(12, 2)
   restaurante_id  Int      @default(1)
   created_at      DateTime @default(now())
 
   reserva     Reserva     @relation(fields: [reserva_id], references: [id], onDelete: Cascade)
   producto    Producto?   @relation(fields: [producto_id], references: [id])
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 
   @@index([reserva_id])
   @@index([restaurante_id])
@@ -212,9 +214,9 @@ model ReservaConsumo {
 
 model Venta {
   id             Int      @id @default(autoincrement())
-  ticket_id      String   @unique
-  subtotal       Float
-  total          Float
+  ticket_id      String
+  subtotal       Decimal  @db.Decimal(12, 2)
+  total          Decimal  @db.Decimal(12, 2)
   metodo_pago    String
   cajero         String
   fecha          DateTime
@@ -222,12 +224,25 @@ model Venta {
   pedido_id      Int?     @unique
   created_at     DateTime @default(now())
 
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   pedido      Pedido?     @relation(fields: [pedido_id], references: [id])
   venta_items VentaItem[]
 
+  @@unique([ticket_id, restaurante_id])
   @@index([restaurante_id])
   @@index([restaurante_id, fecha])
+}
+
+model TicketSecuencia {
+  id             Int    @id @default(autoincrement())
+  restaurante_id Int
+  fecha          String // YYYYMMDD
+  ultimo_numero  Int    @default(0)
+
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
+
+  @@unique([restaurante_id, fecha])
+  @@index([restaurante_id])
 }
 
 model VentaItem {
@@ -236,12 +251,12 @@ model VentaItem {
   producto_id     Int?
   nombre          String
   qty             Int      @default(1)
-  precio_unitario Float    @default(0)
+  precio_unitario Decimal  @default(0) @db.Decimal(12, 2)
   restaurante_id  Int      @default(1)
   created_at      DateTime @default(now())
 
   venta       Venta       @relation(fields: [venta_id], references: [id], onDelete: Cascade)
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 
   @@index([venta_id])
   @@index([restaurante_id])
@@ -251,18 +266,18 @@ model Caja {
   id               Int       @id @default(autoincrement())
   fecha            DateTime
   restaurante_id   Int       @default(1)
-  monto_inicial    Float     @default(0)
-  total_ventas     Float?
-  total_efectivo   Float?
-  monto_final      Float?
-  diferencia       Float?
+  monto_inicial    Decimal   @default(0) @db.Decimal(12, 2)
+  total_ventas     Decimal?  @db.Decimal(12, 2)
+  total_efectivo   Decimal?  @db.Decimal(12, 2)
+  monto_final      Decimal?  @db.Decimal(12, 2)
+  diferencia       Decimal?  @db.Decimal(12, 2)
   cajero_apertura  String    @default("")
   cajero_cierre    String?
   estado           String    @default("abierta")
   created_at       DateTime  @default(now())
   closed_at        DateTime?
 
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 
   @@unique([fecha, restaurante_id])
   @@index([restaurante_id])
@@ -278,8 +293,8 @@ model ConfigNegocio {
   currency_code   String   @default("CLP")
   open_time       String   @default("11:00")
   close_time      String   @default("23:30")
-  tax_rate        Float    @default(19)
-  payment_methods String   @default("{\"cash\":true,\"card\":true,\"transfer\":true,\"qr\":false}")
+  tax_rate        Decimal  @default(19) @db.Decimal(12, 2)
+  payment_methods Json     @default("{\"cash\":true,\"card\":true,\"transfer\":true,\"qr\":false}")
   timezone        String   @default("America/Santiago")
   idioma          String   @default("es")
   formato_fecha   String   @default("DD/MM/YYYY")
@@ -289,7 +304,7 @@ model ConfigNegocio {
   logo_url        String   @default("")
   updated_at      DateTime @updatedAt
 
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 }
 
 model Proveedor {
@@ -301,7 +316,7 @@ model Proveedor {
   restaurante_id Int      @default(1)
   created_at     DateTime @default(now())
 
-  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id])
+  restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   inventario_movimientos InventarioMovimiento[]
 
   @@index([restaurante_id])
@@ -322,7 +337,7 @@ model InventarioMovimiento {
   producto    Producto    @relation(fields: [producto_id], references: [id])
   usuario     Usuario     @relation(fields: [usuario_id], references: [id])
   proveedor   Proveedor?  @relation(fields: [proveedor_id], references: [id])
-  restaurante Restaurante @relation(fields: [restaurante_id], references: [id])
+  restaurante Restaurante @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
 
   @@index([restaurante_id])
   @@index([producto_id])
