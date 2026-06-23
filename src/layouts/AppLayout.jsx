@@ -96,7 +96,7 @@ export default function AppLayout({
   ];
 
   return (
-    <div className="flex min-h-screen font-jakarta" style={{ background: '#090911', color: '#E4E4F0' }}>
+    <div className="flex min-h-screen overflow-x-hidden font-jakarta" style={{ background: '#090911', color: '#E4E4F0' }}>
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -207,7 +207,7 @@ export default function AppLayout({
       </aside>
 
       {/* ── Main ── */}
-      <main className="flex-grow flex flex-col pb-16 lg:pb-0 main-content-area">
+      <main className="min-w-0 flex-grow flex flex-col pb-16 lg:pb-0 main-content-area">
         {/* Header */}
         <header
           className="h-[58px] px-4 lg:px-6 flex items-center justify-between sticky top-0 z-50"
