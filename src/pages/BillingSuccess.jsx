@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const BASE = import.meta.env.VITE_API_URL || '/api'
+const BASE = import.meta.env.VITE_BACKEND_URL || '/api'
 
 function PagoScreen({ icono, titulo, subtitulo, mensaje, color }) {
   return (
