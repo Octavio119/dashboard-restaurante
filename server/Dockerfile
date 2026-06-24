@@ -10,18 +10,23 @@ RUN npm install -g pm2
 # Directorio de trabajo
 WORKDIR /app
 
-# Copiar manifiestos de dependencias
-COPY package*.json ./
+# Copiar manifiestos de dependencias — el build context es la raíz del repo
+# (railway.json apunta a este Dockerfile con dockerfilePath: "server/Dockerfile",
+# pero el contexto sigue siendo la raíz, así que cada COPY necesita el prefijo server/).
+COPY server/package*.json ./
 
-# Instalar dependencias (solo producción para velocidad y seguridad)
-RUN npm install --omit=dev
+# Instalar dependencias (solo producción para velocidad y seguridad).
+# --ignore-scripts: el postinstall corre "prisma generate --schema=./prisma/schema.prisma",
+# pero prisma/ todavía no existe en esta capa (se copia en el siguiente paso) — sin esto
+# el install falla con "Could not load --schema from provided path".
+RUN npm install --omit=dev --ignore-scripts
 
 # Copiar el esquema de Prisma para generar el cliente
-COPY prisma ./prisma/
-RUN npx prisma generate
+COPY server/prisma ./prisma/
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Copiar el resto del código del servidor
-COPY . .
+COPY server/. .
 
 # Crear directorio de logs para PM2
 RUN mkdir -p /logs
