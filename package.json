@@ -29,7 +29,7 @@
     "db:migrate:dev": "cd server && npx prisma migrate dev --schema=./prisma/schema.prisma",
     "db:push": "cd server && npx prisma db push --schema=./prisma/schema.prisma",
     "db:studio": "cd server && npx prisma studio --schema=./prisma/schema.prisma",
-    "postinstall": "cd server && npm install && prisma generate --schema=./prisma/schema.prisma"
+    "postinstall": "if [ \"$VERCEL\" != \"1\" ]; then cd server && npm install && prisma generate --schema=./prisma/schema.prisma; fi"
   },
   "dependencies": {
     "@paypal/react-paypal-js": "^9.2.0",
