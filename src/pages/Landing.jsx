@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import logo from '../../assets/logo.png';
 import './landing.css';
 import PayPalButton from '../components/PayPalButton';
 import { api } from '../api';
@@ -317,7 +316,6 @@ export default function Landing() {
       <nav id="nav" role="navigation" aria-label="Principal">
         <div className="nav-pill">
           <a href="#" className="nav-logo" aria-label="MastexoPOS inicio">
-            <img src={logo} alt="MastexoPOS" style={{ height: '32px', width: 'auto', display: 'block', objectFit: 'contain' }} />
             <span className="nav-logo-text">MastexoPOS</span>
           </a>
 
