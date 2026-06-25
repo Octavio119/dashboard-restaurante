@@ -1,28 +1,25 @@
 'use strict';
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-let _transporter = null;
+const FROM = 'MastexoPOS <hola@mastexopos.com>';
 
-function getTransporter() {
-  if (_transporter) return _transporter;
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) return null;
-  _transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-  return _transporter;
+let _resend = null;
+
+function getClient() {
+  if (_resend) return _resend;
+  if (!process.env.RESEND_API_KEY) return null;
+  _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
 }
 
 async function sendStockAlert(producto, stockActual) {
   const to = process.env.ALERT_EMAIL;
   if (!to) return;
-  const t = getTransporter();
-  if (!t) return;
+  const resend = getClient();
+  if (!resend) return;
   try {
-    await t.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    await resend.emails.send({
+      from: FROM,
       to,
       subject: `⚠️ Stock bajo: ${producto.nombre}`,
       html: `

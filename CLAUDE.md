@@ -11,7 +11,7 @@
 - Socket.io 4 + Redis Adapter (multi-instancia, opcional)
 - JWT (access 15 min + refresh 7 días), bcryptjs
 - Stripe (subscriptions, webhooks, billing portal)
-- Nodemailer (alertas de stock por SMTP)
+- Resend (alertas de stock por email, vía API)
 - Cloudflare R2 compatible con AWS S3 (upload logos)
 - Pino (logging estructurado), Helmet, express-rate-limit
 - Jest + Supertest (tests backend)
@@ -75,7 +75,7 @@
 │   │   ├── planLimits.js       # PLAN_LIMITS, checkPlanFeature middleware
 │   │   ├── validateEnv.js      # Valida env vars al arrancar (falla si falta required)
 │   │   ├── ventaHelper.js      # createVentaConTicket (lógica de numeración)
-│   │   ├── mailer.js           # sendStockAlert por SMTP
+│   │   ├── mailer.js           # sendStockAlert vía Resend
 │   │   ├── r2.js               # Upload a Cloudflare R2
 │   │   ├── logger.js           # Pino logger
 │   │   ├── dateUtils.js        # toDate, fromFilter para queries por fecha
@@ -187,9 +187,7 @@ El servidor valida estas variables al arrancar (`server/lib/validateEnv.js`). La
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Validar firma de webhooks |
 | `STRIPE_PRICE_PRO` | `price_...` ID del precio Pro en Stripe | Checkout |
 | `STRIPE_PRICE_BUSINESS` | `price_...` ID del precio Business en Stripe | Checkout |
-| `SMTP_HOST` | Host SMTP (ej: `smtp.gmail.com`) | Alertas de stock |
-| `SMTP_USER` | Usuario SMTP | Alertas de stock |
-| `SMTP_PASS` | Contraseña / app-password SMTP | Alertas de stock |
+| `RESEND_API_KEY` | API key de Resend (`re_...`) — envía desde `hola@mastexopos.com` | Alertas de stock |
 | `ALERT_EMAIL` | Email destino para alertas de stock bajo | Alertas de stock |
 | `R2_ACCOUNT_ID` | Cloudflare account ID | Upload logos |
 | `R2_ACCESS_KEY_ID` | Cloudflare R2 access key | Upload logos |
@@ -267,7 +265,7 @@ SaaS de gestión para restaurantes. Cada restaurante es un tenant aislado por `r
 - **WebSocket**: Socket.io con salas por restaurante y rol; conexión bloqueada para plan free con evento `plan_upgrade_required`
 - **Billing Stripe**: checkout session, webhook (completed, payment_succeeded, subscription deleted/updated), billing portal, endpoint `/api/billing/usage`; metadata propagada a la suscripción correctamente
 - **API Keys**: modelo en schema + middleware `apiKeyAuth` (plan business)
-- **Alertas de stock**: por email vía Nodemailer al cruzar stock mínimo
+- **Alertas de stock**: por email vía Resend al cruzar stock mínimo
 - **Upload logos**: a Cloudflare R2 desde `/api/config`
 - **OpenAPI docs**: en `/api/docs`
 - **Tests**: unit frontend (Vitest), unit backend (Jest+Supertest), e2e básico (Playwright)
