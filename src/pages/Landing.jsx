@@ -235,7 +235,7 @@ export default function Landing() {
 
   // Scroll reveal for sections below hero
   useEffect(() => {
-    const targets = document.querySelectorAll('#social, #features, #pricing, #faq, #footer-cta');
+    const targets = document.querySelectorAll('#cost-of-chaos, #social, #features, #why-mastexopos, #pricing, #faq, #footer-cta');
     const obs = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
@@ -367,22 +367,22 @@ export default function Landing() {
           <div className="hero-copy">
             <div className="hero-badge">
               <span className="live-dot" aria-hidden="true" />
-              NUEVO · ALERTAS DE STOCK EN TIEMPO REAL
+              14 DÍAS GRATIS · SIN TARJETA DE CRÉDITO
             </div>
 
             <h1 className="hero-h1">
-              Tu restaurante,<br />
-              <em>sin caos</em><br />
-              desde el primer pedido
+              ¿Sigues perdiendo<br />
+              pedidos y <em>plata</em><br />
+              por anotar todo a mano?
             </h1>
 
             <p className="hero-sub">
-              Pedidos, mesas, ventas y stock en un solo sistema. Sin instalar nada, sin técnicos, sin sorpresas.
+              MastexoPOS es el sistema de pedidos para restaurantes que quieren vender más sin contratar más personal. Más pedidos, menos errores, más dinero — desde el primer turno.
             </p>
 
             <div className="hero-ctas">
               <a href="/register" className="btn btn-green">
-                Crear mi restaurante gratis
+                Empieza tu restaurante hoy
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -399,7 +399,7 @@ export default function Landing() {
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              Sin tarjeta de crédito
+              Más de 34 restaurantes ya gestionan sus pedidos con MastexoPOS
               <span className="trust-dot" aria-hidden="true" />
               Cancela cuando quieras
               <span className="trust-dot" aria-hidden="true" />
@@ -521,12 +521,46 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── EL COSTO DE NO CAMBIAR NADA ── */}
+      <section id="cost-of-chaos" aria-label="El costo de seguir igual">
+        <div className="section-hdr container">
+          <p className="section-eyebrow">La realidad</p>
+          <h2 className="section-h2">¿Qué pasa si <span className="g">no cambias nada</span>?</h2>
+          <p className="section-p">El papel, las planillas y los errores manuales no son gratis. Cada turno sin control es plata que se va y no vuelve.</p>
+        </div>
+
+        <div className="features-grid container">
+          <article className="fcard">
+            <div className="fcard-num">01</div>
+            <h3 className="fcard-title">Pedidos que se pierden</h3>
+            <p className="fcard-desc">Una comanda mal escrita o un papel perdido en cocina es una venta que no vuelve. Multiplicado por semana, es plata real que se va de tu bolsillo.</p>
+          </article>
+          <article className="fcard">
+            <div className="fcard-num">02</div>
+            <h3 className="fcard-title">Horas perdidas cuadrando caja</h3>
+            <p className="fcard-desc">Sin un sistema, cerrar el día a mano toma horas y casi siempre hay un número que no cierra. Tiempo que no vuelve y que podrías usar en tu negocio.</p>
+          </article>
+          <article className="fcard">
+            <div className="fcard-num">03</div>
+            <h3 className="fcard-title">Stock que se queda corto, o se bota</h3>
+            <p className="fcard-desc">Sin alertas de inventario, compras de más o te quedas sin ingredientes a media noche. Las dos opciones te cuestan dinero todos los meses.</p>
+          </article>
+        </div>
+
+        <div className="container" style={{ textAlign: 'center', padding: '40px 24px 0' }}>
+          <p style={{ fontSize: '17px', fontWeight: 600, lineHeight: 1.6 }}>
+            <span style={{ color: 'var(--subtle)' }}>Antes: caos, papel y errores que cuestan plata.</span><br />
+            <span className="g">Después: control total de tu restaurante desde una sola pantalla.</span>
+          </p>
+        </div>
+      </section>
+
       {/* ── SOCIAL PROOF ── */}
       <section id="social" aria-label="Prueba social">
         <div className="social-top container">
           <div className="stats-row">
             <div className="stat-item">
-              <div className="stat-num"><span className="g">+200</span></div>
+              <div className="stat-num"><span className="g">34</span></div>
               <div className="stat-label">Restaurantes activos</div>
             </div>
             <div className="stat-item">
@@ -593,18 +627,18 @@ export default function Landing() {
       <section id="features" aria-label="Funcionalidades">
         <div className="section-hdr container">
           <p className="section-eyebrow">Todo lo que necesitas</p>
-          <h2 className="section-h2">Un sistema. Cada parte de tu<br />operación, <span className="g">bajo control</span></h2>
-          <p className="section-p">Diseñado para restaurantes reales, no para corporaciones. Cada feature existe porque lo pidieron dueños de restaurantes como el tuyo.</p>
+          <h2 className="section-h2">Más pedidos, menos errores,<br /><span className="g">más dinero</span></h2>
+          <p className="section-p">Diseñado para restaurantes reales, no para corporaciones. Cada feature existe porque lo pidió un dueño de restaurante como tú.</p>
         </div>
 
         <div className="features-grid container">
           {[
-            { n: '01', title: 'Pedidos en tiempo real', desc: 'Mesas activas, estado de cocina y notificaciones al instante. Sin retrasos, sin confusiones. Cada pedido llega donde tiene que llegar.' },
-            { n: '02', title: 'Control de inventario', desc: 'El stock se descuenta automáticamente con cada pedido. Alertas por email antes de quedarte sin ingredientes. Nunca más sorpresas a media noche.' },
-            { n: '03', title: 'Reservas con consumos', desc: 'Calendario de reservas integrado. Crea el pedido directo desde la reserva, registra consumos y cierra la cuenta sin fricciones.' },
-            { n: '04', title: 'Ventas y tickets PDF', desc: 'Historial completo de ventas, tickets en PDF automáticos, exportación a Excel. Toda la información que necesitas para el SII y tu contador.' },
-            { n: '05', title: 'Analytics avanzado', desc: 'Métricas por hora, por producto, comparativas semanales. Descubre cuál es tu plato más rentable y tu hora pico en segundos.' },
-            { n: '06', title: 'Multi-usuario por roles', desc: 'Crea cuentas para admin, meseros, cocina y caja. Cada rol ve solo lo que necesita. Sin accesos indebidos, sin caos en pantalla.' },
+            { n: '01', title: 'Pedidos en tiempo real', desc: 'Mesas activas, estado de cocina y notificaciones al instante, para que puedas atender más mesas sin perder un solo pedido.' },
+            { n: '02', title: 'Control de inventario', desc: 'El stock se descuenta automáticamente con cada pedido y te avisa antes de quedarte sin ingredientes, para que puedas dejar de perder plata en compras de más o quiebres de stock.' },
+            { n: '03', title: 'Reservas con consumos', desc: 'Calendario de reservas integrado, con el pedido y los consumos en un solo lugar, para que puedas cerrar la cuenta sin perder tiempo ni clientes.' },
+            { n: '04', title: 'Ventas y tickets PDF', desc: 'Historial completo de ventas, tickets en PDF automáticos y exportación a Excel, para que puedas entregarle todo listo a tu contador sin trabajo extra.' },
+            { n: '05', title: 'Analytics avanzado', desc: 'Métricas por hora, por producto y comparativas semanales, para que puedas saber qué plato te hace ganar más, no solo cuál vendes más.' },
+            { n: '06', title: 'Multi-usuario por roles', desc: 'Cuentas separadas para admin, meseros, cocina y caja, cada una viendo solo lo que necesita, para que puedas delegar sin perder el control.' },
           ].map(f => (
             <article key={f.n} className="fcard">
               <div className="fcard-num">{f.n}</div>
@@ -618,57 +652,61 @@ export default function Landing() {
       {/* Mid-page CTA */}
       <div style={{ textAlign: 'center', padding: '0 24px 80px', position: 'relative', zIndex: 1 }}>
         <a href="/register" className="btn btn-green" style={{ fontSize: '16px', padding: '15px 32px' }}>
-          Empezar gratis ahora — sin tarjeta
+          Empieza tu restaurante hoy — sin tarjeta
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" style={{ width: '18px', height: '18px' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
         </a>
-        <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--subtle)' }}>Setup en 5 minutos · +200 restaurantes ya lo usan</p>
+        <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--subtle)' }}>Setup en 5 minutos · Más de 34 restaurantes ya lo usan</p>
       </div>
+
+      {/* ── POR QUÉ MASTEXOPOS ── */}
+      <section id="why-mastexopos" aria-label="Por qué MastexoPOS">
+        <div className="section-hdr container">
+          <p className="section-eyebrow">Por qué MastexoPOS</p>
+          <h2 className="section-h2">No somos otro <span className="g">software genérico</span></h2>
+          <p className="section-p">Tres razones por las que dueños de restaurantes reales eligen MastexoPOS y se quedan.</p>
+        </div>
+
+        <div className="features-grid container">
+          <article className="fcard">
+            <div className="fcard-num">{CHECK_ICON}</div>
+            <h3 className="fcard-title">Nace de un problema real</h3>
+            <p className="fcard-desc">MastexoPOS existe para sacar a los restaurantes del papel y las planillas, no para venderte funciones que nunca vas a usar.</p>
+          </article>
+          <article className="fcard">
+            <div className="fcard-num">{CHECK_ICON}</div>
+            <h3 className="fcard-title">Cada feature la pidió un dueño real</h3>
+            <p className="fcard-desc">No diseñamos para corporaciones. Cada parte del sistema responde a algo que un restaurante real necesitó primero.</p>
+          </article>
+          <article className="fcard">
+            <div className="fcard-num">{CHECK_ICON}</div>
+            <h3 className="fcard-title">Soporte real, en español</h3>
+            <p className="fcard-desc">Nuestro equipo responde en español por chat y email, generalmente en menos de 2 horas en días hábiles. No bots, no esperas eternas.</p>
+          </article>
+        </div>
+      </section>
 
       {/* ── PRICING ── */}
       <section id="pricing" aria-label="Planes y precios">
         <div className="section-hdr container">
           <p className="section-eyebrow">Precios</p>
           <h2 className="section-h2">Transparente desde el primer día.<br /><span className="g">Sin letra chica.</span></h2>
-          <p className="section-p">Empieza gratis, sube cuando lo necesites. Sin contrato anual, sin costos de setup, sin sorpresas en tu tarjeta.</p>
+          <p className="section-p">14 días de prueba gratis en cualquier plan. Sin contrato anual, sin costos de setup, sin sorpresas en tu tarjeta.</p>
         </div>
 
         <div className="pricing-cards container">
-          {/* Starter */}
-          <div className="pcard">
-            <div className="pcard-name">Starter</div>
-            <div className="pcard-headline">Tu restaurante online, sin costo.</div>
-            <p className="pcard-desc">Gestiona pedidos y mesas desde el primer día. Sin técnicos, sin configuración, sin sorpresas.</p>
-            <ul className="pcard-features">
-              <li className="on">{CHECK_ICON} 50 pedidos por mes</li>
-              <li className="on">{CHECK_ICON} Hasta 2 usuarios</li>
-              <li className="on">{CHECK_ICON} 1 local</li>
-              <li>{X_ICON} Tiempo real (WebSocket)</li>
-              <li>{X_ICON} Analytics avanzado</li>
-              <li>{X_ICON} Tickets PDF</li>
-            </ul>
-            <hr className="pcard-divider" />
-            <div className="pcard-price-row">
-              <div className="pcard-price">
-                <span className="price-sym">$</span>
-                <span className="price-amount">0</span>
-              </div>
-              <div className="price-period">Para siempre gratis · sin tarjeta</div>
-            </div>
-            <a href="/register" className="btn-pcard secondary">Empezar gratis</a>
-          </div>
-
           {/* Pro (featured) */}
           <div className="pcard featured">
             <div className="pcard-badge">Más popular</div>
             <div className="pcard-name">Pro</div>
+            <div className="pcard-trial-pill">{CHECK_ICON} 14 días gratis</div>
             <div className="pcard-headline">Operación sin límites, datos en tiempo real.</div>
             <p className="pcard-desc">Para restaurantes activos. Pedidos ilimitados, analytics completo y alertas automáticas de stock.</p>
             <ul className="pcard-features">
               <li className="on">{CHECK_ICON} Pedidos ilimitados</li>
               <li className="on">{CHECK_ICON} Usuarios ilimitados</li>
-              <li className="on">{CHECK_ICON} Tiempo real (WebSocket)</li>
+              <li className="on">{CHECK_ICON} Pedidos en tiempo real</li>
               <li className="on">{CHECK_ICON} Analytics avanzado</li>
               <li className="on">{CHECK_ICON} Tickets PDF + alertas email</li>
               <li>{X_ICON} Multi-local (hasta 5)</li>
@@ -681,25 +719,29 @@ export default function Landing() {
               </div>
               <div className="price-period">USD / mes · sin contrato</div>
             </div>
+            <p style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px', marginBottom: '16px' }}>
+              1 mesa extra por semana cubre el costo
+            </p>
             <button
               className="btn-pcard primary"
               onClick={() => setPayModal('pro')}
               style={{ width: '100%', cursor: 'pointer' }}
             >
-              Empezar con Pro
+              Empezar 14 días gratis
             </button>
-            <p className="pcard-trust">✓ 14 días de prueba gratis · Cancela cuando quieras</p>
+            <p className="pcard-trust">✓ Sin tarjeta de crédito · Cancela cuando quieras</p>
           </div>
 
           {/* Business */}
           <div className="pcard">
             <div className="pcard-name">Business</div>
+            <div className="pcard-trial-pill">{CHECK_ICON} 14 días gratis</div>
             <div className="pcard-headline">Multi-local. Control total desde un panel.</div>
             <p className="pcard-desc">Para cadenas y grupos gastronómicos que operan múltiples locales con un solo sistema.</p>
             <ul className="pcard-features">
               <li className="on">{CHECK_ICON} Todo lo de Pro</li>
               <li className="on">{CHECK_ICON} Hasta 5 locales</li>
-              <li className="on">{CHECK_ICON} API Keys para integraciones</li>
+              <li className="on">{CHECK_ICON} Integraciones con otros sistemas</li>
               <li className="on">{CHECK_ICON} Soporte prioritario</li>
               <li className="on">{CHECK_ICON} Reportes consolidados</li>
               <li className="on">{CHECK_ICON} Onboarding personalizado</li>
@@ -712,13 +754,17 @@ export default function Landing() {
               </div>
               <div className="price-period">USD / mes · sin contrato</div>
             </div>
+            <p style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px', marginBottom: '16px' }}>
+              Menos de $2 al día por hasta 5 locales
+            </p>
             <button
               className="btn-pcard secondary"
               onClick={() => setPayModal('business')}
               style={{ width: '100%', cursor: 'pointer' }}
             >
-              Activar Plan Business
+              Empezar 14 días gratis
             </button>
+            <p className="pcard-trust">✓ Sin tarjeta de crédito · Cancela cuando quieras</p>
           </div>
         </div>
       </section>
@@ -740,18 +786,18 @@ export default function Landing() {
             },
             {
               id: 'faq2',
-              q: '¿Puedo empezar gratis sin ingresar mi tarjeta?',
-              a: 'Sí. El plan Starter es gratis para siempre y no requiere tarjeta de crédito. Puedes crear tu restaurante, invitar a tu equipo y empezar a tomar pedidos en menos de 5 minutos. Cuando estés listo para más, el upgrade a Pro es con un clic.',
+              q: '¿Puedo probar antes de pagar?',
+              a: 'Sí. Tenés 14 días de prueba gratis con acceso completo a las funciones de Pro, sin tarjeta de crédito. Podés crear tu restaurante, invitar a tu equipo y empezar a tomar pedidos en minutos. Antes de que termine el trial, eliges Pro o Business para seguir operando.',
             },
             {
               id: 'faq3',
               q: '¿Qué incluye exactamente el plan Pro?',
-              a: 'Pro incluye pedidos y usuarios ilimitados, tiempo real vía WebSocket (los pedidos llegan a cocina al instante), analytics avanzado con métricas por producto y hora, tickets en PDF automáticos para el cliente, y alertas de stock por email cuando el inventario baja del mínimo que tú configures.',
+              a: 'Pro incluye pedidos y usuarios ilimitados, pedidos en tiempo real (llegan a cocina al instante, sin recargar pantalla), analytics avanzado con métricas por producto y hora, tickets en PDF automáticos para el cliente, y alertas de stock por email cuando el inventario baja del mínimo que tú configures.',
             },
             {
               id: 'faq4',
               q: '¿Puedo cancelar en cualquier momento?',
-              a: 'Sí, sin preguntas ni trámites. Puedes cancelar desde tu panel de facturación con un clic. No hay contratos anuales ni penalizaciones. Al cancelar, tu cuenta pasa automáticamente al plan Starter y conservas todos tus datos.',
+              a: 'Sí, sin preguntas ni trámites. Puedes cancelar desde tu panel de facturación con un clic. No hay contratos anuales ni penalizaciones. Al cancelar conservas todos tus datos, pero necesitas elegir un plan nuevo para seguir operando.',
             },
             {
               id: 'faq5',
@@ -781,10 +827,10 @@ export default function Landing() {
         <div className="fcta-box container">
           <p className="section-eyebrow" style={{ justifyContent: 'center' }}>Empieza hoy</p>
           <h2 className="section-h2">Tu restaurante merece un sistema<br /><span className="g">que trabaje tan duro como tú</span></h2>
-          <p className="section-p">Únete a más de 200 restaurantes que ya operan con MastexoPOS. Empieza gratis en 5 minutos.</p>
+          <p className="section-p">Únete a más de 34 restaurantes que ya operan con MastexoPOS. Empieza en 5 minutos, 14 días gratis.</p>
           <div className="fcta-btns">
             <a href="/register" className="btn btn-green">
-              Empezar gratis ahora
+              Empieza tu restaurante hoy
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

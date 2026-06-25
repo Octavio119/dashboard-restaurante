@@ -1,4 +1,4 @@
-const { PLAN_LIMITS } = require('../lib/planLimits');
+const { resolvePlanAccess } = require('../lib/planLimits');
 
 const MS_30_DIAS = 30 * 24 * 60 * 60 * 1000;
 
@@ -10,7 +10,7 @@ async function checkOrderLimit(req, res, next) {
 
     const restaurante = await prisma.restaurante.findUnique({
       where:  { id: rid },
-      select: { plan: true, plan_status: true, ordenes_mes_actual: true, billing_ciclo_inicio: true },
+      select: { plan: true, plan_status: true, trial_ends_at: true, ordenes_mes_actual: true, billing_ciclo_inicio: true },
     });
     if (!restaurante) return res.status(404).json({ error: 'Restaurante no encontrado' });
 
@@ -26,8 +26,11 @@ async function checkOrderLimit(req, res, next) {
       });
     }
 
-    const plan   = restaurante.plan || 'free';
-    const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+    const access = resolvePlanAccess(restaurante);
+    if (access.blocked) {
+      return res.status(403).json({ error: access.error, message: access.message, upgrade_url: '/billing' });
+    }
+    const { limits } = access;
 
     if (limits.ordenes_mes === Infinity) return next();
 
@@ -49,7 +52,7 @@ async function checkOrderLimit(req, res, next) {
         error:       'ORDER_LIMIT_REACHED',
         used:        ordenesMes,
         limit:       limits.ordenes_mes,
-        plan_actual: plan,
+        plan_actual: restaurante.plan,
         upgrade_url: '/billing',
       });
     }
@@ -68,12 +71,15 @@ async function checkUserLimit(req, res, next) {
 
     const restaurante = await prisma.restaurante.findUnique({
       where:  { id: rid },
-      select: { plan: true },
+      select: { plan: true, trial_ends_at: true },
     });
     if (!restaurante) return res.status(404).json({ error: 'Restaurante no encontrado' });
 
-    const plan    = restaurante.plan || 'free';
-    const limits  = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+    const access = resolvePlanAccess(restaurante);
+    if (access.blocked) {
+      return res.status(403).json({ error: access.error, message: access.message, upgrade_url: '/billing' });
+    }
+    const { limits } = access;
 
     if (limits.usuarios_max === Infinity) return next();
 
@@ -84,8 +90,8 @@ async function checkUserLimit(req, res, next) {
     if (count >= limits.usuarios_max) {
       return res.status(403).json({
         error:       'limite_alcanzado',
-        mensaje:     `Has alcanzado el límite de ${limits.usuarios_max} usuarios del plan ${plan}.`,
-        plan_actual: plan,
+        mensaje:     `Has alcanzado el límite de ${limits.usuarios_max} usuarios del plan ${restaurante.plan}.`,
+        plan_actual: restaurante.plan,
         upgrade_url: '/billing',
       });
     }

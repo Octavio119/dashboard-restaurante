@@ -4,7 +4,7 @@ const { createClient }  = require('redis');
 const { createAdapter } = require('@socket.io/redis-adapter');
 const logger            = require('./logger');
 const prisma            = require('./prisma');
-const { PLAN_LIMITS }   = require('./planLimits');
+const { resolvePlanAccess } = require('./planLimits');
 const socketAuth        = require('../middleware/socketAuth');
 
 let _io = null;
@@ -87,15 +87,14 @@ async function init(httpServer) {
     try {
       const restaurante = await prisma.restaurante.findUnique({
         where:  { id: Number(rid) },
-        select: { plan: true },
+        select: { plan: true, trial_ends_at: true },
       });
-      const plan   = restaurante?.plan || 'free';
-      const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+      const access = resolvePlanAccess(restaurante || {});
 
-      if (!limits.websocket) {
+      if (access.blocked || !access.limits.websocket) {
         socket.emit('plan_upgrade_required', {
           feature:        'websocket',
-          plan_actual:    plan,
+          plan_actual:    restaurante?.plan,
           plan_requerido: 'pro',
           upgrade_url:    '/billing',
         });

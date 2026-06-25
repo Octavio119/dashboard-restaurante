@@ -4,12 +4,14 @@ const { PORT } = require('./config');
 const logger = require('./lib/logger');
 const prisma = require('./lib/prisma');
 
-// Resetea ordenes_mes_actual a 0 para todos los restaurantes en plan free el 1ro de cada mes.
+// Resetea ordenes_mes_actual a 0 el 1ro de cada mes. Hoy es un no-op funcional
+// (trial/pro/business tienen ordenes_mes: Infinity en PLAN_LIMITS), pero se deja
+// programado por si en el futuro algún plan vuelve a tener límite mensual finito.
 // Se programa con setTimeout al inicio del próximo mes; no requiere node-cron.
 async function resetMonthlyOrders() {
   try {
     const result = await prisma.restaurante.updateMany({
-      where: { plan: 'free' },
+      where: { plan: { in: ['trial', 'pro', 'business'] } },
       data:  { ordenes_mes_actual: 0, billing_ciclo_inicio: new Date() },
     });
     logger.info({ updated: result.count }, 'reset mensual de ordenes_mes_actual completado');

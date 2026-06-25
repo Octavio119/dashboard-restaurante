@@ -42,7 +42,7 @@ beforeAll(async () => {
     data: {
       nombre:  'Restaurante Rival Test',
       slug:    `rival-iso-${Date.now()}`,
-      plan:    'free',
+      plan:    'trial',
       activo:  true,
     },
   });

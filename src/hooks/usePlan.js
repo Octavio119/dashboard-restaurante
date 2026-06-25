@@ -9,15 +9,15 @@ import { PLAN_LIMITS, PLAN_NAMES, FEATURE_PLAN } from '../config/plans';
  *   2. user.restaurante.plan — presente después de api.me() al cargar la página
  *
  * plan_status lee de user.plan_status (JWT) — si no existe asume 'active'.
+ * trial_ends_at sigue el mismo patrón (flat o anidado bajo restaurante).
  */
 export function usePlan() {
   const { user } = useAuth();
 
-  const rawPlan   = user?.plan ?? user?.restaurante?.plan ?? 'free';
-  // Normalise: 'starter' (legacy UI key) → 'free' (backend key)
-  const plan       = rawPlan === 'starter' ? 'free' : rawPlan;
-  const planStatus = user?.plan_status ?? 'active';
-  const planLabel  = PLAN_NAMES[plan] ?? 'Starter';
+  const plan        = user?.plan ?? user?.restaurante?.plan ?? 'trial';
+  const planStatus   = user?.plan_status ?? 'active';
+  const trialEndsAt  = user?.trial_ends_at ?? user?.restaurante?.trial_ends_at ?? null;
+  const planLabel    = PLAN_NAMES[plan] ?? 'Trial';
 
   /** Whether the current plan includes a feature. */
   const can = (feature) => PLAN_LIMITS[plan]?.[feature] ?? false;
@@ -28,11 +28,16 @@ export function usePlan() {
     return PLAN_NAMES[key] ?? 'Pro';
   };
 
-  const isStarter  = plan === 'free';
-  const isPro      = plan === 'pro' || plan === 'business';
-  const isBusiness = plan === 'business';
+  const isTrial     = plan === 'trial';
+  const isPro       = plan === 'pro' || plan === 'business';
+  const isBusiness  = plan === 'business';
 
-  const ordersLimit   = PLAN_LIMITS[plan]?.ordersPerMonth ?? 50;
+  const trialDaysLeft = isTrial && trialEndsAt
+    ? Math.ceil((new Date(trialEndsAt) - new Date()) / (24 * 60 * 60 * 1000))
+    : null;
+  const trialExpired  = isTrial && trialDaysLeft !== null && trialDaysLeft <= 0;
+
+  const ordersLimit   = PLAN_LIMITS[plan]?.ordersPerMonth ?? 0;
 
   return {
     plan,
@@ -40,9 +45,12 @@ export function usePlan() {
     planStatus,
     can,
     requiredPlanFor,
-    isStarter,
+    isTrial,
     isPro,
     isBusiness,
+    trialEndsAt,
+    trialDaysLeft,
+    trialExpired,
     ordersLimit,
   };
 }

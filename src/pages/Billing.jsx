@@ -97,7 +97,7 @@ export default function Billing() {
   }
 
   async function handleCancel() {
-    if (!window.confirm('¿Seguro que deseas cancelar tu suscripción? Tu plan pasará a Starter.')) return;
+    if (!window.confirm('¿Seguro que deseas cancelar tu suscripción? Tu cuenta quedará bloqueada hasta que elijas un plan nuevo.')) return;
     setCancelling(true);
     try {
       await fetch('/api/billing/cancel', {
@@ -107,7 +107,7 @@ export default function Billing() {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
-      setBanner({ type: 'success', msg: 'Suscripción cancelada. Tu plan volvió a Starter.' });
+      setBanner({ type: 'success', msg: 'Suscripción cancelada. Tu cuenta quedará bloqueada hasta que elijas un plan nuevo.' });
       api.getBillingUsage().then(setUsage).catch(() => {});
     } catch (e) {
       setBanner({ type: 'error', msg: 'Error al cancelar la suscripción.' });
@@ -338,7 +338,7 @@ export default function Billing() {
               disabled={cancelling}
               style={{ background: 'none', border: 'none', cursor: cancelling ? 'not-allowed' : 'pointer', color: '#94a3b8', fontSize: '13px', textDecoration: 'underline', fontFamily: 'inherit' }}
             >
-              {cancelling ? 'Cancelando...' : 'Cancelar suscripción y volver a Starter'}
+              {cancelling ? 'Cancelando...' : 'Cancelar suscripción'}
             </button>
           </div>
         )}

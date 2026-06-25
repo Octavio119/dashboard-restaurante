@@ -39,9 +39,13 @@ async function clearRefreshToken(prisma, userId) {
 async function getRestaurantePlan(prisma, restaurante_id) {
   const rest = await prisma.restaurante.findUnique({
     where:  { id: restaurante_id },
-    select: { plan: true, plan_status: true },
+    select: { plan: true, plan_status: true, trial_ends_at: true },
   });
-  return { plan: rest?.plan || 'free', plan_status: rest?.plan_status || 'active' };
+  return {
+    plan:          rest?.plan || 'trial',
+    plan_status:   rest?.plan_status || 'active',
+    trial_ends_at: rest?.trial_ends_at ? rest.trial_ends_at.toISOString() : null,
+  };
 }
 
 // POST /api/auth/login
@@ -57,8 +61,8 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!user || !bcrypt.compareSync(password, user.password_hash))
       return res.status(401).json({ error: 'Credenciales inválidas' });
 
-    const { plan, plan_status } = await getRestaurantePlan(req.prisma, user.restaurante_id);
-    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status };
+    const { plan, plan_status, trial_ends_at } = await getRestaurantePlan(req.prisma, user.restaurante_id);
+    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status, trial_ends_at };
     const accessToken  = signAccess(payload);
     const refreshToken = signRefresh(payload);
     await storeRefreshToken(req.prisma, user.id, refreshToken);
@@ -66,7 +70,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       token: accessToken,
       refresh_token: refreshToken,
-      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status },
+      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status, trial_ends_at },
     });
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
@@ -87,8 +91,8 @@ router.post('/refresh', async (req, res) => {
     const user = await req.prisma.usuario.findFirst({ where: { id: decoded.id, activo: true } });
     if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
 
-    const { plan, plan_status } = await getRestaurantePlan(req.prisma, user.restaurante_id);
-    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status };
+    const { plan, plan_status, trial_ends_at } = await getRestaurantePlan(req.prisma, user.restaurante_id);
+    const payload = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, restaurante_id: user.restaurante_id, plan, plan_status, trial_ends_at };
     const newAccess  = signAccess(payload);
     const newRefresh = signRefresh(payload);
     await storeRefreshToken(req.prisma, user.id, newRefresh);
@@ -112,7 +116,7 @@ router.get('/me', requireAuth, async (req, res) => {
       where: { id: req.user.id },
       include: {
         restaurante: {
-          select: { id: true, nombre: true, plan: true }
+          select: { id: true, nombre: true, plan: true, plan_status: true, trial_ends_at: true }
         }
       }
     });
@@ -164,10 +168,11 @@ router.post('/signup', async (req, res) => {
     const slug = existingSlug ? `${baseSlug}-${Date.now()}` : baseSlug;
 
     const hash = bcrypt.hashSync(password, 12);
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
     const { restaurante, usuario } = await req.prisma.$transaction(async (tx) => {
       const restaurante = await tx.restaurante.create({
-        data: { nombre: nombre_restaurante.trim(), slug, plan: 'free' },
+        data: { nombre: nombre_restaurante.trim(), slug, plan: 'trial', trial_ends_at: trialEndsAt },
       });
       const usuario = await tx.usuario.create({
         data: { nombre: nombre_admin.trim(), email: emailNorm, password_hash: hash, rol: 'admin', restaurante_id: restaurante.id },
@@ -175,7 +180,7 @@ router.post('/signup', async (req, res) => {
       return { restaurante, usuario };
     });
 
-    const payload     = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, restaurante_id: restaurante.id, plan: restaurante.plan, plan_status: 'active' };
+    const payload     = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, restaurante_id: restaurante.id, plan: restaurante.plan, plan_status: 'active', trial_ends_at: restaurante.trial_ends_at.toISOString() };
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
     await storeRefreshToken(req.prisma, usuario.id, refreshToken);

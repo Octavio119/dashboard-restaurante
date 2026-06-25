@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import SidebarItem from '../components/layout/SidebarItem';
 import UsageBanner from '../components/UsageBanner';
+import TrialBanner from '../components/TrialBanner';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { PlanUpgradeModal, showOrderLimit } from '../components/ui/PlanUpgradeModal';
 import { usePlan } from '../hooks/usePlan';
@@ -77,7 +78,7 @@ export default function AppLayout({
   children,
 }) {
   const { t } = useTranslation('common');
-  const { isStarter, can } = usePlan();
+  const { isTrial, can } = usePlan();
   const pendingBadge = (pedidos || []).filter(p => p.estado === 'pendiente').length || null;
 
   const NAV_ITEMS = [
@@ -150,7 +151,7 @@ export default function AppLayout({
                     className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded mt-1 inline-block"
                     style={{ background: 'rgba(139,92,246,0.1)', color: '#7878A0', border: '1px solid rgba(139,92,246,0.15)' }}
                   >
-                    {p === 'free' ? 'Starter' : p === 'pro' ? 'Pro' : p === 'business' ? 'Business' : 'Starter'}
+                    {p === 'trial' ? 'Trial' : p === 'pro' ? 'Pro' : p === 'business' ? 'Business' : 'Trial'}
                   </span>
                 );
               })()}
@@ -242,8 +243,8 @@ export default function AppLayout({
           <div className="flex items-center gap-2.5">
             {/* Language switcher */}
             <LanguageSwitcher />
-            {/* Order limit pill — starter plan only, managed by UsageBanner hook */}
-            {isStarter && <OrderLimitPill />}
+            {/* Order limit pill — solo relevante si el plan tiene límite de órdenes finito */}
+            {isTrial && <OrderLimitPill />}
 
             {/* Notifications bell */}
             <div className="relative">
@@ -306,6 +307,7 @@ export default function AppLayout({
           </div>
         </header>
 
+        <TrialBanner />
         <UsageBanner />
 
         {/* Page content */}

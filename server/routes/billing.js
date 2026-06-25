@@ -2,7 +2,7 @@ const router      = require('express').Router();
 const logger      = require('../lib/logger');
 const requireAuth = require('../middleware/auth');
 const { audit }   = require('../lib/audit');
-const { PLAN_LIMITS } = require('../lib/planLimits');
+const { resolvePlanAccess } = require('../lib/planLimits');
 const {
   PLAN_IDS,
   crearOrden,
@@ -153,9 +153,9 @@ router.post('/webhook', async (req, res) => {
         if (!r) break;
         await prisma.restaurante.update({
           where: { id: r.id },
-          data:  { plan: 'free', paypal_subscription_id: null },
+          data:  { plan: 'cancelled', paypal_subscription_id: null },
         });
-        logger.info({ rid: r.id }, 'PayPal subscription cancelled — plan degradado a free');
+        logger.info({ rid: r.id }, 'PayPal subscription cancelled — cuenta bloqueada hasta elegir un plan');
         break;
       }
     }
@@ -172,17 +172,17 @@ router.get('/usage', requireAuth, async (req, res) => {
   try {
     const restaurante = await req.prisma.restaurante.findUnique({
       where:  { id: req.user.restaurante_id },
-      select: { plan: true, ordenes_mes_actual: true, billing_ciclo_inicio: true },
+      select: { plan: true, trial_ends_at: true, ordenes_mes_actual: true, billing_ciclo_inicio: true },
     });
 
-    const plan   = restaurante.plan || 'free';
-    const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+    const access = resolvePlanAccess(restaurante);
     const usadas = restaurante.ordenes_mes_actual || 0;
-    const limite = limits.ordenes_mes === Infinity ? null : limits.ordenes_mes;
-    const pct    = limite ? Math.round((usadas / limite) * 100) : 0;
+    const limite = access.blocked ? 0 : (access.limits.ordenes_mes === Infinity ? null : access.limits.ordenes_mes);
+    const pct    = limite ? Math.round((usadas / limite) * 100) : (access.blocked ? 100 : 0);
 
     res.json({
-      plan,
+      plan: restaurante.plan,
+      bloqueado:      access.blocked,
       ordenes_usadas: usadas,
       ordenes_limite: limite,
       porcentaje:     pct,
@@ -210,11 +210,11 @@ router.delete('/cancel', requireAuth, async (req, res) => {
 
     await req.prisma.restaurante.update({
       where: { id: req.user.restaurante_id },
-      data:  { plan: 'free', paypal_subscription_id: null },
+      data:  { plan: 'cancelled', paypal_subscription_id: null },
     });
 
     logger.info({ rid: req.user.restaurante_id }, 'suscripción cancelada por el usuario');
-    res.json({ ok: true, message: 'Suscripción cancelada. Plan degradado a Starter.' });
+    res.json({ ok: true, message: 'Suscripción cancelada. Tu cuenta queda bloqueada hasta que elijas un plan.' });
   } catch (e) {
     logger.error({ err: e }, 'billing cancel error');
     res.status(500).json({ error: 'Error al cancelar suscripción' });

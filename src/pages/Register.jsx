@@ -6,29 +6,30 @@ import AuthBackground, { useAuthFonts } from '../components/AuthBackground';
 
 // ─── Plan config ──────────────────────────────────────────────────────────────
 const PLANS = {
-  free: {
-    badge:     'Plan Starter',
+  trial: {
+    badge:     '14 días gratis · Sin tarjeta',
     badgeBg:   'rgba(108,99,255,0.15)',
     badgeColor:'#9B93FF',
     badgeBorder:'rgba(108,99,255,0.30)',
-    headline:  'Empieza hoy,',
-    sub:       'sin gastar nada',
+    headline:  '14 días gratis.',
+    sub:       'Sin tarjeta. Sin compromisos.',
     emColor:   '#6C63FF',
-    price:     '$0',
-    priceSub:  'Para siempre gratis',
-    priceShadow: '0 0 40px rgba(108,99,255,0.4)',
+    tagline:   'MastexoPOS: sistema de pedidos para restaurantes que quieren crecer sin contratar más personal.',
+    price:     null,
+    priceSub:  null,
     features: [
-      '50 órdenes / mes',
-      '2 usuarios incluidos',
-      'Pedidos y gestión de mesas',
-      'Acceso desde cualquier dispositivo',
+      'Pedidos ilimitados durante 14 días',
+      'Múltiples usuarios sin costo adicional',
+      'Reportes y analytics en tiempo real',
+      'Soporte incluido durante el trial',
+      'Sin sorpresas al vencer — te avisamos 3 días antes',
     ],
-    guarantee: { icon: '✦', text: 'Sin compromisos · Cambia de plan cuando quieras' },
+    guarantee: { icon: '✦', text: 'Únete a más de 34 restaurantes que ya usan MastexoPOS' },
     guaranteeBg:     '#1A1830',
     guaranteeBorder: 'rgba(108,99,255,0.20)',
     bg:        'linear-gradient(160deg, #0F0E1A 0%, #13112A 55%, #1A1830 100%)',
     accent:    '#6C63FF',
-    btnLabel:  'Crear cuenta gratis',
+    btnLabel:  'Crear cuenta gratis →',
     btnBg:     '#6C63FF',
     btnHover:  '#5B52E5',
     btnShadow: '0 4px 24px rgba(108,99,255,0.35)',
@@ -94,7 +95,7 @@ const PLANS = {
 
 function getPlan() {
   const p = new URLSearchParams(window.location.search).get('plan');
-  return p === 'pro' || p === 'business' ? p : 'free';
+  return p === 'pro' || p === 'business' ? p : 'trial';
 }
 
 // ─── Subcomponents ────────────────────────────────────────────────────────────
@@ -260,7 +261,7 @@ export default function Register() {
       localStorage.setItem('refresh_token', data.refresh_token);
       localStorage.setItem('user',          JSON.stringify(data.user));
 
-      if (planKey !== 'free') {
+      if (planKey !== 'trial') {
         setPayStep('payment');
         return;
       }
@@ -288,7 +289,7 @@ export default function Register() {
     setPayError(msg || 'Error en el proceso de pago.');
   }
 
-  const steps = planKey === 'free'
+  const steps = planKey === 'trial'
     ? [{ n: 1, label: 'Cuenta' }, { n: 2, label: 'Dashboard' }]
     : [{ n: 1, label: 'Cuenta' }, { n: 2, label: 'Pago' }, { n: 3, label: 'Dashboard' }];
 
@@ -383,20 +384,29 @@ export default function Register() {
           <h1 className="lp-h1b" style={{
             fontFamily: 'Instrument Serif, Georgia, serif',
             fontSize: '36px', fontWeight: 700, lineHeight: 1.15,
-            color: plan.emColor, fontStyle: 'italic', marginBottom: '28px',
+            color: plan.emColor, fontStyle: 'italic', marginBottom: plan.tagline ? '16px' : '28px',
           }}>
             {plan.sub}
           </h1>
 
-          {/* Precio */}
-          <div className="lp-price" style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '28px' }}>
-            <span className="lp-price-num" style={{ fontSize: '52px', fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: plan.priceShadow || 'none' }}>
-              {plan.price}
-            </span>
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.50)', maxWidth: '120px', lineHeight: 1.3 }}>
-              {plan.priceSub}
-            </span>
-          </div>
+          {/* Claridad — qué es, para quién, qué resultado da (solo trial) */}
+          {plan.tagline && (
+            <p className="lp-tagline" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.55, marginBottom: '28px' }}>
+              {plan.tagline}
+            </p>
+          )}
+
+          {/* Precio (planes de pago únicamente — el trial no tiene precio) */}
+          {plan.price && (
+            <div className="lp-price" style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '28px' }}>
+              <span className="lp-price-num" style={{ fontSize: '52px', fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: plan.priceShadow || 'none' }}>
+                {plan.price}
+              </span>
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.50)', maxWidth: '120px', lineHeight: 1.3 }}>
+                {plan.priceSub}
+              </span>
+            </div>
+          )}
 
           {/* Features */}
           <ul className="lp-features" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px', padding: 0, listStyle: 'none' }}>
@@ -461,6 +471,7 @@ export default function Register() {
         .lp-badge  { animation: fadeUp 0.55s ease 0.05s both; }
         .lp-h1a    { animation: fadeUp 0.55s ease 0.15s both; }
         .lp-h1b    { animation: fadeUp 0.55s ease 0.25s both; }
+        .lp-tagline { animation: fadeUp 0.55s ease 0.30s both; }
         .lp-price  { animation: fadeUp 0.55s ease 0.35s both; }
         .lp-price-num { animation: pricePulse 4s ease-in-out infinite; }
         .lp-features { animation: fadeUp 0.55s ease 0.45s both; }
@@ -490,7 +501,7 @@ export default function Register() {
         @media (prefers-reduced-motion: reduce) {
           @keyframes spin         { to { transform: rotate(0deg); } }
           .lp-orb-a, .lp-orb-b   { animation: none; }
-          .lp-badge, .lp-h1a, .lp-h1b, .lp-price, .lp-features, .lp-guarantee { animation: none; opacity: 1; }
+          .lp-badge, .lp-h1a, .lp-h1b, .lp-tagline, .lp-price, .lp-features, .lp-guarantee { animation: none; opacity: 1; }
           .lp-shimmer::after      { animation: none; }
         }
       `}</style>
@@ -633,7 +644,7 @@ export default function Register() {
               ))}
             </div>
             <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.55)', fontWeight: 500, margin: 0 }}>
-              {planKey === 'free'     && '200+ restaurantes ya en el plan gratuito'}
+              {planKey === 'trial'    && 'Más de 34 restaurantes ya usan MastexoPOS'}
               {planKey === 'pro'      && 'El plan preferido por restaurantes en crecimiento'}
               {planKey === 'business' && 'Cadenas con 3+ locales eligen Business'}
             </p>
@@ -646,12 +657,12 @@ export default function Register() {
                 Crear cuenta
               </p>
               <h2 style={{ fontFamily: titleFont, fontSize: '26px', fontWeight: 700, color: '#fff', marginBottom: '4px', lineHeight: 1.2 }}>
-                {planKey === 'free'     ? 'Empieza gratis hoy'     : ''}
+                {planKey === 'trial'    ? 'Crea tu cuenta gratis' : ''}
                 {planKey === 'pro'      ? 'Activa el Plan Pro'      : ''}
                 {planKey === 'business' ? 'Activa el Plan Business' : ''}
               </h2>
               <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', marginBottom: '24px' }}>
-                {planKey === 'free' ? 'Sin tarjeta de crédito, sin compromisos.' : 'Completa el registro y configura el pago.'}
+                {planKey === 'trial' ? '14 días gratis. Sin tarjeta de crédito.' : 'Completa el registro y configura el pago.'}
               </p>
             </div>
           )}
@@ -793,7 +804,7 @@ export default function Register() {
                     <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
                     <path d="M12 2a10 10 0 0 1 10 10" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
                   </svg>
-                  {planKey === 'free' ? 'Creando cuenta...' : 'Procesando...'}
+                  {planKey === 'trial' ? 'Creando cuenta...' : 'Procesando...'}
                 </>
               ) : plan.btnLabel}
             </button>
@@ -801,6 +812,17 @@ export default function Register() {
             {plan.payNote && !loading && (
               <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.30)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                 <LockIcon /> {plan.payNote}
+              </p>
+            )}
+
+            {planKey === 'trial' && (
+              <p style={{
+                textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.40)', margin: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '10px',
+              }}>
+                <span>✓ 14 días gratis</span>
+                <span>✓ Sin tarjeta de crédito</span>
+                <span>✓ Cancela cuando quieras</span>
               </p>
             )}
           </form>

@@ -192,7 +192,7 @@ export default function VentasPage({
   const [ventaError, setVentaError] = React.useState(null);
   const [pdfLoading, setPdfLoading]   = React.useState(false);
   const [xlsxLoading, setXlsxLoading] = React.useState(false);
-  const plan  = user?.restaurante?.plan?.toLowerCase() ?? 'free';
+  const plan  = user?.restaurante?.plan?.toLowerCase() ?? 'trial';
   const isPro = plan === 'pro' || plan === 'business';
   const cajaAbierta = cajaHoy?.estado === 'abierta';
 

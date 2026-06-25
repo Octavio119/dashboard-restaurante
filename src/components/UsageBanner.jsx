@@ -16,7 +16,7 @@ export default function UsageBanner() {
     if (usage && usage.porcentaje >= 100) setLimitModal(true);
   }, [usage]);
 
-  if (!usage || usage.plan !== 'free' || usage.ordenes_limite === null) return null;
+  if (!usage || usage.ordenes_limite === null) return null;
 
   const pct = usage.porcentaje;
   const barColor   = pct >= 90 ? '#EF4444' : pct >= 70 ? '#F59E0B' : 'linear-gradient(90deg, #8B5CF6, #EC4899)';

@@ -13,9 +13,10 @@ model Restaurante {
   id                      Int      @id @default(autoincrement())
   nombre                  String
   slug                    String   @unique
-  plan                    String   @default("free")
+  plan                    String   @default("trial")
   plan_status             String   @default("active")
   plan_expires_at         DateTime?
+  trial_ends_at           DateTime?
   activo                  Boolean  @default(true)
   created_at              DateTime @default(now())
   ordenes_mes_actual      Int      @default(0)

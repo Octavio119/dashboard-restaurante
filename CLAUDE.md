@@ -234,15 +234,17 @@ SaaS de gestión para restaurantes. Cada restaurante es un tenant aislado por `r
 
 ### Planes
 
-| Feature | Free | Pro ($29/mes) | Business ($79/mes) |
+No existe plan gratuito permanente. Todo restaurante nuevo arranca en **Trial** (14 días, acceso nivel Pro) — `server/routes/auth.js` setea `plan: 'trial'` y `trial_ends_at: +14 días` en el signup. Si el trial vence sin convertir a Pro/Business, `checkOrderLimit`/`checkUserLimit`/`checkPlanFeature` (vía `resolvePlanAccess` en `server/lib/planLimits.js`) bloquean con 403. Cancelar una suscripción de pago pasa el `plan` a `'cancelled'` (sin entrada en `PLAN_LIMITS`) — mismo bloqueo, hasta elegir un plan nuevo.
+
+| Feature | Trial (14 días) | Pro ($22/mes) | Business ($49/mes) |
 |---|---|---|---|
-| Órdenes/mes | 50 | Ilimitadas | Ilimitadas |
-| Usuarios | 2 | Ilimitados | Ilimitados |
+| Órdenes/mes | Ilimitadas | Ilimitadas | Ilimitadas |
+| Usuarios | Ilimitados | Ilimitados | Ilimitados |
 | Locales | 1 | 1 | 5 |
-| WebSocket tiempo real | No | Sí | Sí |
-| Analytics avanzado | No | Sí | Sí |
-| Alertas email stock | No | Sí | Sí |
-| PDF de tickets | No | Sí | Sí |
+| WebSocket tiempo real | Sí | Sí | Sí |
+| Analytics avanzado | Sí | Sí | Sí |
+| Alertas email stock | Sí | Sí | Sí |
+| PDF de tickets | Sí | Sí | Sí |
 | API Keys | No | No | Sí |
 | Multi-local | No | No | Sí |
 
@@ -262,7 +264,7 @@ SaaS de gestión para restaurantes. Cada restaurante es un tenant aislado por `r
 - **Auth completa**: signup público (crea restaurante + admin en transacción), login, refresh token, logout, change-password, rate limiting
 - **CRUD completo**: pedidos (con items, control de stock atómico, inventario), ventas, reservas (con consumos), clientes, productos, categorías, usuarios, caja, configuración del negocio, inventario/movimientos
 - **Plan limits**: `checkOrderLimit` en POST /pedidos, `checkUserLimit` en POST /usuarios, `checkPlanFeature` en analytics
-- **WebSocket**: Socket.io con salas por restaurante y rol; conexión bloqueada para plan free con evento `plan_upgrade_required`
+- **WebSocket**: Socket.io con salas por restaurante y rol; conexión bloqueada si `resolvePlanAccess` bloquea el plan (trial vencido o cancelado) con evento `plan_upgrade_required`
 - **Billing Stripe**: checkout session, webhook (completed, payment_succeeded, subscription deleted/updated), billing portal, endpoint `/api/billing/usage`; metadata propagada a la suscripción correctamente
 - **API Keys**: modelo en schema + middleware `apiKeyAuth` (plan business)
 - **Alertas de stock**: por email vía Resend al cruzar stock mínimo
@@ -506,3 +508,24 @@ server/routes/pedidos.js: reescrito el bloque para que la transacción haga un n
   - timeout subido de 15000 a 20000ms como margen adicional, no como fix principal.
 Verificado contra Supabase real: pedido con 2 líneas del mismo producto (3+2) descontó stock correctamente (50→45, no se perdió el decremento). Pedido con 6 líneas tardó prácticamente lo mismo que con 2 (~10-11s en este entorno, que tiene latencia mala hacia el pooler) — confirma que el tiempo ya no escala con la cantidad de ítems.
 Corregido también una referencia desactualizada en el Punto 1: no existe ningún `withTenant(req, fn)` en el código — ver nota arriba.
+
+
+✅ Feature — Eliminar plan free, trial de 14 días (COMPLETADO — 2026-06-25)
+
+
+server/prisma/schema.prisma: nuevo campo Restaurante.trial_ends_at DateTime? (ya existía un plan_expires_at sin usar, no se reusó — campo distinto a propósito). @default de Restaurante.plan cambiado de "free" a "trial".
+server/prisma/migrations/20260625000000_add_trial_ends_at/migration.sql: ADD COLUMN trial_ends_at + ALTER DEFAULT + data migration (UPDATE plan='trial', trial_ends_at=now()+14d WHERE plan='free'). Aplicada en Supabase real — las 20 cuentas que estaban en free pasaron a trial con 14 días frescos desde la fecha de la migración, no bloqueadas de golpe.
+server/lib/planLimits.js: PLAN_LIMITS.free reemplazado por PLAN_LIMITS.trial (mismos límites que pro — acceso completo). Nueva función resolvePlanAccess({ plan, trial_ends_at }) centraliza dos bloqueos: trial vencido (error: 'trial_expired') y plan sin entrada en PLAN_LIMITS (error: 'no_plan', cubre 'cancelled') — sin esto, cualquier plan no mapeado crashea con TypeError en `limits.campo`.
+server/middleware/checkPlanLimit.js (checkOrderLimit, checkUserLimit) y server/lib/socket.js: usan resolvePlanAccess en vez de `PLAN_LIMITS[plan] || PLAN_LIMITS.free`.
+server/routes/auth.js: signup crea Restaurante con plan:'trial', trial_ends_at:+14 días. getRestaurantePlan() y /me ahora también devuelven trial_ends_at (JWT payload + respuesta) para que el frontend no necesite un round-trip extra.
+server/routes/billing.js: cancelar suscripción (webhook PayPal CANCELLED + DELETE /api/billing/cancel) ahora pone plan:'cancelled' en vez de plan:'free' — decisión explícita del usuario: cancelar bloquea la cuenta de inmediato (sin entrada en PLAN_LIMITS) en vez de degradar a un plan gratuito. GET /api/billing/usage devuelve bloqueado:true y ordenes_limite:0 en ese caso, en vez de crashear.
+src/config/plans.js, src/hooks/usePlan.js: PLAN_LIMITS.free → trial, isStarter → isTrial, nuevos trialEndsAt/trialDaysLeft/trialExpired. PLANS.starter eliminado (ya no hay card $0).
+src/pages/Landing.jsx: card Starter eliminada de la sección de precios; agregado .pcard-trial-pill ("14 días gratis") en Pro y Business; FAQ actualizado (ya no dice "Starter gratis para siempre" ni "cancelar vuelve a Starter").
+src/pages/Register.jsx: tenía su propia config de planes (PLANS.free con badge "Plan Starter", $0, "para siempre gratis") para el flujo de registro sin parámetro ?plan= — es el que usan TODOS los botones "Empezar gratis" de la Landing. Renombrado a PLANS.trial con copy de prueba de 14 días; getPlan() ya no cae a 'free' por default.
+src/pages/Billing.jsx: textos de cancelación corregidos ("vuelve a Starter" → "cuenta bloqueada hasta elegir un plan"), consistente con el cambio en billing.js.
+src/components/TrialBanner.jsx (nuevo): banner naranja/rojo en el dashboard cuando quedan ≤3 días de trial (rojo si ya venció), con CTA a /billing. Montado en AppLayout.jsx junto a UsageBanner.
+Verificado contra Supabase real end-to-end: signup → plan trial con trial_ends_at correcto → pedido sin límite (nivel Pro) → trial_ends_at forzado al pasado → 403 "Tu período de prueba venció..." → plan forzado a 'cancelled' → 403 "no_plan" sin crash → banner visible en el dashboard con trial_ends_at a 2 días.
+Pendiente / no tocado (fuera del alcance pedido, dejado documentado):
+  - server/middleware/planGuard.js (requireFeature/requireActivePlan) tiene el mismo patrón `|| 'free'` pero no está importado por ninguna ruta — código muerto, no se tocó.
+  - server/db.js, server/migrate-sqlite-to-pg.js, server/prisma/schema.sqlite.bak mencionan 'free' pero son artefactos legados de la migración SQLite→Postgres, ya no se ejecutan.
+  - src/components/PricingCards.jsx no se usa en ningún lado (ni Landing ni Billing lo importan) — no se tocó.
