@@ -272,7 +272,7 @@ export default function Landing() {
   }
 
   return (
-    <>
+    <div className="landing-root">
       {/* ── MODAL DE PAGO RÁPIDO ── */}
       {payModal && (
         <div
@@ -699,72 +699,80 @@ export default function Landing() {
           {/* Pro (featured) */}
           <div className="pcard featured">
             <div className="pcard-badge">Más popular</div>
-            <div className="pcard-name">Pro</div>
-            <div className="pcard-trial-pill">{CHECK_ICON} 14 días gratis</div>
-            <div className="pcard-headline">Operación sin límites, datos en tiempo real.</div>
-            <p className="pcard-desc">Para restaurantes activos. Pedidos ilimitados, analytics completo y alertas automáticas de stock.</p>
-            <ul className="pcard-features">
-              <li className="on">{CHECK_ICON} Pedidos ilimitados</li>
-              <li className="on">{CHECK_ICON} Usuarios ilimitados</li>
-              <li className="on">{CHECK_ICON} Pedidos en tiempo real</li>
-              <li className="on">{CHECK_ICON} Analytics avanzado</li>
-              <li className="on">{CHECK_ICON} Tickets PDF + alertas email</li>
-              <li>{X_ICON} Multi-local (hasta 5)</li>
-            </ul>
-            <hr className="pcard-divider" />
-            <div className="pcard-price-row">
-              <div className="pcard-price">
-                <span className="price-sym">$</span>
-                <span className="price-amount">{PLAN_CFG.pro.price}</span>
-              </div>
-              <div className="price-period">USD / mes · sin contrato</div>
+            <div className="pcard-left">
+              <div className="pcard-name">Pro</div>
+              <div className="pcard-trial-pill">{CHECK_ICON} 14 días gratis</div>
+              <div className="pcard-headline">Operación sin límites, datos en tiempo real.</div>
+              <p className="pcard-desc">Para restaurantes activos. Pedidos ilimitados, analytics completo y alertas automáticas de stock.</p>
+              <ul className="pcard-features">
+                <li className="on">{CHECK_ICON} Pedidos ilimitados</li>
+                <li className="on">{CHECK_ICON} Usuarios ilimitados</li>
+                <li className="on">{CHECK_ICON} Pedidos en tiempo real</li>
+                <li className="on">{CHECK_ICON} Analytics avanzado</li>
+                <li className="on">{CHECK_ICON} Tickets PDF + alertas email</li>
+                <li>{X_ICON} Multi-local (hasta 5)</li>
+              </ul>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px', marginBottom: '16px' }}>
-              1 mesa extra por semana cubre el costo
-            </p>
-            <button
-              className="btn-pcard primary"
-              onClick={() => setPayModal('pro')}
-              style={{ width: '100%', cursor: 'pointer' }}
-            >
-              Empezar 14 días gratis
-            </button>
-            <p className="pcard-trust">✓ Sin tarjeta de crédito · Cancela cuando quieras</p>
+            <div className="pcard-right">
+              <hr className="pcard-divider" />
+              <div className="pcard-price-row">
+                <div className="pcard-price">
+                  <span className="price-sym">$</span>
+                  <span className="price-amount">{PLAN_CFG.pro.price}</span>
+                </div>
+                <div className="price-period">USD / mes · sin contrato</div>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px', marginBottom: '16px' }}>
+                1 mesa extra por semana cubre el costo
+              </p>
+              <button
+                className="btn-pcard primary"
+                onClick={() => setPayModal('pro')}
+                style={{ width: '100%', cursor: 'pointer' }}
+              >
+                Empezar 14 días gratis
+              </button>
+              <p className="pcard-trust">✓ Sin tarjeta de crédito · Cancela cuando quieras</p>
+            </div>
           </div>
 
           {/* Business */}
           <div className="pcard">
-            <div className="pcard-name">Business</div>
-            <div className="pcard-trial-pill">{CHECK_ICON} 14 días gratis</div>
-            <div className="pcard-headline">Multi-local. Control total desde un panel.</div>
-            <p className="pcard-desc">Para cadenas y grupos gastronómicos que operan múltiples locales con un solo sistema.</p>
-            <ul className="pcard-features">
-              <li className="on">{CHECK_ICON} Todo lo de Pro</li>
-              <li className="on">{CHECK_ICON} Hasta 5 locales</li>
-              <li className="on">{CHECK_ICON} Integraciones con otros sistemas</li>
-              <li className="on">{CHECK_ICON} Soporte prioritario</li>
-              <li className="on">{CHECK_ICON} Reportes consolidados</li>
-              <li className="on">{CHECK_ICON} Onboarding personalizado</li>
-            </ul>
-            <hr className="pcard-divider" />
-            <div className="pcard-price-row">
-              <div className="pcard-price">
-                <span className="price-sym">$</span>
-                <span className="price-amount">{PLAN_CFG.business.price}</span>
-              </div>
-              <div className="price-period">USD / mes · sin contrato</div>
+            <div className="pcard-left">
+              <div className="pcard-name">Business</div>
+              <div className="pcard-trial-pill">{CHECK_ICON} 14 días gratis</div>
+              <div className="pcard-headline">Multi-local. Control total desde un panel.</div>
+              <p className="pcard-desc">Para cadenas y grupos gastronómicos que operan múltiples locales con un solo sistema.</p>
+              <ul className="pcard-features">
+                <li className="on">{CHECK_ICON} Todo lo de Pro</li>
+                <li className="on">{CHECK_ICON} Hasta 5 locales</li>
+                <li className="on">{CHECK_ICON} Integraciones con otros sistemas</li>
+                <li className="on">{CHECK_ICON} Soporte prioritario</li>
+                <li className="on">{CHECK_ICON} Reportes consolidados</li>
+                <li className="on">{CHECK_ICON} Onboarding personalizado</li>
+              </ul>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px', marginBottom: '16px' }}>
-              Menos de $2 al día por hasta 5 locales
-            </p>
-            <button
-              className="btn-pcard secondary"
-              onClick={() => setPayModal('business')}
-              style={{ width: '100%', cursor: 'pointer' }}
-            >
-              Empezar 14 días gratis
-            </button>
-            <p className="pcard-trust">✓ Sin tarjeta de crédito · Cancela cuando quieras</p>
+            <div className="pcard-right">
+              <hr className="pcard-divider" />
+              <div className="pcard-price-row">
+                <div className="pcard-price">
+                  <span className="price-sym">$</span>
+                  <span className="price-amount">{PLAN_CFG.business.price}</span>
+                </div>
+                <div className="price-period">USD / mes · sin contrato</div>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px', marginBottom: '16px' }}>
+                Menos de $2 al día por hasta 5 locales
+              </p>
+              <button
+                className="btn-pcard secondary"
+                onClick={() => setPayModal('business')}
+                style={{ width: '100%', cursor: 'pointer' }}
+              >
+                Empezar 14 días gratis
+              </button>
+              <p className="pcard-trust">✓ Sin tarjeta de crédito · Cancela cuando quieras</p>
+            </div>
           </div>
         </div>
       </section>
@@ -843,6 +851,6 @@ export default function Landing() {
 
       {/* ── FOOTER ── */}
       <Footer />
-    </>
+    </div>
   );
 }

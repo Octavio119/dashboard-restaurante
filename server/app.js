@@ -78,6 +78,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth/login',      authLimiter);
 app.use('/api/auth/register',   authLimiter);
 app.use('/api/auth/signup',     authLimiter);
+app.use('/api/auth/google',     authLimiter);
 // Rate limiting granular para endpoints de creación de recursos
 ['/api/pedidos', '/api/ventas', '/api/clientes', '/api/reservas', '/api/usuarios'].forEach(path => {
   app.post(path, writeLimiter);
@@ -141,6 +142,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/auth',       require('./routes/oauth'));
 app.use('/api/billing',    require('./routes/billing'));
 app.use('/api/pedidos',    require('./routes/pedidos'));
 app.use('/api/reservas',   require('./routes/reservas'));

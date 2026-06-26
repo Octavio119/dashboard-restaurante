@@ -76,6 +76,26 @@ body {
   position: relative;
 }
 
+/*
+ * src/index.css define `body { background: #0A0A12; color: #F0F0FF; }` para
+ * el dashboard autenticado (siempre oscuro, sin variante de tema) y se carga
+ * globalmente en toda la app. En la Landing, esa regla puede ganarle en
+ * cascada a `body { background: var(--bg) }` de arriba (mismo selector,
+ * gana el último insertado en el bundle) — en modo claro del sistema eso
+ * deja el fondo real en #0A0A12 mientras el texto de las secciones, que sí
+ * usa var(--text)/var(--muted) correctamente, pasa a ser oscuro: texto
+ * oscuro sobre fondo oscuro, invisible. .landing-root pinta el fondo/color
+ * correctos directamente sobre el wrapper de la página (ver el <div
+ * className="landing-root"> que envuelve todo el JSX devuelto), así no
+ * depende de ganar esa pelea de cascada contra index.css.
+ */
+.landing-root {
+  background: var(--bg);
+  color: var(--text);
+  position: relative;
+  min-height: 100vh;
+}
+
 /* Global dot grid */
 body::before {
   content: '';
@@ -159,8 +179,12 @@ body::before {
 }
 .btn-outline {
   background: transparent;
-  color: #0F0E1A;
-  border: 1.5px solid #0F0E1A;
+  /* var(--text), no #0F0E1A fijo — esta clase se usa fuera de #hero (ej. el
+     CTA final "Iniciar sesión"), que tiene su propio override de tema más
+     específico (línea ~558) y no se ve afectado por este cambio. Sin esto,
+     el texto quedaba oscuro fijo y se volvía invisible en modo oscuro. */
+  color: var(--text);
+  border: 1.5px solid var(--text);
 }
 .btn-outline:hover {
   border-color: var(--green);
@@ -1067,23 +1091,52 @@ html:not(.dark) .s-done { color: #6B7280; background: rgba(0,0,0,0.06); }
 }
 
 .pricing-cards {
-  max-width: 920px;
+  max-width: 900px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  align-items: start;
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
 }
 
 .pcard {
+  flex: 1;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 20px;
   padding: 28px 22px 32px;
   position: relative;
   transition: transform 220ms;
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  /* stretch, no flex-start: así el border-left de .pcard-right cubre toda
+     la altura de la card (igualada a la columna de features, que es más
+     larga) en vez de cortarse donde termina el precio/CTA. */
+  align-items: stretch;
 }
 .pcard:hover { transform: translateY(-3px); }
+
+.pcard-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.pcard-right {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-left: 1px solid var(--border2);
+  padding-left: 1.5rem;
+}
+/* La línea horizontal solo tenía sentido cuando precio y features
+   estaban en la misma columna (layout vertical) — en el layout de dos
+   columnas el border-left de .pcard-right ya separa visualmente. */
+.pcard-right .pcard-divider { display: none; }
 .pcard.featured {
   background: var(--surface2);
   border-color: rgba(29,158,117,0.38);
@@ -1175,9 +1228,14 @@ html:not(.dark) .s-done { color: #6B7280; background: rgba(0,0,0,0.06); }
   margin-bottom: 8px;
 }
 
+/* Color explícito en var(--text), no var(--muted) — pedido para evitar
+   que el texto de descripción tome un color incorrecto en modo claro.
+   No se generalizó a ".pcard p" porque eso le ganaría en especificidad
+   a .pcard-trust (gris) y al value-prop en línea (verde), que sí deben
+   mantener su propio color. */
 .pcard-desc {
   font-size: 13.5px;
-  color: var(--muted);
+  color: var(--text);
   line-height: 1.55;
   margin-bottom: 20px;
 }
@@ -1515,15 +1573,6 @@ html.dark .sf-contact a:hover { color: #fff; }
 
   .testimonials { grid-template-columns: 1fr; gap: 24px; }
   .features-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
-
-  .pricing-cards {
-    grid-template-columns: 1fr;
-    max-width: 450px;
-    margin: 0 auto;
-    gap: 24px;
-  }
-  .pcard.featured { transform: none; }
-  .pcard.featured:hover { transform: translateY(-4px); }
 }
 
 @media (max-width: 768px) {
@@ -1537,6 +1586,23 @@ html.dark .sf-contact a:hover { color: #fff; }
   .hero-h1 { font-size: 38px; }
   .hero-sub { max-width: 100%; margin-left: auto; margin-right: auto; }
   .hero-ctas { justify-content: center; }
+
+  .pricing-cards {
+    flex-direction: column;
+    max-width: 450px;
+    margin: 0 auto;
+    gap: 24px;
+  }
+  .pcard { width: 100%; flex-direction: column; }
+  .pcard.featured { transform: none; }
+  .pcard.featured:hover { transform: translateY(-4px); }
+  .pcard-right {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border2);
+    padding-left: 0;
+    padding-top: 1.5rem;
+  }
 }
 
 @media (max-width: 640px) {

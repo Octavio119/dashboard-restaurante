@@ -827,6 +827,40 @@ export default function Register() {
             )}
           </form>
 
+          {payStep !== 'payment' && (
+            <>
+              {/* Divider */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.30)' }}>o continúa con</span>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+
+              {/* Social login */}
+              <button
+                type="button"
+                onClick={() => { window.location.href = (import.meta.env.VITE_BACKEND_URL || '') + '/api/auth/google'; }}
+                style={{
+                  width: '100%', height: '42px', borderRadius: '10px',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
+                  color: '#fff', fontSize: '13px', fontWeight: '500',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  transition: 'border-color 0.2s, background 0.2s', fontFamily: font, marginBottom: '20px',
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.borderColor = fColor; e.currentTarget.style.background = fRgba; }}
+                onMouseOut={(e)  => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M5.27 9.77A7.18 7.18 0 0 1 12 4.8c1.74 0 3.3.63 4.53 1.66l3.37-3.37A12 12 0 0 0 12 0 12 12 0 0 0 1.32 6.64l3.95 3.13z"/>
+                  <path fill="#34A853" d="M16.04 18.01A7.19 7.19 0 0 1 12 19.2c-3.09 0-5.73-1.95-6.73-4.71l-3.97 3.06A12 12 0 0 0 12 24c3.24 0 6.18-1.22 8.41-3.2l-4.37-2.79z"/>
+                  <path fill="#4A90D9" d="M23.73 12.27c0-.8-.07-1.57-.2-2.32H12v4.64h6.58a5.7 5.7 0 0 1-2.54 3.64l4.37 2.79c2.54-2.31 3.32-5.76 3.32-8.75z"/>
+                  <path fill="#FBBC05" d="M5.27 14.49A7.2 7.2 0 0 1 4.8 12c0-.87.15-1.71.43-2.49l-3.91-3.1A12 12 0 0 0 0 12c0 1.99.48 3.86 1.32 5.52l3.95-3.03z"/>
+                </svg>
+                Continuar con Google
+              </button>
+            </>
+          )}
+
           {/* Footer */}
           <p className="anim-reg-footer" style={{ textAlign: 'center', fontSize: '13.5px', color: 'rgba(255,255,255,0.40)', marginTop: '24px' }}>
             ¿Ya tienes cuenta?{' '}

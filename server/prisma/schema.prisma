@@ -66,6 +66,8 @@ model Usuario {
   activo         Boolean     @default(true)
   restaurante_id Int         @default(1)
   created_at     DateTime    @default(now())
+  oauth_provider String?
+  oauth_id       String?
 
   restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
   inventario_movimientos InventarioMovimiento[]

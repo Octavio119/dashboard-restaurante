@@ -25,7 +25,9 @@ const OPTIONAL = [
   { key: 'PAYPAL_PLAN_ID_PRO',      hint: 'ID del plan de suscripción Pro en PayPal (opcional si usas Orders API)' },
   { key: 'PAYPAL_PLAN_ID_BUSINESS', hint: 'ID del plan de suscripción Business en PayPal (opcional si usas Orders API)' },
   { key: 'PAYPAL_WEBHOOK_ID',       hint: 'ID del webhook en developer.paypal.com → Webhooks' },
-  { key: 'BACKEND_URL',             hint: 'URL pública del backend, ej: https://tu-app.railway.app — necesaria para redirect de PayPal' },
+  { key: 'BACKEND_URL',             hint: 'URL pública del backend, ej: https://tu-app.railway.app — necesaria para redirect de PayPal y el callback de Google OAuth' },
+  { key: 'GOOGLE_CLIENT_ID',        hint: 'OAuth Client ID — console.cloud.google.com → APIs & Services → Credentials' },
+  { key: 'GOOGLE_CLIENT_SECRET',    hint: 'OAuth Client Secret — mismo lugar que GOOGLE_CLIENT_ID' },
 ];
 
 function validateEnv() {

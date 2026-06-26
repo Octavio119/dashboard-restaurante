@@ -32,6 +32,7 @@ import ConfiguracionPage from './pages/ConfiguracionPage';
 import Landing           from './pages/Landing';
 import Register          from './pages/Register';
 import Login             from './pages/Login';
+import AuthCallback      from './pages/AuthCallback';
 import Billing           from './pages/Billing';
 import ApiKeysPage       from './pages/ApiKeysPage';
 import BillingSuccess    from './pages/BillingSuccess';
@@ -155,6 +156,7 @@ const App = () => {
     const path = window.location.pathname;
     if (path === '/' || path === '') return <Landing />;
     if (path === '/register') return <Register />;
+    if (path === '/auth/callback') return <AuthCallback />;
     return <Login />;
   }
   if (window.location.pathname === '/billing') return _qs.get('success') === '1' ? <BillingSuccess /> : <Billing />;

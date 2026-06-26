@@ -230,4 +230,11 @@ router.post('/register', requireAuth, verifyRole('admin', 'gerente'), async (req
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
 });
 
+// El router ES el export (así lo consume app.js: app.use('/api/auth', require('./routes/auth'))).
+// Los helpers se cuelgan como propiedades del mismo objeto función — server/routes/oauth.js
+// los reusa para firmar el JWT exactamente igual que login/signup, sin duplicar la lógica.
 module.exports = router;
+module.exports.signAccess = signAccess;
+module.exports.signRefresh = signRefresh;
+module.exports.storeRefreshToken = storeRefreshToken;
+module.exports.getRestaurantePlan = getRestaurantePlan;

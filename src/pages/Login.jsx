@@ -230,6 +230,7 @@ export default function Login() {
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
           <button
             type="button"
+            onClick={() => { window.location.href = (import.meta.env.VITE_BACKEND_URL || '') + '/api/auth/google'; }}
             style={{
               flex: 1, height: '42px', borderRadius: '10px',
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
