@@ -120,34 +120,10 @@ function WarnIcon() {
   );
 }
 
-function CheckIcon({ color }) {
-  return (
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={2.5} style={{ flexShrink: 0, marginTop: '2px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
 function LockIcon() {
   return (
     <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0 }}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  );
-}
-
-function StarIcon({ color }) {
-  return (
-    <svg width="11" height="11" fill={color} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
-}
-
-function BuildingIcon({ color }) {
-  return (
-    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={2} style={{ flexShrink: 0 }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
     </svg>
   );
 }
@@ -301,193 +277,11 @@ export default function Register() {
   return (
     <AuthBackground style={{ display: 'flex', alignItems: 'stretch', overflow: 'auto', fontFamily: font }}>
 
-      {/* ── Panel izquierdo ── */}
-      <div style={{
-        width: '420px',
-        minWidth: '420px',
-        maxWidth: '420px',
-        background: plan.bg,
-        display: 'none',
-        flexDirection: 'column',
-        padding: '40px 36px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-        className="lg-panel"
-      >
-        {/* Orbs decorativos flotantes */}
-        <div className="lp-orb-a" style={{
-          position: 'absolute', top: '-80px', right: '-80px',
-          width: '300px', height: '300px', borderRadius: '50%',
-          background: `radial-gradient(circle, ${plan.accent}28 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }} />
-        <div className="lp-orb-b" style={{
-          position: 'absolute', bottom: '-60px', left: '-60px',
-          width: '250px', height: '250px', borderRadius: '50%',
-          background: `radial-gradient(circle, ${plan.accent}18 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }} />
-        <div className="lp-shimmer" />
-
-        {/* Logo */}
-        <div style={{ position: 'relative', zIndex: 1, marginBottom: 'auto' }}>
-          <img
-            src="/logo.png"
-            alt="MastexoPOS"
-            height="36"
-            width="auto"
-            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-            style={{ height: '36px', width: 'auto', objectFit: 'contain', maxWidth: '140px' }}
-          />
-          <div style={{ display: 'none', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '32px', height: '32px', borderRadius: '8px',
-              background: 'rgba(255,255,255,0.12)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.85)" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h18M3 17h18M9 9V5m6 4V5M5 9h14a1 1 0 011 1v1H4v-1a1 1 0 011-1z" />
-              </svg>
-            </div>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>
-              Mastexo<span style={{ color: plan.accent }}>POS</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Contenido centrado */}
-        <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 0' }}>
-
-          {/* Badge */}
-          <div className="lp-badge" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            background: plan.badgeBg, border: `1px solid ${plan.badgeBorder || `${plan.accent}33`}`,
-            borderRadius: '20px', padding: '4px 12px', marginBottom: '20px',
-            width: 'fit-content',
-          }}>
-            {planKey === 'pro'      && <StarIcon color={plan.accent} />}
-            {planKey === 'business' && <BuildingIcon color={plan.accent} />}
-            <span style={{ color: plan.accent, fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em' }}>
-              {plan.badge}
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="lp-h1a" style={{
-            fontFamily: 'Instrument Serif, Georgia, serif',
-            fontSize: '36px', fontWeight: 700, lineHeight: 1.15,
-            color: '#fff', marginBottom: '6px',
-          }}>
-            {plan.headline}
-          </h1>
-          <h1 className="lp-h1b" style={{
-            fontFamily: 'Instrument Serif, Georgia, serif',
-            fontSize: '36px', fontWeight: 700, lineHeight: 1.15,
-            color: plan.emColor, fontStyle: 'italic', marginBottom: plan.tagline ? '16px' : '28px',
-          }}>
-            {plan.sub}
-          </h1>
-
-          {/* Claridad — qué es, para quién, qué resultado da (solo trial) */}
-          {plan.tagline && (
-            <p className="lp-tagline" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.55, marginBottom: '28px' }}>
-              {plan.tagline}
-            </p>
-          )}
-
-          {/* Precio (planes de pago únicamente — el trial no tiene precio) */}
-          {plan.price && (
-            <div className="lp-price" style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '28px' }}>
-              <span className="lp-price-num" style={{ fontSize: '52px', fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: plan.priceShadow || 'none' }}>
-                {plan.price}
-              </span>
-              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.50)', maxWidth: '120px', lineHeight: 1.3 }}>
-                {plan.priceSub}
-              </span>
-            </div>
-          )}
-
-          {/* Features */}
-          <ul className="lp-features" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px', padding: 0, listStyle: 'none' }}>
-            {plan.features.map((f) => (
-              <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'rgba(255,255,255,0.78)', fontSize: '13.5px' }}>
-                <CheckIcon color={plan.accent} />
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          {/* Guarantee */}
-          <div className="lp-guarantee" style={{
-            background: plan.guaranteeBg || 'rgba(255,255,255,0.06)',
-            border: `1px solid ${plan.guaranteeBorder || 'rgba(255,255,255,0.10)'}`,
-            borderRadius: '10px',
-            padding: '12px 14px',
-            display: 'flex', gap: '10px', alignItems: 'flex-start',
-          }}>
-            <span style={{ color: plan.accent, fontSize: '14px', marginTop: '1px' }}>{plan.guarantee.icon}</span>
-            <p style={{ color: 'rgba(255,255,255,0.60)', fontSize: '12.5px', lineHeight: 1.5, margin: 0 }}>
-              {plan.guarantee.text}
-            </p>
-          </div>
-        </div>
-
-        <p style={{ position: 'relative', zIndex: 1, color: 'rgba(255,255,255,0.22)', fontSize: '11px' }}>
-          © 2025 MastexoPOS
-        </p>
-      </div>
-
       {/* ── Estilos globales + animaciones ── */}
       <style>{`
-        @media (min-width: 1024px) { .lg-panel { display: flex !important; } }
-        @media (min-width: 1024px) { .mobile-logo { display: none !important; } }
-
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes floatA {
-          0%,100% { transform: translate(0,0) scale(1); }
-          33%      { transform: translate(-14px,-20px) scale(1.06); }
-          66%      { transform: translate(8px,-10px) scale(0.97); }
-        }
-        @keyframes floatB {
-          0%,100% { transform: translate(0,0) scale(1); }
-          40%      { transform: translate(12px,16px) scale(0.94); }
-          75%      { transform: translate(-8px,8px) scale(1.04); }
-        }
-
-        @keyframes pricePulse {
-          0%,100% { opacity:1; }
-          50%      { opacity:0.82; }
-        }
-
-        @keyframes shimmerPanel {
-          0%   { transform: translateX(-120%) skewX(-20deg); }
-          100% { transform: translateX(250%) skewX(-20deg); }
-        }
-
-        .lp-orb-a { animation: floatA 9s ease-in-out infinite; }
-        .lp-orb-b { animation: floatB 11s ease-in-out infinite; }
-        .lp-badge  { animation: fadeUp 0.55s ease 0.05s both; }
-        .lp-h1a    { animation: fadeUp 0.55s ease 0.15s both; }
-        .lp-h1b    { animation: fadeUp 0.55s ease 0.25s both; }
-        .lp-tagline { animation: fadeUp 0.55s ease 0.30s both; }
-        .lp-price  { animation: fadeUp 0.55s ease 0.35s both; }
-        .lp-price-num { animation: pricePulse 4s ease-in-out infinite; }
-        .lp-features { animation: fadeUp 0.55s ease 0.45s both; }
-        .lp-guarantee { animation: fadeUp 0.55s ease 0.55s both; }
-        .lp-shimmer {
-          position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2;
-        }
-        .lp-shimmer::after {
-          content: '';
-          position: absolute; top: 0; left: 0;
-          width: 40%; height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-          animation: shimmerPanel 6s ease-in-out infinite;
-        }
-
-        /* Animaciones de entrada — panel derecho */
+        /* Animaciones de entrada — formulario */
         .anim-reg-logo   { animation: fadeUp 0.5s ease 0.10s both; }
         .anim-reg-steps  { animation: fadeUp 0.5s ease 0.20s both; }
         .anim-reg-social { animation: fadeUp 0.5s ease 0.30s both; }
@@ -499,22 +293,19 @@ export default function Register() {
         .reg-panel input::placeholder { color: rgba(255,255,255,0.25); }
 
         @media (prefers-reduced-motion: reduce) {
-          @keyframes spin         { to { transform: rotate(0deg); } }
-          .lp-orb-a, .lp-orb-b   { animation: none; }
-          .lp-badge, .lp-h1a, .lp-h1b, .lp-tagline, .lp-price, .lp-features, .lp-guarantee { animation: none; opacity: 1; }
-          .lp-shimmer::after      { animation: none; }
+          @keyframes spin { to { transform: rotate(0deg); } }
         }
       `}</style>
 
-      {/* ── Panel derecho — dark ── */}
+      {/* ── Formulario centrado (sin panel de value prop) ── */}
       <div className="reg-panel" style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', overflowY: 'auto',
       }}>
-        <div style={{ width: '100%', maxWidth: '420px' }}>
+        <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto' }}>
 
-          {/* Logo móvil */}
-          <div className="anim-reg-logo mobile-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
+          {/* Logo */}
+          <div className="anim-reg-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '8px',
               background: '#6C63FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
