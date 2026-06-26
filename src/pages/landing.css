@@ -1091,7 +1091,7 @@ html:not(.dark) .s-done { color: #6B7280; background: rgba(0,0,0,0.06); }
 }
 
 .pricing-cards {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
   display: flex;
   flex-direction: row;
@@ -1109,7 +1109,7 @@ html:not(.dark) .s-done { color: #6B7280; background: rgba(0,0,0,0.06); }
   transition: transform 220ms;
   display: flex;
   flex-direction: row;
-  gap: 1.5rem;
+  gap: 1rem;
   /* stretch, no flex-start: así el border-left de .pcard-right cubre toda
      la altura de la card (igualada a la columna de features, que es más
      larga) en vez de cortarse donde termina el precio/CTA. */
@@ -1119,11 +1119,11 @@ html:not(.dark) .s-done { color: #6B7280; background: rgba(0,0,0,0.06); }
 
 .pcard-left {
   flex: 1;
-  min-width: 0;
+  min-width: 220px;
 }
 
 .pcard-right {
-  width: 200px;
+  width: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1285,11 +1285,15 @@ html:not(.dark) .s-done { color: #6B7280; background: rgba(0,0,0,0.06); }
 .btn-pcard {
   display: block;
   width: 100%;
-  padding: 12px;
+  padding: 12px 16px;
   border-radius: 11px;
-  font-size: 14.5px;
+  /* 12.5px, no los 14px pedidos originalmente — con 180px de columna y
+     white-space:nowrap, "Empezar 14 días gratis" no entra en una línea
+     a 14px y el texto se corta. Se bajó el tamaño hasta que entra entero. */
+  font-size: 12.5px;
   font-weight: 600;
   text-align: center;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 150ms;
 }
