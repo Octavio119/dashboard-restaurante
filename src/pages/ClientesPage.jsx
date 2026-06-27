@@ -121,18 +121,20 @@ export default function ClientesPage({
   deleteCliente
 }) {
   return (
-    <motion.div key="clientes" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1400px] w-full mx-auto">
+    <motion.div key="clientes" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-8 max-w-[1400px] w-full mx-auto">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Módulo de <span style={{ color: 'var(--primary)' }}>Clientes</span></h2>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">Módulo de <span style={{ color: 'var(--primary)' }}>Clientes</span></h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Gestión de relaciones y fidelización</p>
         </div>
         <button
           onClick={() => { setClienteForm({ nombre:'', email:'', telefono:'', rut:'', tipo_cliente:'persona', razon_social:'', estado:'Nuevo' }); setClienteFormOpen(true); }}
-          className="btn-primary flex items-center gap-2 w-fit"
-          style={{ height: '40px', padding: '0 20px', fontSize: '14px', fontWeight: 500 }}
+          className="flex items-center gap-2 w-fit rounded-xl cursor-pointer"
+          style={{ height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, background: '#7C3AED', color: '#fff', border: 'none', boxShadow: '0 4px 14px rgba(124,58,237,0.35)', transition: 'background 150ms' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#6D28D9'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#7C3AED'; }}
         >
-          <Plus size={15}/> Nuevo Cliente
+          <Plus size={17}/> Nuevo Cliente
         </button>
       </div>
 
@@ -141,7 +143,7 @@ export default function ClientesPage({
           <thead>
             <tr style={{ borderBottom: '1px solid #1F1F23', background: 'var(--bg-surface)' }}>
               {['Cliente','RUT / Tipo','Contacto','Visitas','Total Gastado','Estado','Acciones'].map(h => (
-                <th key={h} className="px-5 pt-4" style={{ fontSize: '11px', fontWeight: 500, color: '#3F3F46', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '12px' }}>{h}</th>
+                <th key={h} className="px-5 pt-5" style={{ fontSize: '12.5px', fontWeight: 700, color: '#71717A', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '14px' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -159,7 +161,7 @@ export default function ClientesPage({
                   </div>
                 </td>
                 <td className="px-5 py-4">
-                  <p style={{ fontSize: '13px', fontFamily: 'monospace', color: '#A1A1AA' }}>{c.rut || '—'}</p>
+                  <p style={{ fontSize: '14px', fontFamily: 'monospace', color: '#A1A1AA' }}>{c.rut || '—'}</p>
                   <span
                     className={`flex items-center gap-1 mt-1 ${c.tipo_cliente === 'empresa' ? 'text-blue-400' : ''}`}
                     style={c.tipo_cliente === 'persona' ? {
@@ -178,8 +180,8 @@ export default function ClientesPage({
                   </span>
                 </td>
                 <td className="px-5 py-4">
-                  <p style={{ fontSize: '13px', color: '#818CF8' }}>{c.email || '—'}</p>
-                  <p style={{ fontSize: '12px', color: '#52525B', marginTop: '2px' }}>{c.telefono || ''}</p>
+                  <p style={{ fontSize: '14px', color: '#818CF8' }}>{c.email || '—'}</p>
+                  <p style={{ fontSize: '13px', color: '#71717A', marginTop: '2px' }}>{c.telefono || ''}</p>
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex flex-col items-center gap-1">
@@ -241,13 +243,13 @@ export default function ClientesPage({
         </table>
 
         {filteredClientes.length === 0 && (
-          <div className="py-16 flex flex-col items-center gap-3" style={{ color: 'var(--text-3)' }}>
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-              <Users size={24} className="opacity-40" />
+          <div className="py-24 flex flex-col items-center gap-4" style={{ color: 'var(--text-3)' }}>
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+              <Users size={36} className="opacity-40" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-sm" style={{ color: 'var(--text-2)' }}>Sin clientes registrados</p>
-              <p className="text-xs mt-1">Agrega tu primer cliente para comenzar</p>
+              <p className="font-bold text-base" style={{ color: 'var(--text-2)' }}>Sin clientes registrados</p>
+              <p className="text-sm mt-1.5">Agrega tu primer cliente para comenzar</p>
             </div>
           </div>
         )}

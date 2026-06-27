@@ -53,7 +53,7 @@ export default function InventarioPage({
 
   return (
     <>
-    <motion.div key="inventario" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto">
+    <motion.div key="inventario" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="p-4 sm:p-8 flex flex-col gap-8 max-w-[1200px] w-full mx-auto">
       <style>{INVENTARIO_STYLES}</style>
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
@@ -68,20 +68,21 @@ export default function InventarioPage({
               { id: 'proveedores', label: 'Proveedores', icon: Truck },
             ].map(t => (
               <button key={t.id} onClick={() => setInventarioTab(t.id)}
-                className="flex items-center gap-1.5 rounded-lg transition-all"
+                className="flex items-center gap-2 rounded-lg transition-all"
                 style={{
-                  height: '38px',
-                  padding: '0 18px',
-                  fontSize: '13px',
+                  height: '42px',
+                  padding: '0 20px',
+                  fontSize: '14px',
+                  fontWeight: 600,
                   ...(inventarioTab === t.id
                     ? { background: '#18181B', border: '1px solid #3F3F46', color: '#F4F4F5' }
-                    : { background: 'transparent', border: '1px solid transparent', color: '#71717A' }
+                    : { background: 'transparent', border: '1px solid transparent', color: '#9CA3AF' }
                   )
                 }}
-                onMouseEnter={e => { if (inventarioTab !== t.id) { e.currentTarget.style.color = '#A1A1AA'; e.currentTarget.style.background = '#111113'; } }}
-                onMouseLeave={e => { if (inventarioTab !== t.id) { e.currentTarget.style.color = '#71717A'; e.currentTarget.style.background = 'transparent'; } }}
+                onMouseEnter={e => { if (inventarioTab !== t.id) { e.currentTarget.style.color = '#D4D4D8'; e.currentTarget.style.background = '#111113'; } }}
+                onMouseLeave={e => { if (inventarioTab !== t.id) { e.currentTarget.style.color = '#9CA3AF'; e.currentTarget.style.background = 'transparent'; } }}
               >
-                <t.icon size={13} /> {t.label}
+                <t.icon size={14} /> {t.label}
               </button>
             ))}
           </div>
@@ -104,17 +105,19 @@ export default function InventarioPage({
           </button>
           <RippleButton
             onClick={() => { setMovimientoForm({ producto_id:'', tipo:'entrada', cantidad:'', proveedor_id:'', notas:'' }); setIsMovModalOpen(true); }}
-            className="btn-primary flex items-center gap-2"
-            style={{ height: '38px', padding: '0 18px', fontSize: '13px', fontWeight: 500 }}
+            className="flex items-center gap-2 rounded-xl cursor-pointer"
+            style={{ height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, background: '#7C3AED', color: '#fff', border: 'none', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#6D28D9'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#7C3AED'; }}
           >
-            <History size={15}/> Registrar movimiento
+            <History size={17}/> Registrar movimiento
           </RippleButton>
         </div>
       </div>
 
       {/* Vistas de Inventario */}
       {inventarioTab === 'stock' && (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           {/* Alertas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
@@ -146,15 +149,15 @@ export default function InventarioPage({
                 iconBg: 'rgba(37,99,235,0.12)', iconColor: '#60A5FA', numColor: '#3F3F46',
               },
             ].map((s, i) => (
-              <div key={i} className="metric-card flex flex-col gap-4 cursor-default" style={s.cardStyle}>
-                <div className="metric-icon" style={{ background: s.iconBg }}>
-                  <s.Icon size={17} style={{ color: s.iconColor }} />
+              <div key={i} className="metric-card flex flex-col gap-5 cursor-default" style={{ ...s.cardStyle, padding: '32px' }}>
+                <div className="metric-icon" style={{ background: s.iconBg, width: '46px', height: '46px' }}>
+                  <s.Icon size={22} style={{ color: s.iconColor }} />
                 </div>
                 <div>
                   <p className="metric-label" style={{ fontSize: '11px', letterSpacing: '0.08em', color: '#71717A' }}>{s.label}</p>
                   <h3 className="metric-value" style={{ color: s.numColor }}>
-                    <span className={s.pulse && s.value > 0 ? 'inv-pulse' : ''} style={{ fontSize: '36px', fontWeight: 500 }}>{s.value}</span>
-                    {' '}<span style={{ fontSize: '13px', fontWeight: 500, color: '#52525B' }}>{s.suffix}</span>
+                    <span className={s.pulse && s.value > 0 ? 'inv-pulse' : ''} style={{ fontSize: '40px', fontWeight: 600 }}>{s.value}</span>
+                    {' '}<span style={{ fontSize: '14px', fontWeight: 500, color: '#52525B' }}>{s.suffix}</span>
                   </h3>
                 </div>
               </div>
@@ -167,7 +170,7 @@ export default function InventarioPage({
               <thead>
                 <tr style={{ borderBottom: '1px solid #1F1F23', background: 'var(--bg-surface)' }}>
                   {['Producto','Categoría','Stock Actual','Mínimo','Unidad','Estado'].map(h=>(
-                    <th key={h} className="px-6 pt-4" style={{ fontSize: '11px', fontWeight: 500, color: '#3F3F46', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '10px' }}>{h}</th>
+                    <th key={h} className="px-6 pt-5" style={{ fontSize: '12.5px', fontWeight: 700, color: '#71717A', letterSpacing: '0.08em', textTransform: 'uppercase', paddingBottom: '14px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -193,25 +196,25 @@ export default function InventarioPage({
                     onMouseEnter={e => { if (!e.currentTarget.classList.contains('inv-row-agotado') && !e.currentTarget.classList.contains('inv-row-bajo')) e.currentTarget.style.background = '#111113'; }}
                     onMouseLeave={e => { if (!e.currentTarget.classList.contains('inv-row-agotado') && !e.currentTarget.classList.contains('inv-row-bajo')) e.currentTarget.style.background = ''; }}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5">
                       <span style={{ fontSize: '14px', fontWeight: 500, color: '#F4F4F5', display: 'block' }}>{p.nombre}</span>
                       <span style={{ fontSize: '11px', color: '#3F3F46', fontFamily: 'monospace' }}>Id: {p.id}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="capitalize" style={{ background: '#1C1C1F', border: '1px solid #27272A', borderRadius: '4px', padding: '3px 10px', fontSize: '12px', color: '#A1A1AA' }}>{p.categoria}</span>
+                    <td className="px-6 py-5">
+                      <span className="capitalize" style={{ background: '#1C1C1F', border: '1px solid #27272A', borderRadius: '4px', padding: '3px 10px', fontSize: '14px', color: '#A1A1AA' }}>{p.categoria}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5">
                       <span style={{ fontSize: '15px', fontWeight: 500, color: stockColor }}>{p.stock}</span>
                     </td>
-                    <td className="px-6 py-4" style={{ fontSize: '13px', color: '#52525B' }}>{p.stock_minimo}</td>
-                    <td className="px-6 py-4" style={{ fontSize: '13px', color: '#52525B' }}>{p.unidad || 'und'}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5" style={{ fontSize: '14px', color: '#71717A' }}>{p.stock_minimo}</td>
+                    <td className="px-6 py-5" style={{ fontSize: '14px', color: '#71717A' }}>{p.unidad || 'und'}</td>
+                    <td className="px-6 py-5">
                       {p.stock <= 0 ? (
-                        <span style={{ background: '#1A0707', border: '1px solid #DC2626', borderRadius: '4px', padding: '3px 10px', fontSize: '12px', color: '#F87171', fontWeight: 500 }}>Agotado</span>
+                        <span style={{ background: '#1A0707', border: '1px solid #DC2626', borderRadius: '4px', padding: '4px 11px', fontSize: '14px', color: '#F87171', fontWeight: 500 }}>Agotado</span>
                       ) : p.stock <= p.stock_minimo ? (
-                        <span style={{ background: '#1C1007', border: '1px solid #D97706', borderRadius: '4px', padding: '3px 10px', fontSize: '12px', color: '#FCD34D', fontWeight: 500 }}>Bajo Stock</span>
+                        <span style={{ background: '#1C1007', border: '1px solid #D97706', borderRadius: '4px', padding: '4px 11px', fontSize: '14px', color: '#FCD34D', fontWeight: 500 }}>Bajo Stock</span>
                       ) : (
-                        <span style={{ background: '#052912', border: '1px solid #16A34A', borderRadius: '4px', padding: '3px 10px', fontSize: '12px', color: '#4ADE80', fontWeight: 500 }}>Disponible</span>
+                        <span style={{ background: '#052912', border: '1px solid #16A34A', borderRadius: '4px', padding: '4px 11px', fontSize: '14px', color: '#4ADE80', fontWeight: 500 }}>Disponible</span>
                       )}
                     </td>
                   </tr>
