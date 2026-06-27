@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/(api|socket.io)(.*)",
-      "destination": "https://dashboard-restaurante-api.up.railway.app/$1$2"
+      "destination": "https://dashboard-restaurante-production.up.railway.app/$1$2"
     },
     {
       "source": "/(.*)",
