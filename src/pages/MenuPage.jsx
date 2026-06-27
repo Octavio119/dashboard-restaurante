@@ -142,7 +142,7 @@ const ProductRow = memo(({ prod, onEdit, onDelete, canEdit }) => {
           >
             <Utensils size={13} style={{ color: alpha(color.purple, 0.7) }} />
           </div>
-          <span className="text-[13px] font-semibold leading-none" style={{ color: text.primary }}>
+          <span className="text-[14px] font-semibold leading-none" style={{ color: text.primary }}>
             {prod.nombre}
           </span>
         </div>
@@ -174,7 +174,7 @@ const ProductRow = memo(({ prod, onEdit, onDelete, canEdit }) => {
           >
             {st.label}
           </span>
-          <span className="text-[12px] font-semibold tabular-nums" style={{ color: text.secondary }}>
+          <span className="text-[14px] font-semibold tabular-nums" style={{ color: text.secondary }}>
             {prod.stock ?? 0}
           </span>
         </div>
@@ -291,9 +291,9 @@ const MenuPage = ({
       {/* ── Header ── */}
       <motion.div variants={fadeUp} className="flex flex-col gap-4">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5" style={{ color: text.muted, fontSize: '11px' }}>
+        <div className="flex items-center gap-1.5" style={{ color: text.muted, fontSize: '13px' }}>
           <span>Configuración</span>
-          <ChevronRight size={11} />
+          <ChevronRight size={13} />
           <span style={{ color: text.secondary, fontWeight: 600 }}>Menú</span>
         </div>
 
@@ -303,7 +303,7 @@ const MenuPage = ({
               Carta del{' '}
               <span style={{ color: color.purple }}>Menú</span>
             </h2>
-            <p className="mt-1.5 text-[13px]" style={{ color: text.muted }}>
+            <p className="mt-1.5 text-[15px]" style={{ color: text.muted }}>
               Administra categorías y productos que aparecen en tus pedidos
             </p>
           </div>
@@ -337,7 +337,7 @@ const MenuPage = ({
           >
             <Tag size={12} style={{ color: color.blue }} />
           </div>
-          <h3 className="text-[11px] font-bold uppercase tracking-widest" style={{ color: text.muted }}>
+          <h3 className="text-[13px] font-bold uppercase tracking-widest" style={{ color: text.muted }}>
             Categorías del menú
           </h3>
           <span
@@ -406,12 +406,12 @@ const MenuPage = ({
               <button
                 onClick={agregarCategoria}
                 disabled={!nuevaCategoria.trim()}
-                className="flex items-center gap-1.5 px-4 rounded-lg text-[13px] font-semibold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                style={{ background: color.purpleDark, color: '#fff', height: '40px', whiteSpace: 'nowrap' }}
+                className="flex items-center gap-1.5 px-6 rounded-lg text-[15px] font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                style={{ background: color.purpleDark, color: '#fff', height: '44px', whiteSpace: 'nowrap' }}
                 onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = color.purpleDeep; }}
                 onMouseLeave={e => { e.currentTarget.style.background = color.purpleDark; }}
               >
-                <Plus size={14} /> Agregar
+                <Plus size={17} /> Agregar
               </button>
             </div>
           )}
@@ -539,12 +539,12 @@ const MenuPage = ({
               <button
                 onClick={saveProducto}
                 disabled={!isFormValid || categorias.length === 0}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                style={{ background: color.purpleDark, color: '#fff' }}
+                className="flex items-center gap-1.5 px-6 rounded-lg text-[15px] font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                style={{ background: color.purpleDark, color: '#fff', height: '44px', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
                 onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = color.purpleDeep; }}
                 onMouseLeave={e => { e.currentTarget.style.background = color.purpleDark; }}
               >
-                <Plus size={14} /> Agregar producto
+                <Plus size={17} /> Agregar producto
               </button>
             )}
             {categorias.length === 0 && !editProduct && (
@@ -575,7 +575,7 @@ const MenuPage = ({
               >
                 <Grid3X3 size={12} style={{ color: color.green }} />
               </div>
-              <h3 className="text-[11px] font-bold uppercase tracking-widest" style={{ color: text.muted }}>
+              <h3 className="text-[13px] font-bold uppercase tracking-widest" style={{ color: text.muted }}>
                 Productos
               </h3>
             </div>
@@ -633,7 +633,7 @@ const MenuPage = ({
                 height: '34px',
                 paddingLeft: '30px',
                 width: '180px',
-                fontSize: '12px',
+                fontSize: '14px',
               }}
             />
           </div>
@@ -664,7 +664,7 @@ const MenuPage = ({
                   {['Producto', 'Categoría', 'Precio', 'Stock', canEditMenu ? 'Acciones' : ''].filter(Boolean).map(h => (
                     <th
                       key={h}
-                      className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest"
+                      className="px-5 py-3 text-left text-[14px] font-black uppercase tracking-widest"
                       style={{ color: text.muted, background: 'rgba(255,255,255,0.02)' }}
                     >
                       {h}
@@ -701,10 +701,10 @@ const MenuPage = ({
                   <ShoppingBag size={20} style={{ color: alpha(color.purple, 0.5) }} />
                 </div>
                 <div className="text-center">
-                  <p className="text-[13px] font-semibold" style={{ color: text.secondary }}>
+                  <p className="text-[14px] font-semibold" style={{ color: text.secondary }}>
                     {tableSearch ? 'Sin resultados para esa búsqueda' : activeMenuCategory ? `Sin productos en "${activeMenuCategory}"` : 'Aún no hay productos'}
                   </p>
-                  <p className="text-[12px] mt-1" style={{ color: text.muted }}>
+                  <p className="text-[14px] mt-1" style={{ color: text.muted }}>
                     {tableSearch ? 'Prueba otro término' : 'Agrega el primer producto usando el formulario de arriba'}
                   </p>
                 </div>
@@ -719,14 +719,14 @@ const MenuPage = ({
             className="px-5 py-2.5 flex items-center justify-between"
             style={{ borderTop: `1px solid rgba(255,255,255,0.04)` }}
           >
-            <span className="text-[11px]" style={{ color: text.muted }}>
+            <span className="text-[14px]" style={{ color: text.muted }}>
               {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
               {activeMenuCategory && <> en <strong style={{ color: text.secondary }}>{activeMenuCategory}</strong></>}
             </span>
             {tableSearch && (
               <button
                 onClick={() => setTableSearch('')}
-                className="flex items-center gap-1 text-[11px] cursor-pointer transition-colors"
+                className="flex items-center gap-1 text-[14px] cursor-pointer transition-colors"
                 style={{ color: text.muted }}
                 onMouseEnter={e => { e.currentTarget.style.color = text.secondary; }}
                 onMouseLeave={e => { e.currentTarget.style.color = text.muted; }}

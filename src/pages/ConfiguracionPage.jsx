@@ -68,17 +68,17 @@ const ConfiguracionPage = ({
         ].filter(t => !t.adminOnly || isAdmin)
          .map(({ key, label, icon:Icon }) => (
           <button key={key} onClick={() => setConfigTab(key)}
-            className="flex items-center gap-1.5 transition-all"
+            className="flex items-center gap-2 transition-all"
             style={{
-              fontSize: '13px', padding: '7px 16px', borderRadius: '8px',
+              fontSize: '14px', fontWeight: 600, height: '42px', padding: '0 20px', borderRadius: '8px',
               ...(configTab === key
-                ? { background: 'rgba(139,92,246,.12)', border: '1px solid rgba(139,92,246,.28)', color: '#C4B5FD', fontWeight: 600 }
+                ? { background: 'rgba(139,92,246,.12)', border: '1px solid rgba(139,92,246,.28)', color: '#C4B5FD' }
                 : { background: 'transparent', border: '1px solid transparent', color: '#52525B' })
             }}
             onMouseEnter={e => { if (configTab !== key) { e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.background = 'rgba(139,92,246,.05)'; } }}
             onMouseLeave={e => { if (configTab !== key) { e.currentTarget.style.color = '#52525B'; e.currentTarget.style.background = 'transparent'; } }}
           >
-            <Icon size={13} />{label}
+            <Icon size={15} />{label}
           </button>
         ))}
       </div>
