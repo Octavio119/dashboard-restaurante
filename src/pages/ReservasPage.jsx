@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CosmicButton } from '../components/ui/cosmic-button';
 import { DotPattern } from '../components/ui/dot-pattern';
 import {
   ChevronLeft, ChevronRight, Plus, Users, Phone, Utensils,
@@ -328,9 +327,21 @@ export default function ReservasPage({
           </div>
 
           {setIsNewResModalOpen && (
-            <CosmicButton onClick={() => setIsNewResModalOpen(true)}>
-              <Plus size={14} /> Nueva reserva
-            </CosmicButton>
+            <button
+              onClick={() => setIsNewResModalOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                height: 44, padding: '0 24px', borderRadius: 12,
+                background: T.purple, border: 'none', color: '#fff',
+                fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(124,58,237,0.35)',
+                transition: 'background 150ms, transform 150ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#6D28D9'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = T.purple; }}
+            >
+              <Plus size={17} /> Nueva reserva
+            </button>
           )}
         </div>
       </div>
@@ -339,10 +350,10 @@ export default function ReservasPage({
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', height: 'calc(100vh - 73px)' }}>
 
         {/* ── LEFT PANEL ── */}
-        <div style={{ width: '25%', minWidth: 240, maxWidth: 300, borderRight: `1px solid ${T.borderDim}`, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ width: '25%', minWidth: 240, maxWidth: 300, borderRight: `1px solid ${T.borderDim}`, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 32 }}>
 
           {/* Mini calendar */}
-          <div style={{ background: 'rgba(124,58,237,.03)', border: `1px solid rgba(124,58,237,.22)`, borderRadius: 8, padding: 16 }}>
+          <div style={{ background: 'rgba(124,58,237,.03)', border: `1px solid rgba(124,58,237,.22)`, borderRadius: 8, padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <button onClick={prevMonth}
                 style={{ background: '#1E1E22', border: `1px solid ${T.border}`, borderRadius: 4, width: 26, height: 26, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textDim, transition: 'all 150ms' }}
@@ -380,8 +391,8 @@ export default function ReservasPage({
                           width: '100%', height: '100%', border: 'none', cursor: 'pointer',
                           borderRadius: isSel ? 8 : 4,
                           background: isSel ? '#7C3AED' : isToday ? 'rgba(124,58,237,0.15)' : 'transparent',
-                          color: isSel ? '#fff' : isToday ? '#7C3AED' : '#888',
-                          fontSize: 11, fontWeight: isSel ? 500 : 400,
+                          color: isSel ? '#fff' : isToday ? '#7C3AED' : '#AEAEB8',
+                          fontSize: 13, fontWeight: isSel ? 600 : 500,
                           boxShadow: isSel ? '0 0 0 2px #7C3AED44' : 'none',
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
                           transition: 'background 0.15s, color 0.15s, box-shadow 0.15s, border-radius 0.15s',
@@ -402,9 +413,9 @@ export default function ReservasPage({
           </div>
 
           {/* Filtros de estado */}
-          <div style={{ background: T.card, border: `1px solid rgba(124,58,237,.18)`, borderRadius: 8, padding: 16 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(124,58,237,.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Filtrar por estado</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ background: T.card, border: `1px solid rgba(124,58,237,.18)`, borderRadius: 8, padding: 20 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(124,58,237,.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Filtrar por estado</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {FILTER_OPTIONS.map(({ key, label, color, border, borderLeft, badgeBg, badgeColor }) => {
                 const count  = key === 'all' ? dayReservas.length : dayReservas.filter(r => r.estado === key).length;
                 const active = filterEstado === key;
@@ -417,13 +428,13 @@ export default function ReservasPage({
                       background: active ? (key === 'all' ? '#18181B' : `${color}12`) : 'transparent',
                       border: `1px solid ${active ? border : 'transparent'}`,
                       borderLeft: active && borderLeft ? `3px solid ${borderLeft}` : active ? `1px solid ${border}` : '1px solid transparent',
-                      borderRadius: 6, padding: active && borderLeft ? '7px 10px 7px 8px' : '7px 10px',
+                      borderRadius: 6, padding: active && borderLeft ? '10px 12px 10px 10px' : '10px 12px',
                       cursor: 'pointer', transition: 'background 120ms, border-color 120ms', width: '100%',
                     }}>
-                    <span style={{ fontSize: 12, fontWeight: 400, color: active ? color : '#71717A' }}>{label}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 500, color: active ? color : '#A1A1AA' }}>{label}</span>
                     <span style={{
-                      fontSize: 11, fontWeight: 500, borderRadius: 4, padding: '1px 6px',
-                      color: active ? badgeColor : '#555',
+                      fontSize: 12, fontWeight: 600, borderRadius: 4, padding: '2px 7px',
+                      color: active ? badgeColor : '#888',
                       background: active ? badgeBg : '#1E1E22',
                       border: `1px solid ${active ? `${badgeColor}30` : T.border}`,
                     }}>
@@ -486,12 +497,12 @@ export default function ReservasPage({
 
           {view === 'mapa' ? (
             /* ── Mesa map ── */
-            <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column', gap: 32 }}>
               <motion.div
                 variants={gridVariants}
                 initial="hidden"
                 animate="visible"
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}
               >
                 {MESAS.map(mesa => {
                   const { estado, reserva } = getMesaState(mesa);
@@ -527,31 +538,31 @@ export default function ReservasPage({
                         position: 'relative',
                         background: ms.bg,
                         border: `1px solid ${ms.border}`,
-                        borderRadius: 8,
-                        padding: '16px 14px',
+                        borderRadius: 10,
+                        padding: '20px 18px',
                         cursor: reserva ? 'pointer' : 'default',
                         opacity: ms.opacity,
-                        minHeight: 90,
+                        minHeight: 112,
                         boxShadow: selectedRes?.id === reserva?.id ? `0 0 0 2px ${ms.border}` : ms.shadow,
                         transition: ms.transition,
                       }}>
 
                       {/* Pulsing dot for active reservations */}
                       {isOcupada && !isPending && (
-                        <span style={{ position: 'absolute', top: 10, right: 10 }}>
+                        <span style={{ position: 'absolute', top: 12, right: 12 }}>
                           <PulseDot color={ms.dotColor} />
                         </span>
                       )}
 
-                      <div style={{ fontSize: 12, fontWeight: 500, color: ms.labelColor, marginBottom: 4 }}>{mesa.nombre}</div>
-                      <div style={{ fontSize: 10, color: ms.capacityColor }}>{mesa.capacidad} pers. máx.</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: ms.labelColor, marginBottom: 6 }}>{mesa.nombre}</div>
+                      <div style={{ fontSize: 12, color: ms.capacityColor }}>{mesa.capacidad} pers. máx.</div>
 
                       {reserva && (
-                        <div style={{ marginTop: 8 }}>
-                          <div style={{ fontSize: 11, color: ms.labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, opacity: 0.9 }}>
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ fontSize: 12.5, color: ms.labelColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, opacity: 0.9 }}>
                             {reserva.nombre}
                           </div>
-                          <div style={{ fontSize: 10, color: ms.capacityColor, marginTop: 2, opacity: 0.7 }}>{reserva.hora} · {reserva.personas}p</div>
+                          <div style={{ fontSize: 11, color: ms.capacityColor, marginTop: 3, opacity: 0.7 }}>{reserva.hora} · {reserva.personas}p</div>
                         </div>
                       )}
 
