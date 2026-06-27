@@ -269,7 +269,7 @@ export default function VentasPage({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto"
+      className="p-4 sm:p-8 flex flex-col gap-8 max-w-[1200px] w-full mx-auto"
     >
 
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -299,7 +299,7 @@ export default function VentasPage({
           <p className="text-sm mt-1.5" style={{ color: '#9090B0' }}>Operación financiera del día</p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           <input
             type="date"
             value={ventasFecha}
@@ -309,27 +309,27 @@ export default function VentasPage({
           <button
             onClick={handleExportPDF}
             disabled={pdfLoading}
-            className="flex items-center gap-[6px] px-4 rounded-xl text-[13px] font-semibold h-[38px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#9090B0' }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#F8FAFC'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#9090B0'; }}
           >
             {pdfLoading
-              ? <Loader2 size={14} className="animate-spin"/>
-              : <FileText size={14}/>}
+              ? <Loader2 size={15} className="animate-spin"/>
+              : <FileText size={15}/>}
             {pdfLoading ? 'Generando...' : 'PDF'}
           </button>
           <button
             onClick={handleExportExcel}
             disabled={xlsxLoading}
-            className="flex items-center gap-[6px] px-4 rounded-xl text-[13px] font-semibold h-[38px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#9090B0' }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#F8FAFC'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#9090B0'; }}
           >
             {xlsxLoading
-              ? <Loader2 size={14} className="animate-spin"/>
-              : <Download size={14}/>}
+              ? <Loader2 size={15} className="animate-spin"/>
+              : <Download size={15}/>}
             {xlsxLoading ? 'Generando...' : 'Excel'}
           </button>
           <RippleButton
@@ -343,12 +343,12 @@ export default function VentasPage({
               catch { setVentaProductos([]); }
               setVentaModal(true);
             }}
-            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-medium h-[40px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
-            style={btnPrimary.base}
+            className="flex items-center gap-2 px-6 rounded-xl text-[15px] font-bold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.97] cursor-pointer"
+            style={{ ...btnPrimary.base, boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
             onMouseEnter={e => { e.currentTarget.style.background = btnPrimary.hover.background; }}
             onMouseLeave={e => { e.currentTarget.style.background = btnPrimary.base.background; }}
           >
-            <Plus size={15}/> Nueva venta
+            <Plus size={17}/> Nueva venta
           </RippleButton>
         </div>
       </div>
@@ -435,11 +435,11 @@ export default function VentasPage({
       )}
 
       {/* ── KPI Cards ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         {kpiCards.map((card, i) => {
           const [r, g, b] = hexToRgb(card.iconColor);
           return (
-            <MagicCard key={i} gradientColor={`rgba(${r},${g},${b},0.06)`} className="cursor-default p-5">
+            <MagicCard key={i} gradientColor={`rgba(${r},${g},${b},0.06)`} className="cursor-default p-6">
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -452,14 +452,14 @@ export default function VentasPage({
                 >
                   <card.icon size={14} style={{ color: card.iconColor }}/>
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                   <p className="text-[11px] font-medium uppercase tracking-[0.09em]" style={{ color: 'var(--text-3)' }}>
                     {card.title}
                   </p>
                   <AnimatedCount
                     value={card.value}
                     prefix={card.prefix}
-                    className={card.large ? 'text-[30px] font-bold' : 'text-[24px] font-bold'}
+                    className={card.large ? 'text-[34px] font-bold' : 'text-[28px] font-bold'}
                     style={{ color: card.large ? card.iconColor : '#F8FAFC' }}
                   />
                 </div>
@@ -470,11 +470,11 @@ export default function VentasPage({
       </div>
 
       {/* ── Analytics Row ──────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Payment method breakdown */}
-        <div style={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', background: '#0F0F17', padding: '20px 24px' }}>
-          <div className="flex items-center justify-between mb-5">
+        <div style={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', background: '#0F0F17', padding: '24px 28px' }}>
+          <div className="flex items-center justify-between mb-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.09em]" style={{ color: '#374151' }}>Por método de pago</p>
             {displayResumen.cantidad > 0 && (
               <span className="text-[10px] font-semibold tabular-nums" style={{ color: '#374151' }}>
@@ -531,8 +531,8 @@ export default function VentasPage({
         </div>
 
         {/* Trend chart */}
-        <div style={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', background: '#0F0F17', padding: '20px 24px' }}>
-          <div className="flex items-center justify-between mb-5">
+        <div style={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', background: '#0F0F17', padding: '24px 28px' }}>
+          <div className="flex items-center justify-between mb-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.09em]" style={{ color: '#374151' }}>
               {isDemoMode ? 'Tendencia semanal' : 'Ventas por hora'}
             </p>
