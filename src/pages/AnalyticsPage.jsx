@@ -36,7 +36,7 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="p-5 sm:p-8 flex flex-col gap-7 max-w-[1400px] w-full mx-auto"
+        className="p-5 sm:p-8 flex flex-col gap-8 max-w-[1400px] w-full mx-auto"
       >
         <div className="flex items-center gap-3 mb-1">
           <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
@@ -85,7 +85,7 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="p-5 sm:p-8 flex flex-col gap-7 max-w-[1400px] w-full mx-auto"
+      className="p-5 sm:p-8 flex flex-col gap-8 max-w-[1400px] w-full mx-auto"
     >
 
       {/* ── Header ── */}
@@ -105,8 +105,14 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
             Datos históricos · comparativas por período
           </p>
         </div>
-        <button onClick={loadAnalytics} className="btn-ghost flex items-center gap-2 text-xs w-fit">
-          <Activity size={14} /> Actualizar datos
+        <button
+          onClick={loadAnalytics}
+          className="flex items-center gap-2 w-fit rounded-lg transition-colors cursor-pointer"
+          style={{ height: '42px', padding: '0 20px', fontSize: '14px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.14)', color: '#CBD5E1', background: 'rgba(255,255,255,0.03)' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#3B82F6'; e.currentTarget.style.color = '#93C5FD'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = '#CBD5E1'; }}
+        >
+          <Activity size={15} /> Actualizar datos
         </button>
       </div>
 
@@ -114,17 +120,15 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         {/* Ventas hoy */}
-        <div className="card p-5 flex flex-col gap-3" style={{ border: '1px solid rgba(59,130,246,.14)' }}>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Ventas hoy</span>
-            {pct != null && (
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${pct >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                <TrendingUp size={9} className={pct < 0 ? 'rotate-180' : ''} />
-                {Math.abs(pct)}%
-              </span>
-            )}
-          </div>
-          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
+        <div className="card p-6 relative flex flex-col items-center text-center gap-3" style={{ border: '1px solid rgba(59,130,246,.14)' }}>
+          {pct != null && (
+            <span className={`absolute top-4 right-4 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${pct >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+              <TrendingUp size={9} className={pct < 0 ? 'rotate-180' : ''} />
+              {Math.abs(pct)}%
+            </span>
+          )}
+          <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#64748B' }}>Ventas hoy</span>
+          <p className="text-3xl sm:text-[40px] font-black tracking-tight leading-none break-words" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
             ${(analytics?.total_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}
           </p>
           {analytics?.total_ayer != null && (
@@ -135,14 +139,14 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
               </span>
             </p>
           )}
-          <div className="h-px mt-auto" style={{ background: 'rgba(59,130,246,.15)' }} />
-          <DollarSign size={13} style={{ color: '#3B82F6', opacity: 0.55 }} />
+          <div className="h-px w-full mt-auto" style={{ background: 'rgba(59,130,246,.15)' }} />
+          <DollarSign size={15} style={{ color: '#3B82F6', opacity: 0.55 }} />
         </div>
 
         {/* Ticket promedio */}
-        <div className="card p-5 flex flex-col gap-3" style={{ border: '1px solid rgba(99,102,241,.14)' }}>
-          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Ticket promedio</span>
-          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
+        <div className="card p-6 flex flex-col items-center text-center gap-3" style={{ border: '1px solid rgba(99,102,241,.14)' }}>
+          <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#64748B' }}>Ticket promedio</span>
+          <p className="text-3xl sm:text-[40px] font-black tracking-tight leading-none break-words" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
             ${(analytics?.ticket_promedio_hoy ?? 0).toLocaleString('es-CL', { minimumFractionDigits: 0 })}
           </p>
           {analytics?.ticket_promedio_ayer != null && (
@@ -153,14 +157,14 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
               </span>
             </p>
           )}
-          <div className="h-px mt-auto" style={{ background: 'rgba(99,102,241,.15)' }} />
-          <Receipt size={13} style={{ color: '#6366F1', opacity: 0.55 }} />
+          <div className="h-px w-full mt-auto" style={{ background: 'rgba(99,102,241,.15)' }} />
+          <Receipt size={15} style={{ color: '#6366F1', opacity: 0.55 }} />
         </div>
 
         {/* Transacciones */}
-        <div className="card p-5 flex flex-col gap-3" style={{ border: '1px solid rgba(20,184,166,.14)' }}>
-          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Transacciones</span>
-          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
+        <div className="card p-6 flex flex-col items-center text-center gap-3" style={{ border: '1px solid rgba(20,184,166,.14)' }}>
+          <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#64748B' }}>Transacciones</span>
+          <p className="text-3xl sm:text-[40px] font-black tracking-tight leading-none break-words" style={{ color: '#F8FAFC', ...NUM_STYLE }}>
             {analytics?.cantidad_hoy ?? 0}
           </p>
           {analytics?.cantidad_ayer != null && (
@@ -171,33 +175,33 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
               </span>
             </p>
           )}
-          <div className="h-px mt-auto" style={{ background: 'rgba(20,184,166,.15)' }} />
-          <ShoppingBag size={13} style={{ color: '#14B8A6', opacity: 0.55 }} />
+          <div className="h-px w-full mt-auto" style={{ background: 'rgba(20,184,166,.15)' }} />
+          <ShoppingBag size={15} style={{ color: '#14B8A6', opacity: 0.55 }} />
         </div>
 
         {/* Delta card — hoy vs ayer */}
-        <div className="card p-5 flex flex-col gap-3" style={{ border: `1px solid ${deltaBorder}` }}>
-          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Hoy vs ayer</span>
-          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: deltaColor, ...NUM_STYLE }}>
+        <div className="card p-6 flex flex-col items-center text-center gap-3" style={{ border: `1px solid ${deltaBorder}` }}>
+          <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#64748B' }}>Hoy vs ayer</span>
+          <p className="text-3xl sm:text-[40px] font-black tracking-tight leading-none break-words" style={{ color: deltaColor, ...NUM_STYLE }}>
             {pct == null ? '—' : `${pct > 0 ? '+' : ''}${pct}%`}
           </p>
           <p className="text-xs" style={{ color: '#475569' }}>en ventas totales</p>
-          <div className="h-px mt-auto" style={{ background: deltaDivider }} />
-          <TrendingUp size={13} style={{ color: deltaColor, opacity: 0.55, transform: pct != null && pct < 0 ? 'rotate(180deg)' : undefined }} />
+          <div className="h-px w-full mt-auto" style={{ background: deltaDivider }} />
+          <TrendingUp size={15} style={{ color: deltaColor, opacity: 0.55, transform: pct != null && pct < 0 ? 'rotate(180deg)' : undefined }} />
         </div>
 
       </div>
 
       {/* ── Charts — 3 + 2 col split ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
         {/* Bar chart — horas pico */}
-        <div className="lg:col-span-3 card p-5 sm:p-6 flex flex-col gap-4"
+        <div className="lg:col-span-3 card p-6 flex flex-col gap-4"
           style={{ border: '1px solid rgba(59,130,246,.1)' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Distribución horaria</p>
-              <h3 className="text-sm font-bold mt-0.5" style={{ color: '#F8FAFC' }}>Horas pico — hoy</h3>
+              <h3 className="text-lg font-bold mt-0.5" style={{ color: '#F8FAFC' }}>Horas pico — hoy</h3>
             </div>
             <span className="text-[10px] font-bold px-2.5 py-1 rounded"
               style={{ background: 'rgba(59,130,246,.08)', color: '#3B82F6', border: '1px solid rgba(59,130,246,.15)' }}>
@@ -226,19 +230,20 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-sm relative" style={{ color: '#475569' }}>
+            <div className="h-[300px] flex flex-col items-center justify-center gap-3 py-16 relative" style={{ color: '#475569' }}>
               <DotPattern color="#7C3AED" size={20} opacity={0.15} style={{ zIndex: 0 }} />
-              <span style={{ position: 'relative', zIndex: 1 }}>Sin ventas registradas hoy</span>
+              <BarChart2 size={32} style={{ position: 'relative', zIndex: 1, opacity: 0.3 }} />
+              <span className="text-base" style={{ position: 'relative', zIndex: 1 }}>Sin ventas registradas hoy</span>
             </div>
           )}
         </div>
 
         {/* Donut — top productos */}
-        <div className="lg:col-span-2 card p-5 sm:p-6 flex flex-col gap-4"
+        <div className="lg:col-span-2 card p-6 flex flex-col gap-4"
           style={{ border: '1px solid rgba(99,102,241,.1)' }}>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>Ranking</p>
-            <h3 className="text-sm font-bold mt-0.5" style={{ color: '#F8FAFC' }}>Top productos — 30 días</h3>
+            <h3 className="text-lg font-bold mt-0.5" style={{ color: '#F8FAFC' }}>Top productos — 30 días</h3>
           </div>
 
           {analytics?.top_productos?.length > 0 ? (
@@ -281,9 +286,9 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-2 py-8">
-              <Flame size={22} style={{ color: '#8892A4', opacity: 0.25 }} />
-              <p className="text-sm" style={{ color: '#475569' }}>Sin datos en 30 días</p>
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16">
+              <Flame size={36} style={{ color: '#8892A4', opacity: 0.25 }} />
+              <p className="text-base" style={{ color: '#475569' }}>Sin datos en 30 días</p>
             </div>
           )}
         </div>
