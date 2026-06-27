@@ -9,31 +9,31 @@ export default function SidebarItem({ icon: Icon, label, active, onClick, badge,
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center rounded-lg text-left",
         "transition-all duration-[150ms] ease-in-out",
-        collapsed ? "justify-center p-[9px]" : "gap-2.5 px-3 py-[9px]",
+        collapsed ? "justify-center p-3" : "gap-2.5 px-3 py-3",
         active
-          ? "bg-white/[0.06] text-[#E8E8F8]"
+          ? "bg-[#7C3AED]/[0.16] text-[#F8F8FF]"
           : "text-[#6B6B88] hover:bg-white/[0.03] hover:text-[#A0A0BC]"
       )}
     >
       {/* Left accent bar — only when expanded */}
       {!collapsed && (
         <span
-          className="absolute left-0 h-4 w-[2px] rounded-r transition-all duration-200"
-          style={{ background: "#7C3AED", opacity: active ? 1 : 0 }}
+          className="absolute left-0 h-5 w-[3px] rounded-r transition-all duration-200"
+          style={{ background: "#A78BFA", opacity: active ? 1 : 0 }}
         />
       )}
 
       <Icon
-        size={collapsed ? 17 : 15}
+        size={20}
         strokeWidth={active ? 2.2 : 1.8}
         className="shrink-0 transition-colors duration-150"
-        style={{ color: active ? "#A78BFA" : "inherit" }}
+        style={{ color: active ? "#C4B5FD" : "inherit" }}
       />
 
       {!collapsed && (
         <span
-          className="flex-1 truncate text-[13px] transition-all duration-150"
-          style={{ fontWeight: active ? 600 : 450 }}
+          className="flex-1 truncate text-[15px] transition-all duration-150"
+          style={{ fontWeight: active ? 600 : 500 }}
         >
           {label}
         </span>

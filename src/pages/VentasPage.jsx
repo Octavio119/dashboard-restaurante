@@ -309,8 +309,8 @@ export default function VentasPage({
           <button
             onClick={handleExportPDF}
             disabled={pdfLoading}
-            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#9090B0' }}
+            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', color: '#9090B0' }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#F8FAFC'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#9090B0'; }}
           >
@@ -322,8 +322,8 @@ export default function VentasPage({
           <button
             onClick={handleExportExcel}
             disabled={xlsxLoading}
-            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#9090B0' }}
+            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', color: '#9090B0' }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#F8FAFC'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#9090B0'; }}
           >
@@ -344,7 +344,7 @@ export default function VentasPage({
               setVentaModal(true);
             }}
             className="flex items-center gap-2 px-6 rounded-xl text-[15px] font-bold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.97] cursor-pointer"
-            style={{ ...btnPrimary.base, boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
+            style={{ ...btnPrimary.base, boxShadow: '0 4px 14px rgba(124,58,237,0.35)', marginLeft: '8px' }}
             onMouseEnter={e => { e.currentTarget.style.background = btnPrimary.hover.background; }}
             onMouseLeave={e => { e.currentTarget.style.background = btnPrimary.base.background; }}
           >

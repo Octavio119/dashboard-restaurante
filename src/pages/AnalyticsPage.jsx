@@ -107,10 +107,10 @@ export default function AnalyticsPage({ loadAnalytics, analytics, analyticsError
         </div>
         <button
           onClick={loadAnalytics}
-          className="flex items-center gap-2 w-fit rounded-lg transition-colors cursor-pointer"
-          style={{ height: '42px', padding: '0 20px', fontSize: '14px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.14)', color: '#CBD5E1', background: 'rgba(255,255,255,0.03)' }}
+          className="flex items-center gap-2 w-fit rounded-xl transition-colors cursor-pointer"
+          style={{ height: '44px', padding: '0 20px', fontSize: '14px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.15)', color: '#CBD5E1', background: 'rgba(255,255,255,0.03)' }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#3B82F6'; e.currentTarget.style.color = '#93C5FD'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = '#CBD5E1'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#CBD5E1'; }}
         >
           <Activity size={15} /> Actualizar datos
         </button>

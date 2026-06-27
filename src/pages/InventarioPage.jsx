@@ -87,26 +87,26 @@ export default function InventarioPage({
             ))}
           </div>
           <button onClick={() => exportInventarioExcel(productos)} disabled={!productos.length}
-            className="flex items-center gap-2 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ height: '38px', padding: '0 16px', fontSize: '13px', border: '1px solid #27272A', color: '#A1A1AA', background: 'transparent' }}
+            className="flex items-center gap-2 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: '44px', padding: '0 20px', fontSize: '14px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.15)', color: '#A1A1AA', background: 'transparent' }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) { e.currentTarget.style.borderColor = '#16A34A'; e.currentTarget.style.color = '#4ADE80'; } }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#27272A'; e.currentTarget.style.color = '#A1A1AA'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#A1A1AA'; }}
           >
-            <Download size={14}/> Excel
+            <Download size={15}/> Excel
           </button>
           <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-2 rounded-lg transition-all cursor-pointer"
-            style={{ height: '38px', padding: '0 16px', fontSize: '13px', border: '1px solid rgba(139,92,246,0.3)', color: '#A78BFA', background: 'rgba(139,92,246,0.07)' }}
+            className="flex items-center gap-2 rounded-xl transition-all cursor-pointer"
+            style={{ height: '44px', padding: '0 20px', fontSize: '14px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.15)', color: '#A78BFA', background: 'rgba(139,92,246,0.07)' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#8B5CF6'; e.currentTarget.style.color = '#C4B5FD'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.background = 'rgba(139,92,246,0.07)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.background = 'rgba(139,92,246,0.07)'; }}
           >
-            <Upload size={14}/> Importar
+            <Upload size={15}/> Importar
           </button>
           <RippleButton
             onClick={() => { setMovimientoForm({ producto_id:'', tipo:'entrada', cantidad:'', proveedor_id:'', notas:'' }); setIsMovModalOpen(true); }}
             className="flex items-center gap-2 rounded-xl cursor-pointer"
-            style={{ height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, background: '#7C3AED', color: '#fff', border: 'none', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
+            style={{ height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, background: '#7C3AED', color: '#fff', border: 'none', boxShadow: '0 4px 14px rgba(124,58,237,0.35)', marginLeft: '8px' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#6D28D9'; }}
             onMouseLeave={e => { e.currentTarget.style.background = '#7C3AED'; }}
           >
