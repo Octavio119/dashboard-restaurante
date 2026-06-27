@@ -211,8 +211,8 @@ export default function PedidosPage({
 
   // Tab button style helper
   const tabStyle = active => active
-    ? { background: 'rgba(139,92,246,0.2)', color: '#C4B5FD' }
-    : { color: '#4B5563' };
+    ? { background: 'rgba(139,92,246,0.22)', color: '#C4B5FD', boxShadow: 'inset 0 0 0 1px rgba(139,92,246,0.35)' }
+    : { color: '#9CA3AF' };
 
   return (
     <motion.div
@@ -220,7 +220,7 @@ export default function PedidosPage({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="p-4 sm:p-8 flex flex-col gap-6 max-w-[1200px] w-full mx-auto"
+      className="p-4 sm:p-8 flex flex-col gap-8 max-w-[1200px] w-full mx-auto"
     >
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex justify-between items-end flex-wrap gap-4">
@@ -246,22 +246,22 @@ export default function PedidosPage({
         <div className="flex items-center gap-2 flex-wrap">
           {/* View toggle */}
           <div
-            className="flex rounded-xl p-1 gap-0.5"
+            className="flex rounded-xl p-1.5 gap-1"
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
             <button
               onClick={() => setPedidoMesaView(false)}
-              className="flex items-center gap-1.5 px-[18px] rounded-lg text-[13px] font-semibold h-[38px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
+              className="flex items-center gap-1.5 px-5 rounded-lg text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
               style={tabStyle(!pedidoMesaView)}
             >
-              <List size={12} /> Lista
+              <List size={14} /> Lista
             </button>
             <button
               onClick={() => { setPedidoMesaView(true); loadMesasPedidos(); }}
-              className="flex items-center gap-1.5 px-[18px] rounded-lg text-[13px] font-semibold h-[38px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
+              className="flex items-center gap-1.5 px-5 rounded-lg text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
               style={tabStyle(pedidoMesaView)}
             >
-              <LayoutGrid size={12} /> Por Mesa
+              <LayoutGrid size={14} /> Por Mesa
             </button>
           </div>
 
@@ -269,14 +269,14 @@ export default function PedidosPage({
           {!pedidoMesaView && (
             <>
               <div
-                className="flex rounded-xl p-1 gap-0.5"
+                className="flex rounded-xl p-1.5 gap-1"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
               >
                 {['dia', 'semana', 'mes'].map(p => (
                   <button
                     key={p}
                     onClick={() => setSalesFilter(p)}
-                    className="px-4 rounded-lg text-[13px] font-semibold h-[38px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
+                    className="px-5 rounded-lg text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
                     style={tabStyle(salesFilter === p)}
                   >
                     {p === 'dia' ? 'HOY' : p === 'semana' ? 'SEM' : 'MES'}
@@ -303,12 +303,12 @@ export default function PedidosPage({
               setPedidoError(null);
               setPedidoModal(true);
             }}
-            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-medium h-[40px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
-            style={{ background: '#7C3AED', color: '#fff' }}
+            className="flex items-center gap-2 px-6 rounded-xl text-[15px] font-bold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.97] cursor-pointer"
+            style={{ background: '#7C3AED', color: '#fff', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
             onMouseEnter={e => { e.currentTarget.style.background = '#6D28D9'; }}
             onMouseLeave={e => { e.currentTarget.style.background = '#7C3AED'; }}
           >
-            <Plus size={15} /> Nuevo pedido
+            <Plus size={17} /> Nuevo pedido
           </RippleButton>
         </div>
       </div>
@@ -317,7 +317,7 @@ export default function PedidosPage({
       {pedidosLoading ? (
         <SkeletonMetricGrid count={4} cols={4} className="grid grid-cols-2 md:grid-cols-4" />
       ) : null}
-      <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${pedidosLoading ? 'hidden' : ''}`}>
+      <div className={`grid grid-cols-2 md:grid-cols-4 gap-5 ${pedidosLoading ? 'hidden' : ''}`}>
         {kpiCards.map((card, i) => {
           const [r, g, b] = hexToRgb(card.iconColor)
           return (
@@ -355,7 +355,7 @@ export default function PedidosPage({
 
       {/* ── Vista Por Mesa ─────────────────────────────────────── */}
       {pedidoMesaView && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-4">
               <h3 className="font-bold text-zinc-300 flex items-center gap-2">
@@ -393,7 +393,7 @@ export default function PedidosPage({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {mesasPedidos.map(({ mesa, pedidos: mp }, cardIdx) => {
                 const total = mp.reduce((s, p) => s + parseFloat(p.total||0), 0);
                 const allEstados = mp.map(p => p.estado);
@@ -420,15 +420,15 @@ export default function PedidosPage({
                     <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: accentColor }} />
 
                     {/* Card header */}
-                    <div className="px-5 pt-5 pb-4 flex items-center justify-between"
+                    <div className="px-6 pt-6 pb-5 flex items-center justify-between"
                       style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-base font-black"
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black"
                           style={{ background: 'rgba(255,255,255,0.06)', color: '#F8FAFC' }}>
-                          {mesa.replace(/[^0-9]/g,'') || <Utensils size={16}/>}
+                          {mesa.replace(/[^0-9]/g,'') || <Utensils size={18}/>}
                         </div>
                         <div>
-                          <p className="font-bold text-sm" style={{ color: '#F8FAFC' }}>{mesa}</p>
+                          <p className="font-bold text-base" style={{ color: '#F8FAFC' }}>{mesa}</p>
                           <p className="text-xs mt-0.5" style={{ color: '#475569' }}>
                             {mp.length} pedido{mp.length!==1?'s':''} · {mp.reduce((s,p)=>(p.items||[]).reduce((a,i)=>a+i.cantidad,0)+s,0)} ítems
                           </p>
@@ -436,7 +436,7 @@ export default function PedidosPage({
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#334155' }}>Total</p>
-                        <p className="text-xl font-black" style={{ color: '#F8FAFC', fontVariantNumeric: 'tabular-nums' }}>
+                        <p className="text-2xl font-black" style={{ color: '#F8FAFC', fontVariantNumeric: 'tabular-nums' }}>
                           ${total.toLocaleString('es-CL', { minimumFractionDigits:0, maximumFractionDigits:0 })}
                         </p>
                       </div>
@@ -445,7 +445,7 @@ export default function PedidosPage({
                     {/* Orders */}
                     <div className="flex flex-col flex-1 divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
                       {mp.map(pedido => (
-                        <div key={pedido.id} className="px-5 py-4 flex flex-col gap-3">
+                        <div key={pedido.id} className="px-6 py-5 flex flex-col gap-4">
 
                           {/* Order header */}
                           <div className="flex items-start justify-between gap-2">
@@ -575,7 +575,7 @@ export default function PedidosPage({
 
                     {/* Multi-order mesa total footer */}
                     {mp.length > 1 && (
-                      <div className="px-5 py-3 flex items-center justify-between"
+                      <div className="px-6 py-4 flex items-center justify-between"
                         style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
                         <span className="text-xs font-semibold" style={{ color: '#475569' }}>Total mesa</span>
                         <span className="font-black" style={{ color: '#10B981', fontVariantNumeric: 'tabular-nums' }}>
