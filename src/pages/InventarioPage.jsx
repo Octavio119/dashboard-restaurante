@@ -61,25 +61,25 @@ export default function InventarioPage({
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Control de suministros, trazabilidad y proveedores</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: '#0D0D0F', border: '1px solid #1F1F23' }}>
+          <div className="flex items-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '4px', gap: '4px' }}>
             {[
               { id: 'stock', label: 'Stock', icon: Package },
               { id: 'movimientos', label: 'Movimientos', icon: List },
               { id: 'proveedores', label: 'Proveedores', icon: Truck },
             ].map(t => (
               <button key={t.id} onClick={() => setInventarioTab(t.id)}
-                className="flex items-center gap-2 rounded-lg transition-all"
+                className="flex items-center gap-2 transition-all"
                 style={{
-                  height: '42px',
-                  padding: '0 20px',
-                  fontSize: '14px',
-                  fontWeight: 600,
+                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  fontSize: '13px',
+                  fontWeight: 500,
                   ...(inventarioTab === t.id
-                    ? { background: '#18181B', border: '1px solid #3F3F46', color: '#F4F4F5' }
+                    ? { background: 'rgba(124,58,237,0.2)', border: '1px solid transparent', color: '#C4B5FD' }
                     : { background: 'transparent', border: '1px solid transparent', color: '#9CA3AF' }
                   )
                 }}
-                onMouseEnter={e => { if (inventarioTab !== t.id) { e.currentTarget.style.color = '#D4D4D8'; e.currentTarget.style.background = '#111113'; } }}
+                onMouseEnter={e => { if (inventarioTab !== t.id) { e.currentTarget.style.color = '#D4D4D8'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; } }}
                 onMouseLeave={e => { if (inventarioTab !== t.id) { e.currentTarget.style.color = '#9CA3AF'; e.currentTarget.style.background = 'transparent'; } }}
               >
                 <t.icon size={14} /> {t.label}

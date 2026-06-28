@@ -307,17 +307,17 @@ export default function ReservasPage({
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* View toggle */}
-          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, padding: 3, display: 'flex', gap: 2 }}>
+          <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '4px', display: 'flex', gap: '4px' }}>
             {[
               { key: 'mapa',     label: 'Mapa',       icon: <LayoutGrid size={13} /> },
               { key: 'timeline', label: 'Línea tiempo', icon: <List size={13} /> },
             ].map(({ key, label, icon }) => (
               <button key={key} onClick={() => setView(key)}
                 style={{
-                  background: view === key ? T.purple : 'transparent',
-                  color: view === key ? '#fff' : T.textDim,
-                  border: 'none', borderRadius: 4, cursor: 'pointer',
-                  padding: '5px 10px', fontSize: 12, fontWeight: 500,
+                  background: view === key ? 'rgba(124,58,237,0.2)' : 'transparent',
+                  color: view === key ? '#C4B5FD' : '#9CA3AF',
+                  border: 'none', borderRadius: '8px', cursor: 'pointer',
+                  padding: '6px 14px', fontSize: '13px', fontWeight: 500,
                   display: 'flex', alignItems: 'center', gap: 5,
                   transition: 'all 150ms',
                 }}>

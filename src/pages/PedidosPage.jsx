@@ -211,8 +211,8 @@ export default function PedidosPage({
 
   // Tab button style helper
   const tabStyle = active => active
-    ? { background: 'rgba(139,92,246,0.22)', color: '#C4B5FD', boxShadow: 'inset 0 0 0 1px rgba(139,92,246,0.35)' }
-    : { color: '#9CA3AF' };
+    ? { background: 'rgba(124,58,237,0.2)', color: '#C4B5FD', borderRadius: '8px' }
+    : { background: 'transparent', color: '#9CA3AF', borderRadius: '8px' };
 
   return (
     <motion.div
@@ -246,20 +246,20 @@ export default function PedidosPage({
         <div className="flex items-center gap-2 flex-wrap">
           {/* View toggle */}
           <div
-            className="flex rounded-xl p-1.5 gap-1"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+            className="flex"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '4px', gap: '4px' }}
           >
             <button
               onClick={() => setPedidoMesaView(false)}
-              className="flex items-center gap-1.5 px-5 rounded-lg text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
-              style={tabStyle(!pedidoMesaView)}
+              className="flex items-center gap-1.5 transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
+              style={{ padding: '6px 14px', fontSize: '13px', fontWeight: 500, ...tabStyle(!pedidoMesaView) }}
             >
               <List size={14} /> Lista
             </button>
             <button
               onClick={() => { setPedidoMesaView(true); loadMesasPedidos(); }}
-              className="flex items-center gap-1.5 px-5 rounded-lg text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
-              style={tabStyle(pedidoMesaView)}
+              className="flex items-center gap-1.5 transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
+              style={{ padding: '6px 14px', fontSize: '13px', fontWeight: 500, ...tabStyle(pedidoMesaView) }}
             >
               <LayoutGrid size={14} /> Por Mesa
             </button>
@@ -269,15 +269,15 @@ export default function PedidosPage({
           {!pedidoMesaView && (
             <>
               <div
-                className="flex rounded-xl p-1.5 gap-1"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+                className="flex"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '4px', gap: '4px' }}
               >
                 {['dia', 'semana', 'mes'].map(p => (
                   <button
                     key={p}
                     onClick={() => setSalesFilter(p)}
-                    className="px-5 rounded-lg text-[14px] font-semibold h-[42px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
-                    style={tabStyle(salesFilter === p)}
+                    className="transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer"
+                    style={{ padding: '6px 14px', fontSize: '13px', fontWeight: 500, ...tabStyle(salesFilter === p) }}
                   >
                     {p === 'dia' ? 'HOY' : p === 'semana' ? 'SEM' : 'MES'}
                   </button>
