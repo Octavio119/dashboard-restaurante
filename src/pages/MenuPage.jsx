@@ -384,7 +384,7 @@ const MenuPage = ({
 
           {/* Add category input */}
           {canEditMenu && (
-            <div className="flex gap-2 pt-1" style={{ width: '100%', overflow: 'hidden' }}>
+            <div className="flex gap-2 pt-1" style={{ display: 'flex', width: '100%', overflow: 'visible' }}>
               <div className="relative flex-1" style={{ minWidth: 0 }}>
                 <Plus
                   size={13}
@@ -406,8 +406,8 @@ const MenuPage = ({
               <button
                 onClick={agregarCategoria}
                 disabled={!nuevaCategoria.trim()}
-                className="flex items-center gap-1.5 px-6 rounded-lg text-[15px] font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                style={{ background: color.purpleDark, color: '#fff', height: '44px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                className="flex items-center gap-1.5 rounded-lg transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                style={{ background: color.purpleDark, color: '#fff', height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}
                 onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = color.purpleDeep; }}
                 onMouseLeave={e => { e.currentTarget.style.background = color.purpleDark; }}
               >
@@ -517,18 +517,18 @@ const MenuPage = ({
               <>
                 <button
                   onClick={() => setEditProduct(null)}
-                  className="px-4 py-2 rounded-lg text-[13px] font-semibold transition-all duration-150 active:scale-95 cursor-pointer"
-                  style={{ background: 'rgba(255,255,255,0.05)', color: text.secondary, border: `1px solid ${border.base}` }}
+                  className="rounded-lg transition-all duration-150 active:scale-95 cursor-pointer"
+                  style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, background: 'rgba(255,255,255,0.05)', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px' }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = text.primary; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = text.secondary; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#9CA3AF'; }}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={updateProductoSave}
                   disabled={!isFormValid}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  style={{ background: color.purpleDark, color: '#fff' }}
+                  className="flex items-center gap-1.5 rounded-lg transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  style={{ background: color.purpleDark, color: '#fff', height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700 }}
                   onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = color.purpleDeep; }}
                   onMouseLeave={e => { e.currentTarget.style.background = color.purpleDark; }}
                 >
