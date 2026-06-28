@@ -36,6 +36,13 @@ function scheduleMonthlyReset() {
   );
 }
 
+// Cron de emails de trial (día 0 bienvenida, día 11-13 advertencia, día 14
+// vencido) — solo en producción, igual que se evita en dev/test cualquier
+// otro side-effect con efecto real (envío de correo) al arrancar el server.
+if (process.env.NODE_ENV === 'production') {
+  require('./lib/trialEmails');
+}
+
 (async () => {
   await initSocket(server);
 
