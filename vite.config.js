@@ -22,8 +22,9 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MiB
       },
 
-      // Registration — the workbox-window Prompt lets us handle updates ourselves
-      registerType: 'prompt',
+      // Registration — auto-applies new SW versions without waiting for user action,
+      // since src/sw.js already calls skipWaiting()/clientsClaim() unconditionally.
+      registerType: 'autoUpdate',
       devOptions: {
         enabled: true,   // SW active in dev so you can test offline flow
         type: 'module',
