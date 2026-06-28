@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { Decimal } = require('@prisma/client/runtime/library');
 const { getRestaurantId } = require('./context');
-const logger = require('./logger');
 
 // Los campos @db.Decimal (montos, precios, tax_rate) llegan de Prisma como
 // instancias de Decimal, no `number`. Por diseño, decimal.js NO castea
@@ -17,23 +16,7 @@ Decimal.prototype.valueOf = function () { return Number(this.toString()); };
 Decimal.prototype.toJSON  = function () { return Number(this.toString()); };
 
 const basePrisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development'
-    ? [{ emit: 'event', level: 'warn' }, { emit: 'event', level: 'error' }]
-    : [{ emit: 'event', level: 'error' }],
-});
-
-// El motor de queries de Prisma (Rust) puede entrar en panic ("timer has gone
-// away") cuando la conexión a la BD se cae a medias — el proceso de Node sigue
-// vivo pero el query engine queda en un estado inconsistente y todas las
-// queries posteriores cuelgan o fallan. No hay forma de recuperar ese estado
-// desde JS: la única salida confiable es terminar el proceso y dejar que
-// Railway lo reinicie (restart policy ya configurada en railway.json).
-basePrisma.$on('error', (e) => {
-  logger.error({ err: e }, 'Prisma engine error');
-  if (typeof e.message === 'string' && e.message.includes('timer has gone away')) {
-    logger.fatal({ err: e }, 'Prisma query engine panic detectado — terminando proceso para que Railway reinicie');
-    process.exit(1);
-  }
+  log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
 });
 
 // Modelos que contienen restaurante_id como clave de tenant (PascalCase = nombre interno de Prisma)

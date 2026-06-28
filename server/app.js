@@ -16,11 +16,6 @@ validateEnv();
 
 const app = express();
 
-// Railway pone la app detrás de un único proxy reverso — sin esto, Express no
-// confía en X-Forwarded-For y express-rate-limit lanza ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
-// / ERR_ERL_FORWARDED_HEADER al intentar derivar la IP real del cliente.
-app.set('trust proxy', 1);
-
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
