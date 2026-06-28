@@ -384,8 +384,8 @@ const MenuPage = ({
 
           {/* Add category input */}
           {canEditMenu && (
-            <div className="flex gap-2 pt-1">
-              <div className="relative flex-1">
+            <div className="flex gap-2 pt-1" style={{ width: '100%', overflow: 'hidden' }}>
+              <div className="relative flex-1" style={{ minWidth: 0 }}>
                 <Plus
                   size={13}
                   className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -407,7 +407,7 @@ const MenuPage = ({
                 onClick={agregarCategoria}
                 disabled={!nuevaCategoria.trim()}
                 className="flex items-center gap-1.5 px-6 rounded-lg text-[15px] font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                style={{ background: color.purpleDark, color: '#fff', height: '44px', whiteSpace: 'nowrap' }}
+                style={{ background: color.purpleDark, color: '#fff', height: '44px', whiteSpace: 'nowrap', flexShrink: 0 }}
                 onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = color.purpleDeep; }}
                 onMouseLeave={e => { e.currentTarget.style.background = color.purpleDark; }}
               >
