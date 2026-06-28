@@ -330,55 +330,56 @@ export default function GlobalModals({
       <AnimatePresence>
         {isMovModalOpen && (
           <div className="fixed inset-0 z-[210] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsMovModalOpen(false)} className="absolute inset-0 bg-black/88"/>
+            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsMovModalOpen(false)} className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.7)' }}/>
             <motion.div initial={{ opacity:0, scale:0.97, y:8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.97 }}
               transition={{ duration:0.2, ease:[0.16,1,0.3,1] }}
               className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
               <div className="px-6 py-4 flex justify-between items-center" style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}>
-                <h3 className="font-black text-white">REGISTRAR MOVIMIENTO</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Registrar movimiento</h3>
                 <button onClick={() => setIsMovModalOpen(false)} className="text-white/60 hover:text-white"><X size={18}/></button>
               </div>
               <div className="p-6 flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Producto</label>
-                  <select value={movimientoForm.producto_id} onChange={e=>setMovimientoForm({...movimientoForm, producto_id: e.target.value})} className="input bg-zinc-800">
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF', marginBottom: '6px' }}>Producto</label>
+                  <select value={movimientoForm.producto_id} onChange={e=>setMovimientoForm({...movimientoForm, producto_id: e.target.value})} className="input" style={{ height: '44px', fontSize: '15px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '0 14px', background: 'rgba(255,255,255,0.06)' }}>
                     <option value="">Seleccione un producto...</option>
                     {(productos || []).map(p => <option key={p.id} value={p.id}>{p.nombre} (Stock: {p.stock})</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Tipo</label>
-                    <select value={movimientoForm.tipo} onChange={e=>setMovimientoForm({...movimientoForm, tipo: e.target.value})} className="input bg-zinc-800">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF', marginBottom: '6px' }}>Tipo</label>
+                    <select value={movimientoForm.tipo} onChange={e=>setMovimientoForm({...movimientoForm, tipo: e.target.value})} className="input" style={{ height: '44px', fontSize: '15px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '0 14px', background: 'rgba(255,255,255,0.06)' }}>
                       <option value="entrada">Entrada (+)</option>
                       <option value="salida">Salida (-)</option>
                       <option value="ajuste">Ajuste (Manual)</option>
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Cantidad</label>
-                    <input type="number" value={movimientoForm.cantidad} onChange={e=>setMovimientoForm({...movimientoForm, cantidad: e.target.value})} className="input" placeholder="0"/>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF', marginBottom: '6px' }}>Cantidad</label>
+                    <input type="number" value={movimientoForm.cantidad} onChange={e=>setMovimientoForm({...movimientoForm, cantidad: e.target.value})} className="input" style={{ height: '44px', fontSize: '15px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '0 14px', background: 'rgba(255,255,255,0.06)' }} placeholder="0"/>
                   </div>
                 </div>
                 {movimientoForm.tipo === 'entrada' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Proveedor (Opcional)</label>
-                    <select value={movimientoForm.proveedor_id} onChange={e=>setMovimientoForm({...movimientoForm, proveedor_id: e.target.value})} className="input bg-zinc-800">
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF', marginBottom: '6px' }}>Proveedor (Opcional)</label>
+                    <select value={movimientoForm.proveedor_id} onChange={e=>setMovimientoForm({...movimientoForm, proveedor_id: e.target.value})} className="input" style={{ height: '44px', fontSize: '15px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '0 14px', background: 'rgba(255,255,255,0.06)' }}>
                       <option value="">Ninguno</option>
                       {(proveedores || []).map(pr => <option key={pr.id} value={pr.id}>{pr.nombre}</option>)}
                     </select>
                   </div>
                 )}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Notas / Referencia</label>
-                  <textarea value={movimientoForm.notas} onChange={e=>setMovimientoForm({...movimientoForm, notas: e.target.value})} className="input min-h-[80px]" placeholder="Ej: Compra mensual, Merma, etc."/>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF', marginBottom: '6px' }}>Notas / Referencia</label>
+                  <textarea value={movimientoForm.notas} onChange={e=>setMovimientoForm({...movimientoForm, notas: e.target.value})} className="input min-h-[80px]" style={{ fontSize: '14px', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '12px 14px', background: 'rgba(255,255,255,0.06)' }} placeholder="Ej: Compra mensual, Merma, etc."/>
                 </div>
                 <button
                   onClick={saveMovimiento}
                   disabled={isSavingMov}
-                  className={`btn-primary w-full py-4 font-black uppercase tracking-widest mt-2 shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 ${isSavingMov ? 'opacity-70 cursor-wait' : ''}`}
+                  className={`w-full mt-2 flex items-center justify-center gap-2 ${isSavingMov ? 'opacity-70 cursor-wait' : ''}`}
+                  style={{ height: '48px', fontSize: '16px', fontWeight: 700, borderRadius: '12px', background: '#7C3AED', color: '#fff', border: 'none', boxShadow: '0 4px 18px rgba(124,58,237,0.4)' }}
                 >
-                  {isSavingMov ? <><Spinner size="sm" color="white" /> PROCESANDO...</> : 'Procesar Movimiento'}
+                  {isSavingMov ? <><Spinner size="sm" color="white" /> Procesando...</> : 'Procesar movimiento'}
                 </button>
               </div>
             </motion.div>
