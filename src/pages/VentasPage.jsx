@@ -309,27 +309,27 @@ export default function VentasPage({
           <button
             onClick={handleExportPDF}
             disabled={pdfLoading}
-            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', color: '#9090B0' }}
+            className="flex items-center rounded-xl transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: '46px', padding: '0 30px', fontSize: '17px', fontWeight: 600, gap: '8px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '11px', background: 'rgba(255,255,255,0.05)', color: '#9090B0' }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#F8FAFC'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#9090B0'; }}
           >
             {pdfLoading
-              ? <Loader2 size={15} className="animate-spin"/>
-              : <FileText size={15}/>}
+              ? <Loader2 size={18} className="animate-spin"/>
+              : <FileText size={18}/>}
             {pdfLoading ? 'Generando...' : 'PDF'}
           </button>
           <button
             onClick={handleExportExcel}
             disabled={xlsxLoading}
-            className="flex items-center gap-2 px-5 rounded-xl text-[14px] font-semibold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)', color: '#9090B0' }}
+            className="flex items-center rounded-xl transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ height: '46px', padding: '0 30px', fontSize: '17px', fontWeight: 600, gap: '8px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '11px', background: 'rgba(255,255,255,0.05)', color: '#9090B0' }}
             onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.color = '#F8FAFC'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#9090B0'; }}
           >
             {xlsxLoading
-              ? <Loader2 size={15} className="animate-spin"/>
-              : <Download size={15}/>}
+              ? <Loader2 size={18} className="animate-spin"/>
+              : <Download size={18}/>}
             {xlsxLoading ? 'Generando...' : 'Excel'}
           </button>
           <RippleButton
@@ -343,12 +343,12 @@ export default function VentasPage({
               catch { setVentaProductos([]); }
               setVentaModal(true);
             }}
-            className="flex items-center gap-2 px-6 rounded-xl text-[15px] font-bold h-[44px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.97] cursor-pointer"
-            style={{ ...btnPrimary.base, boxShadow: '0 4px 14px rgba(124,58,237,0.35)', marginLeft: '8px' }}
+            className="flex items-center gap-2 rounded-xl transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.97] cursor-pointer"
+            style={{ ...btnPrimary.base, height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 800, boxShadow: '0 4px 14px rgba(124,58,237,0.35)', marginLeft: '12px' }}
             onMouseEnter={e => { e.currentTarget.style.background = btnPrimary.hover.background; }}
             onMouseLeave={e => { e.currentTarget.style.background = btnPrimary.base.background; }}
           >
-            <Plus size={17}/> Nueva venta
+            <Plus size={18}/> Nueva venta
           </RippleButton>
         </div>
       </div>

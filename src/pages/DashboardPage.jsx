@@ -240,8 +240,8 @@ export default function DashboardPage({
         <div className="flex items-center gap-2">
           <button
             onClick={exportCSV}
-            className="flex cursor-pointer items-center gap-2 rounded-lg border px-5 text-[14px] font-medium h-[40px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 hover:border-white/[0.12] hover:text-white active:scale-[0.97]"
-            style={{ background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-2)" }}
+            className="flex cursor-pointer items-center gap-2 rounded-lg border min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 hover:border-white/[0.12] hover:text-white active:scale-[0.97]"
+            style={{ height: '44px', padding: '0 30px', fontSize: '15px', fontWeight: 700, background: "var(--bg-card)", border: '1px solid rgba(255,255,255,0.15)', color: "var(--text-2)" }}
           >
             <Download size={12} />
             {t("export", { ns: "common" })}
@@ -249,8 +249,8 @@ export default function DashboardPage({
           <ShineBorder color={["#A78BFA", "#7C3AED"]} borderWidth={1} className="rounded-lg">
             <button
               onClick={() => setIsNewResModalOpen(true)}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg px-5 text-[14px] font-medium h-[40px] min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 hover:brightness-110 active:scale-[0.97]"
-              style={{ background: "#8B5CF6", color: "white" }}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg min-w-fit transition-[opacity,transform] duration-150 hover:opacity-85 hover:brightness-110 active:scale-[0.97]"
+              style={{ height: '44px', padding: '0 30px', fontSize: '15px', fontWeight: 700, background: "#8B5CF6", color: "white" }}
             >
               <Plus size={12} />
               {t("new_reservation", { ns: "dashboard" })}
