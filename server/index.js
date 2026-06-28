@@ -63,12 +63,30 @@ if (process.env.NODE_ENV === 'production') {
     });
   });
 
+  // Prisma puede lanzar PrismaClientRustPanicError ("timer has gone away")
+  // cuando el query engine (Rust) entra en pánico — el proceso queda en un
+  // estado inconsistente sin forma de recuperación desde JS. Salir con
+  // exit(1) deja que Railway reinicie el proceso automáticamente en vez de
+  // dejar el servidor inutilizable hasta un reinicio manual.
+  function isPrismaPanic(err) {
+    return err?.name === 'PrismaClientRustPanicError'
+      || (typeof err?.message === 'string' && err.message.includes('timer has gone away'));
+  }
+
   process.on('unhandledRejection', (err) => {
+    if (isPrismaPanic(err)) {
+      logger.fatal({ err }, 'Prisma panic en unhandledRejection — reiniciando proceso');
+      process.exit(1);
+    }
     logger.error({ err }, 'unhandledRejection');
     process.exit(1);
   });
 
   process.on('uncaughtException', (err) => {
+    if (isPrismaPanic(err)) {
+      logger.fatal({ err }, 'Prisma panic en uncaughtException — reiniciando proceso');
+      process.exit(1);
+    }
     logger.fatal({ err }, 'uncaughtException');
     process.exit(1);
   });
