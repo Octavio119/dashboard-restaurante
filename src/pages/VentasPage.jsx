@@ -945,7 +945,7 @@ export default function VentasPage({
 
                 {/* Items */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Items</label>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF' }} className="uppercase tracking-wider">Items</label>
                   {ventaItems.map((item, idx) => (
                     <div key={idx} className="grid grid-cols-[1fr_60px_80px_32px] gap-2 items-center">
                       {ventaProductos.length > 0 ? (
@@ -995,7 +995,7 @@ export default function VentasPage({
 
                 {/* Método de pago */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Método de pago</label>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF' }} className="uppercase tracking-wider">Método de pago</label>
                   <div className="grid grid-cols-4 gap-2">
                     {[
                       { value:'efectivo',      label:'Efectivo',      icon: Banknote },
@@ -1062,12 +1062,12 @@ export default function VentasPage({
                     } catch(e) { setVentaError(e.message); }
                     finally { setVentaLoading(false); }
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                  style={btnPrimary.base}
+                  className="w-full flex items-center justify-center gap-2 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  style={{ ...btnPrimary.base, height: '48px', padding: '0 28px', fontSize: '16px', fontWeight: 700, borderRadius: '12px', background: '#7C3AED', boxShadow: '0 4px 18px rgba(124,58,237,0.4)', width: '100%' }}
                   onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = btnPrimary.hover.background; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = btnPrimary.base.background; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#7C3AED'; }}
                 >
-                  <Receipt size={15}/>
+                  <Receipt size={17}/>
                   {ventaLoading ? 'Registrando...' : 'Registrar venta'}
                 </button>
               </>

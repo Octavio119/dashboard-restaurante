@@ -926,7 +926,8 @@ export default function PedidosPage({
                       <button
                         key={prod.id}
                         onClick={() => addItem(prod)}
-                        className={`relative flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all cursor-pointer ${enCarrito ? 'bg-[#8B5CF6]/10 border-[#8B5CF6]/50' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-600'}`}
+                        className={`relative flex flex-col items-start gap-1 text-left transition-all cursor-pointer ${enCarrito ? 'bg-[#8B5CF6]/10' : 'bg-zinc-900 hover:border-zinc-600'}`}
+                        style={{ padding: '12px 14px', borderRadius: '10px', border: enCarrito ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(255,255,255,0.08)' }}
                       >
                         {enCarrito && (
                           <span className="absolute top-2 right-2 bg-[#8B5CF6] text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center">
@@ -994,15 +995,18 @@ export default function PedidosPage({
                   )}
                   <button
                     onClick={() => { setPedidoModal(false); setPedidoError(null); }}
-                    className="py-2 rounded-xl border border-zinc-700 text-zinc-400 hover:text-white transition-colors text-sm font-semibold cursor-pointer"
+                    className="transition-colors cursor-pointer"
+                    style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: '#9CA3AF', background: 'transparent' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#9CA3AF'; }}
                   >
                     Cancelar
                   </button>
                   <button
                     disabled={pedidoLoading || !pedidoForm.cliente_nombre || pedidoItems.length === 0}
                     onClick={handleCreatePedido}
-                    className="py-3 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                    style={{ background: '#7C3AED' }}
+                    className="text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    style={{ height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, borderRadius: '10px', background: '#7C3AED', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
                     onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = '#6D28D9'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = '#7C3AED'; }}
                   >

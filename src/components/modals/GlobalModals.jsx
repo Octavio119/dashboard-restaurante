@@ -175,7 +175,15 @@ export default function GlobalModals({
                 ))}
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setIsNewResModalOpen(false)} className="btn-ghost flex-1">Cancelar</button>
+                <button
+                  onClick={() => setIsNewResModalOpen(false)}
+                  className="flex-1 transition-colors cursor-pointer"
+                  style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: '#9CA3AF', background: 'transparent' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#9CA3AF'; }}
+                >
+                  Cancelar
+                </button>
                 <button onClick={addReservation} disabled={!newResData.name || addResLoading} className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed">
                   {addResLoading ? 'Guardando...' : 'Crear Reservación'}
                 </button>
@@ -318,8 +326,25 @@ export default function GlobalModals({
                 </div>
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setClienteFormOpen(false)} className="btn-ghost flex-1">Cancelar</button>
-                <button onClick={saveCliente} disabled={!clienteForm.nombre} className="btn-primary flex-1 disabled:opacity-50">Guardar</button>
+                <button
+                  onClick={() => setClienteFormOpen(false)}
+                  className="flex-1 transition-colors cursor-pointer"
+                  style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: '#9CA3AF', background: 'transparent' }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#9CA3AF'; }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={saveCliente}
+                  disabled={!clienteForm.nombre}
+                  className="flex-1 text-white transition-all disabled:opacity-50 cursor-pointer"
+                  style={{ height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, borderRadius: '10px', background: '#7C3AED', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
+                  onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = '#6D28D9'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#7C3AED'; }}
+                >
+                  Guardar
+                </button>
               </div>
             </motion.div>
           </div>
