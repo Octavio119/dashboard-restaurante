@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const requireAuth = require('../middleware/auth');
 const verifyRole  = require('../middleware/verifyRole');
+const logger      = require('../lib/logger');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -15,7 +16,10 @@ router.get('/', async (req, res) => {
       orderBy: { nombre: 'asc' },
     });
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) {
+    logger.error({ err: e }, 'categorias.list error');
+    res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 // POST /api/categorias
@@ -28,6 +32,9 @@ router.post('/', verifyRole('admin', 'gerente'), async (req, res) => {
     res.status(201).json(cat);
   } catch (e) {
     if (e.code === 'P2002') return res.status(409).json({ error: 'Esa categoría ya existe' });
+    // Sin este log no había forma de saber por qué fallaba en producción —
+    // el catch devolvía "Error interno" genérico y descartaba e por completo.
+    logger.error({ err: e, errCode: e.code, meta: e.meta, rid: RID(req) }, 'categorias.create error');
     res.status(500).json({ error: 'Error interno' });
   }
 });
@@ -51,6 +58,7 @@ router.put('/:id', verifyRole('admin', 'gerente'), async (req, res) => {
     res.json(cat);
   } catch (e) {
     if (e.code === 'P2002') return res.status(409).json({ error: 'Ese nombre ya existe' });
+    logger.error({ err: e, errCode: e.code, meta: e.meta }, 'categorias.update error');
     res.status(500).json({ error: 'Error interno' });
   }
 });
@@ -68,7 +76,10 @@ router.delete('/:id', verifyRole('admin'), async (req, res) => {
     });
     await req.prisma.categoria.delete({ where: { id } });
     res.json({ ok: true, productosHuerfanos });
-  } catch (e) { res.status(500).json({ error: 'Error interno' }); }
+  } catch (e) {
+    logger.error({ err: e, errCode: e.code, meta: e.meta }, 'categorias.delete error');
+    res.status(500).json({ error: 'Error interno' });
+  }
 });
 
 module.exports = router;

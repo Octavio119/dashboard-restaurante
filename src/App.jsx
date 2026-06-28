@@ -221,6 +221,7 @@ const App = () => {
               pedidos={peds.pedidos}
               salesData={vtas.salesData}
               setActiveTab={nav.setActiveTab}
+              setConfigTab={cfg.setConfigTab}
             />
           )}
 

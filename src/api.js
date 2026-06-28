@@ -184,6 +184,9 @@ export const api = {
   updateCliente: (id, data) => request(`/clientes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCliente: (id, adminCode) => request(`/clientes/${id}`, { method: 'DELETE', body: JSON.stringify({ admin_code: adminCode }) }),
 
+  // Onboarding
+  getOnboardingStatus: () => request('/onboarding/status'),
+
   // Categorías
   getCategorias: () => request('/categorias'),
   createCategoria: (nombre) => request('/categorias', { method: 'POST', body: JSON.stringify({ nombre }) }),

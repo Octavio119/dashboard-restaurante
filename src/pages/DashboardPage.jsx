@@ -13,6 +13,8 @@ import {
   XAxis, YAxis, Tooltip, Area,
 } from "recharts"
 import AIInsightsWidget from "../features/dashboard/components/AIInsightsWidget"
+import OnboardingBanner from "../components/OnboardingBanner"
+import { useOnboarding } from "../hooks/useOnboarding"
 import MetricCard from "../components/ui/MetricCard"
 import StatusBadge from "../components/ui/StatusBadge"
 import { MagicCard } from "../components/ui/magic-card"
@@ -117,7 +119,9 @@ export default function DashboardPage({
   pedidos,
   salesData,
   setActiveTab,
+  setConfigTab,
 }) {
+  const { status: onboardingStatus, isComplete: onboardingComplete, isLoading: onboardingLoading } = useOnboarding({ user })
   const { t, i18n } = useTranslation(["dashboard", "common"])
   const numLocale = i18n.language?.startsWith("en") ? "en-US" : "es-CL"
 
@@ -184,6 +188,15 @@ export default function DashboardPage({
       transition={{ duration: 0.14 }}
       className="flex flex-col gap-5 p-5 sm:p-7 max-w-[1440px] w-full mx-auto"
     >
+
+      {!onboardingLoading && !onboardingComplete && (
+        <OnboardingBanner
+          user={user}
+          status={onboardingStatus}
+          setActiveTab={setActiveTab}
+          setConfigTab={setConfigTab}
+        />
+      )}
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

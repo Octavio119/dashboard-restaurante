@@ -156,6 +156,7 @@ app.use('/api/config',     require('./routes/config'));
 app.use('/api/inventario', require('./routes/inventario'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/apikeys',   require('./routes/apikeys'));
+app.use('/api/onboarding', require('./routes/onboarding'));
 app.use('/api/payments',  require('./routes/payments'));
 
 app.get('/api/health', (_req, res) => {

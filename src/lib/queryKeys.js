@@ -13,4 +13,5 @@ export const qk = {
   cajaHoy:       ()             => ['caja', 'hoy'],
   config:        ()             => ['config'],
   usuarios:      ()             => ['usuarios'],
+  onboarding:    ()             => ['onboarding'],
 };
