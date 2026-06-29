@@ -1,4 +1,5 @@
-const { resolvePlanAccess } = require('../lib/planLimits');
+const { resolvePlanAccess, OWNER_RESTAURANTE_ID } = require('../lib/planLimits');
+const { hasValidAdminCode } = require('../lib/adminAuth');
 
 const MS_30_DIAS = 30 * 24 * 60 * 60 * 1000;
 
@@ -15,7 +16,8 @@ async function checkOrderLimit(req, res, next) {
     if (!restaurante) return res.status(404).json({ error: 'Restaurante no encontrado' });
 
     const plan_status = restaurante.plan_status || 'active';
-    if (plan_status === 'past_due' || plan_status === 'cancelled') {
+    const bypassed     = rid === OWNER_RESTAURANTE_ID || hasValidAdminCode(req);
+    if (!bypassed && (plan_status === 'past_due' || plan_status === 'cancelled')) {
       return res.status(402).json({
         error:       'PAYMENT_REQUIRED',
         plan_status,
@@ -26,7 +28,7 @@ async function checkOrderLimit(req, res, next) {
       });
     }
 
-    const access = resolvePlanAccess(restaurante);
+    const access = resolvePlanAccess({ ...restaurante, id: rid }, { adminBypass: hasValidAdminCode(req) });
     if (access.blocked) {
       return res.status(403).json({ error: access.error, message: access.message, upgrade_url: '/billing' });
     }
@@ -75,7 +77,7 @@ async function checkUserLimit(req, res, next) {
     });
     if (!restaurante) return res.status(404).json({ error: 'Restaurante no encontrado' });
 
-    const access = resolvePlanAccess(restaurante);
+    const access = resolvePlanAccess({ ...restaurante, id: rid }, { adminBypass: hasValidAdminCode(req) });
     if (access.blocked) {
       return res.status(403).json({ error: access.error, message: access.message, upgrade_url: '/billing' });
     }

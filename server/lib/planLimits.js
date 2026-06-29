@@ -1,3 +1,5 @@
+const { hasValidAdminCode } = require('./adminAuth');
+
 /**
  * Definición canónica de planes — fuente de verdad del backend.
  * Espejo en el frontend: src/config/plans.js (sincronizar a mano si cambian
@@ -80,13 +82,29 @@ function toLegacyShape(canonical) {
   };
 }
 
+// Restaurante propio (octaviofararene@gmail.com, usuario admin id 6) — nunca
+// bloqueado por trial vencido / cancelado, sin importar el plan que tenga en BD.
+// A propósito es el id fijo, NO el email: Usuario.email solo es @@unique([email,
+// restaurante_id]) (no global), así que cualquiera podría firmar un restaurante
+// nuevo con ese mismo email y heredar el bypass — el id de restaurante no se
+// puede falsificar desde signup.
+const OWNER_RESTAURANTE_ID = 3;
+
 /**
  * Resuelve si un restaurante tiene acceso activo a algún plan.
  * Centraliza dos bloqueos usados por checkOrderLimit, checkUserLimit y
  * checkPlanFeature: trial vencido, y plan cancelado/sin entrada en
  * PLAN_LIMITS.
+ *
+ * `id` es opcional (no todos los callers lo tenían antes) — si no se pasa,
+ * simplemente no aplica el bypass de cuenta propia. `adminBypass` lo setean
+ * los callers HTTP que ya verificaron el header x-admin-code.
  */
-function resolvePlanAccess({ plan, trial_ends_at }) {
+function resolvePlanAccess({ id, plan, trial_ends_at }, { adminBypass = false } = {}) {
+  if (id === OWNER_RESTAURANTE_ID || adminBypass) {
+    return { blocked: false, limits: toLegacyShape(PLAN_LIMITS.business) };
+  }
+
   if (plan === 'trial' && trial_ends_at && new Date(trial_ends_at) < new Date()) {
     return {
       blocked: true,
@@ -123,7 +141,7 @@ function checkPlanFeature(featureKey) {
       });
       if (!restaurante) return res.status(404).json({ error: 'Restaurante no encontrado' });
 
-      const access = resolvePlanAccess(restaurante);
+      const access = resolvePlanAccess({ ...restaurante, id: rid }, { adminBypass: hasValidAdminCode(req) });
       if (access.blocked) {
         return res.status(403).json({ error: access.error, message: access.message, upgrade_url: '/billing' });
       }
@@ -145,4 +163,4 @@ function checkPlanFeature(featureKey) {
   };
 }
 
-module.exports = { PLAN_LIMITS, PLAN_REQUERIDO, resolvePlanAccess, checkPlanFeature };
+module.exports = { PLAN_LIMITS, PLAN_REQUERIDO, resolvePlanAccess, checkPlanFeature, OWNER_RESTAURANTE_ID };

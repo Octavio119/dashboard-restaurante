@@ -175,7 +175,7 @@ router.get('/usage', requireAuth, async (req, res) => {
       select: { plan: true, trial_ends_at: true, ordenes_mes_actual: true, billing_ciclo_inicio: true },
     });
 
-    const access = resolvePlanAccess(restaurante);
+    const access = resolvePlanAccess({ ...restaurante, id: req.user.restaurante_id });
     const usadas = restaurante.ordenes_mes_actual || 0;
     const limite = access.blocked ? 0 : (access.limits.ordenes_mes === Infinity ? null : access.limits.ordenes_mes);
     const pct    = limite ? Math.round((usadas / limite) * 100) : (access.blocked ? 100 : 0);

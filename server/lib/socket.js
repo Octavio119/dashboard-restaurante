@@ -89,7 +89,7 @@ async function init(httpServer) {
         where:  { id: Number(rid) },
         select: { plan: true, trial_ends_at: true },
       });
-      const access = resolvePlanAccess(restaurante || {});
+      const access = resolvePlanAccess({ ...(restaurante || {}), id: Number(rid) });
 
       if (access.blocked || !access.limits.websocket) {
         socket.emit('plan_upgrade_required', {

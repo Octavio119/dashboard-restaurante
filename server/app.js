@@ -84,6 +84,9 @@ app.use('/api/auth/login',      authLimiter);
 app.use('/api/auth/register',   authLimiter);
 app.use('/api/auth/signup',     authLimiter);
 app.use('/api/auth/google',     authLimiter);
+// Mismo limiter estricto que login — el panel /api/admin solo está protegido
+// por ADMIN_CODE, conviene frenar intentos de fuerza bruta sobre el código.
+app.use('/api/admin',           authLimiter);
 // Rate limiting granular para endpoints de creación de recursos
 ['/api/pedidos', '/api/ventas', '/api/clientes', '/api/reservas', '/api/usuarios'].forEach(path => {
   app.post(path, writeLimiter);
@@ -169,6 +172,7 @@ app.use('/api/apikeys',   require('./routes/apikeys'));
 app.use('/api/onboarding', require('./routes/onboarding'));
 app.use('/api/payments',  require('./routes/payments'));
 app.use('/api/pagos',     require('./routes/pagos'));
+app.use('/api/admin',     require('./routes/admin'));
 
 app.get('/api/health', (_req, res) => {
   // Lazy-require para evitar dependencia circular en la inicialización

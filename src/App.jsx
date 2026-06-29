@@ -37,6 +37,7 @@ import Billing           from './pages/Billing';
 import ApiKeysPage       from './pages/ApiKeysPage';
 import BillingSuccess    from './pages/BillingSuccess';
 import PagoTransferencia from './pages/PagoTransferencia';
+import AdminPanel        from './pages/AdminPanel';
 import Spinner           from './components/ui/Spinner';
 import SyncBanner        from './components/SyncBanner';
 
@@ -150,6 +151,9 @@ const App = () => {
   if (window.location.pathname === '/billing' && (_qs.get('success') === '1' || _qs.get('cancel') === '1')) {
     return <BillingSuccess />;
   }
+  // Panel de administrador — ruta pública protegida solo por ADMIN_CODE, no
+  // depende del login del dashboard (debe funcionar incluso sin sesión).
+  if (window.location.pathname === '/admin') return <AdminPanel />;
   if (authLoading) {
     return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><Spinner size="lg" color="violet" /></div>;
   }
