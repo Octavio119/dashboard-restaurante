@@ -4,6 +4,7 @@ const multer = require('multer');
 const xlsx   = require('xlsx');
 const requireAuth = require('../middleware/auth');
 const verifyRole  = require('../middleware/verifyRole');
+const { uploadImage } = require('../lib/cloudinary');
 
 router.use(requireAuth);
 router.use(require('../middleware/requireTenant'));
@@ -186,7 +187,7 @@ router.post('/import', verifyRole('admin', 'gerente'), upload.single('file'), as
 // POST /api/productos
 router.post('/', verifyRole('admin', 'gerente'), async (req, res) => {
   try {
-    const { nombre, categoria, precio, stock = 0 } = req.body;
+    const { nombre, categoria, precio, stock = 0, imagen_base64 } = req.body;
     if (!nombre || !categoria || precio == null)
       return res.status(400).json({ error: 'nombre, categoria y precio requeridos' });
 
@@ -194,8 +195,11 @@ router.post('/', verifyRole('admin', 'gerente'), async (req, res) => {
     const cat = await req.prisma.categoria.findFirst({ where: { nombre: categoria, restaurante_id: rid } });
     if (!cat) return res.status(400).json({ error: `Categoría "${categoria}" no existe. Créala primero.` });
 
+    // Sin imagen_base64 → imagen_url queda null (producto nuevo, sin foto todavía).
+    const imagen_url = imagen_base64 ? await uploadImage(imagen_base64) : null;
+
     const producto = await req.prisma.producto.create({
-      data: { nombre: nombre.trim(), categoria, precio: parseFloat(precio), stock: parseInt(stock), restaurante_id: rid },
+      data: { nombre: nombre.trim(), categoria, precio: parseFloat(precio), stock: parseInt(stock), imagen_url, restaurante_id: rid },
     });
     res.status(201).json(producto);
   } catch (e) { logger.error({ err: e }, 'route error'); res.status(500).json({ error: 'Error interno' }); }
@@ -204,7 +208,7 @@ router.post('/', verifyRole('admin', 'gerente'), async (req, res) => {
 // PUT /api/productos/:id
 router.put('/:id', verifyRole('admin', 'gerente'), async (req, res) => {
   try {
-    const { nombre, categoria, precio, stock } = req.body;
+    const { nombre, categoria, precio, stock, imagen_base64 } = req.body;
     if (!nombre || !categoria || precio == null)
       return res.status(400).json({ error: 'nombre, categoria y precio requeridos' });
 
@@ -212,10 +216,14 @@ router.put('/:id', verifyRole('admin', 'gerente'), async (req, res) => {
     const exists = await req.prisma.producto.findFirst({ where: { id, restaurante_id: RID(req) } });
     if (!exists) return res.status(404).json({ error: 'Producto no encontrado' });
 
-    const producto = await req.prisma.producto.update({
-      where: { id },
-      data: { nombre: nombre.trim(), categoria, precio: parseFloat(precio), stock: parseInt(stock ?? 0) },
-    });
+    const data = { nombre: nombre.trim(), categoria, precio: parseFloat(precio), stock: parseInt(stock ?? 0) };
+    // Sin imagen_base64 en el body → no se toca imagen_url existente.
+    if (imagen_base64) {
+      const imagen_url = await uploadImage(imagen_base64);
+      if (imagen_url) data.imagen_url = imagen_url;
+    }
+
+    const producto = await req.prisma.producto.update({ where: { id }, data });
     res.json(producto);
   } catch (e) { res.status(500).json({ error: 'Error interno' }); }
 });

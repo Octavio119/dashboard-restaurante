@@ -134,10 +134,12 @@ app.use(
   (req, _res, next) => { req.body = req.body ? JSON.parse(req.body) : {}; next(); }
 );
 
-// Comprobantes de pago como data URL base64 — exceden el límite global de 10kb.
-// Body-parser ignora el parseo global si el body ya fue parseado, así que
-// basta con un parser más permisivo montado antes, igual que los webhooks.
-app.use('/api/pagos', express.json({ limit: '8mb' }));
+// Comprobantes de pago / fotos de platos como data URL base64 — exceden el
+// límite global de 10kb. Body-parser ignora el parseo global si el body ya
+// fue parseado, así que basta con un parser más permisivo montado antes,
+// igual que los webhooks.
+app.use('/api/pagos',     express.json({ limit: '8mb' }));
+app.use('/api/productos', express.json({ limit: '8mb' }));
 
 app.use(express.json({ limit: '10kb' }));
 app.use((req, _res, next) => { req.prisma = prisma; next(); });

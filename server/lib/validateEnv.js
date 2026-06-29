@@ -28,6 +28,9 @@ const OPTIONAL = [
   { key: 'BACKEND_URL',             hint: 'URL pública del backend, ej: https://tu-app.railway.app — necesaria para redirect de PayPal y el callback de Google OAuth' },
   { key: 'GOOGLE_CLIENT_ID',        hint: 'OAuth Client ID — console.cloud.google.com → APIs & Services → Credentials' },
   { key: 'GOOGLE_CLIENT_SECRET',    hint: 'OAuth Client Secret — mismo lugar que GOOGLE_CLIENT_ID' },
+  { key: 'CLOUDINARY_CLOUD_NAME',   hint: 'Fotos de platos en Menú — cloudinary.com/console' },
+  { key: 'CLOUDINARY_API_KEY',      hint: 'Cloudinary — mismo panel que CLOUDINARY_CLOUD_NAME' },
+  { key: 'CLOUDINARY_API_SECRET',   hint: 'Cloudinary — mismo panel que CLOUDINARY_CLOUD_NAME' },
 ];
 
 function validateEnv() {

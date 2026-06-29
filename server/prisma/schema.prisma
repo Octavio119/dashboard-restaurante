@@ -116,6 +116,7 @@ model Producto {
   stock_minimo   Int     @default(10)
   unidad         String  @default("unidades")
   activo         Boolean @default(true)
+  imagen_url     String?
   restaurante_id Int     @default(1)
 
   restaurante            Restaurante            @relation(fields: [restaurante_id], references: [id], onDelete: Cascade)
