@@ -133,6 +133,24 @@ const ProductRow = memo(({ prod, onEdit, onDelete, canEdit }) => {
       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
     >
+      {/* Foto */}
+      <td className="px-5 py-3.5">
+        {prod.imagen_url ? (
+          <img
+            src={prod.imagen_url}
+            alt={prod.nombre}
+            className="w-10 h-10 rounded-lg object-cover shrink-0"
+          />
+        ) : (
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-base"
+            style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${border.base}` }}
+          >
+            🍽️
+          </div>
+        )}
+      </td>
+
       {/* Producto */}
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
@@ -273,6 +291,27 @@ const MenuPage = ({
 
   const handleFocus  = useCallback(e => { e.target.style.borderColor = alpha(color.purple, 0.55); }, []);
   const handleBlur   = useCallback(e => { e.target.style.borderColor = border.base; }, []);
+
+  // Foto del plato — convierte a base64 y lo guarda en el mismo objeto que ya
+  // viaja al backend (newProduct se reconstruye campo a campo en saveProducto;
+  // editProduct se envía completo, así que imagen_base64 ahí no necesita más cambios).
+  const handleImagenChange = useCallback(e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (editProduct) {
+        setEditProduct({ ...editProduct, imagen_base64: reader.result });
+      } else {
+        setNewProduct({ ...newProduct, imagen_base64: reader.result });
+      }
+    };
+    reader.readAsDataURL(file);
+  }, [editProduct, newProduct, setEditProduct, setNewProduct]);
+
+  const fotoPreview = editProduct
+    ? (editProduct.imagen_base64 || editProduct.imagen_url || null)
+    : (newProduct.imagen_base64 || null);
 
   const isFormValid  = editProduct
     ? editProduct.nombre && editProduct.precio
@@ -511,6 +550,44 @@ const MenuPage = ({
             </div>
           </div>
 
+          {/* Foto del producto */}
+          <div className="flex items-center gap-3 mt-4">
+            {fotoPreview ? (
+              <img
+                src={fotoPreview}
+                alt="Preview"
+                className="w-[60px] h-[60px] rounded-full object-cover shrink-0"
+                style={{ border: `1px solid ${border.base}` }}
+              />
+            ) : (
+              <div
+                className="w-[60px] h-[60px] rounded-full flex items-center justify-center shrink-0 text-2xl"
+                style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${border.base}` }}
+              >
+                🍽️
+              </div>
+            )}
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="producto-foto-input"
+                className="flex items-center gap-1.5 cursor-pointer transition-colors text-[13px] font-semibold"
+                style={{ color: color.purple }}
+              >
+                📷 {editProduct ? 'Cambiar foto' : 'Subir foto'}
+              </label>
+              <input
+                id="producto-foto-input"
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handleImagenChange}
+              />
+              <span className="text-[11px]" style={{ color: text.muted }}>
+                Opcional — JPG o PNG
+              </span>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex items-center gap-2.5 mt-4">
             {editProduct ? (
@@ -661,7 +738,7 @@ const MenuPage = ({
             <table className="w-full min-w-[560px]">
               <thead>
                 <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
-                  {['Producto', 'Categoría', 'Precio', 'Stock', canEditMenu ? 'Acciones' : ''].filter(Boolean).map(h => (
+                  {['Foto', 'Producto', 'Categoría', 'Precio', 'Stock', canEditMenu ? 'Acciones' : ''].filter(Boolean).map(h => (
                     <th
                       key={h}
                       className="px-5 py-3 text-left text-[14px] font-black uppercase tracking-widest"

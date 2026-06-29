@@ -124,6 +124,7 @@ export const useProductos = ({ user }) => {
         categoria: newProduct.categoria,
         precio: parseFloat(newProduct.precio),
         stock: parseInt(newProduct.stock) || 0,
+        imagen_base64: newProduct.imagen_base64,
       });
       setProductos(p => [...p, created]);
       setNewProduct({ nombre:'', categoria: categorias[0]?.nombre || '', precio:'', stock:'' });
