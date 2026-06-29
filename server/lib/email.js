@@ -144,4 +144,69 @@ async function sendTrialExpiredEmail(to, nombre) {
   }
 }
 
-module.exports = { sendWelcomeEmail, sendTrialWarningEmail, sendTrialExpiredEmail };
+// ─── Comprobante de transferencia bancaria ───────────────────────────────────
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+const PAYMENT_PROOF_TO = 'octaviofararene@gmail.com';
+
+async function sendPaymentProofEmail({ plan, monto, nombre, email, restaurante, comprobante }) {
+  const resend = getClient();
+  if (!resend) { logger.warn('RESEND_API_KEY no configurada — sendPaymentProofEmail omitido'); return false; }
+
+  // comprobante llega como data URL ("data:image/png;base64,...."): separamos
+  // el mime type (para el nombre de archivo) del contenido base64 que espera Resend.
+  const match   = /^data:(.+);base64,(.+)$/.exec(comprobante || '');
+  const mime    = match ? match[1] : 'application/octet-stream';
+  const content = match ? match[2] : comprobante;
+  const ext     = mime.split('/')[1] || 'bin';
+
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: PAYMENT_PROOF_TO,
+      subject: `💰 Nuevo pago - ${restaurante} - Plan ${plan}`,
+      html: wrapEmail({
+        preheader: `${nombre} envió un comprobante de transferencia — Plan ${plan}.`,
+        body: `
+          <h1 style="margin:0 0 16px;font-size:22px;color:#fff;">💰 Nuevo comprobante de pago</h1>
+          <table style="width:100%;border-collapse:collapse;margin:0 0 16px;font-size:14px;">
+            <tr>
+              <td style="padding:8px 0;color:#9D9DB8;width:140px;">Restaurante</td>
+              <td style="padding:8px 0;color:#fff;font-weight:600;">${escapeHtml(restaurante)}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#9D9DB8;">Usuario</td>
+              <td style="padding:8px 0;color:#fff;">${escapeHtml(nombre)}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#9D9DB8;">Email</td>
+              <td style="padding:8px 0;color:#fff;">${escapeHtml(email)}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#9D9DB8;">Plan</td>
+              <td style="padding:8px 0;color:#fff;font-weight:600;">${escapeHtml(plan)}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#9D9DB8;">Monto</td>
+              <td style="padding:8px 0;color:#10B981;font-weight:700;">$${escapeHtml(monto)}</td>
+            </tr>
+          </table>
+          <p style="margin:0;font-size:13px;color:#6B6B88;">Comprobante adjunto en este correo.</p>
+        `,
+      }),
+      attachments: [{ filename: `comprobante.${ext}`, content }],
+    });
+    return true;
+  } catch (e) {
+    logger.error({ err: e }, 'sendPaymentProofEmail error');
+    return false;
+  }
+}
+
+module.exports = {
+  sendWelcomeEmail, sendTrialWarningEmail, sendTrialExpiredEmail, sendPaymentProofEmail,
+};

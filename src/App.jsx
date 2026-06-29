@@ -36,6 +36,7 @@ import AuthCallback      from './pages/AuthCallback';
 import Billing           from './pages/Billing';
 import ApiKeysPage       from './pages/ApiKeysPage';
 import BillingSuccess    from './pages/BillingSuccess';
+import PagoTransferencia from './pages/PagoTransferencia';
 import Spinner           from './components/ui/Spinner';
 import SyncBanner        from './components/SyncBanner';
 
@@ -161,6 +162,7 @@ const App = () => {
   }
   if (window.location.pathname === '/billing') return _qs.get('success') === '1' ? <BillingSuccess /> : <Billing />;
   if (window.location.pathname === '/apikeys') return <ApiKeysPage user={user} />;
+  if (window.location.pathname === '/dashboard/pago-transferencia') return <PagoTransferencia user={user} />;
 
   // ── Derived values ────────────────────────────────────────────────────────────
   const safeReservas = Array.isArray(ress.reservas) ? ress.reservas : [];

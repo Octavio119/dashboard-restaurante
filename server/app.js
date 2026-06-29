@@ -131,6 +131,11 @@ app.use(
   (req, _res, next) => { req.body = req.body ? JSON.parse(req.body) : {}; next(); }
 );
 
+// Comprobantes de pago como data URL base64 — exceden el límite global de 10kb.
+// Body-parser ignora el parseo global si el body ya fue parseado, así que
+// basta con un parser más permisivo montado antes, igual que los webhooks.
+app.use('/api/pagos', express.json({ limit: '8mb' }));
+
 app.use(express.json({ limit: '10kb' }));
 app.use((req, _res, next) => { req.prisma = prisma; next(); });
 
@@ -163,6 +168,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/apikeys',   require('./routes/apikeys'));
 app.use('/api/onboarding', require('./routes/onboarding'));
 app.use('/api/payments',  require('./routes/payments'));
+app.use('/api/pagos',     require('./routes/pagos'));
 
 app.get('/api/health', (_req, res) => {
   // Lazy-require para evitar dependencia circular en la inicialización

@@ -269,6 +269,7 @@ export const api = {
   createCheckout:    (plan)      => request('/billing/checkout', { method: 'POST', body: JSON.stringify({ plan }) }),
   captureCheckout:   (orderId)   => request('/billing/capture',  { method: 'POST', body: JSON.stringify({ orderId }) }),
   getBillingPortal:  ()          => request('/billing/portal'),
+  enviarComprobantePago: (data)  => request('/pagos/transferencia', { method: 'POST', body: JSON.stringify(data) }),
   signup: (nombre_restaurante, email, password, nombre_admin) =>
     request('/auth/signup', { method: 'POST', body: JSON.stringify({ nombre_restaurante, email, password, nombre_admin }) }),
 

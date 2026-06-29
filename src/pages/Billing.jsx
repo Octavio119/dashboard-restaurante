@@ -330,6 +330,20 @@ export default function Billing() {
           })}
         </div>
 
+        {/* Pago alternativo por transferencia bancaria */}
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <a
+            href="/dashboard/pago-transferencia"
+            style={{
+              display: 'inline-block', fontSize: '13px', fontWeight: 600,
+              color: '#0066CC', textDecoration: 'none', padding: '10px 16px',
+              border: '1.5px solid #bfdbfe', borderRadius: '8px', background: '#eff6ff',
+            }}
+          >
+            Pagar por transferencia
+          </a>
+        </div>
+
         {/* Cancelar suscripción (solo planes de pago activos) */}
         {planActual !== 'free' && (
           <div style={{ textAlign: 'center', paddingTop: '8px' }}>
