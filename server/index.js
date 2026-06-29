@@ -64,11 +64,21 @@ if (process.env.NODE_ENV === 'production') {
   });
 
   process.on('unhandledRejection', (err) => {
+    if (err?.name === 'PrismaClientRustPanicError' ||
+        (err?.message && err.message.includes('timer has gone away'))) {
+      logger.error({ err }, 'Prisma panic — restarting process');
+      process.exit(1);
+    }
     logger.error({ err }, 'unhandledRejection');
     process.exit(1);
   });
 
   process.on('uncaughtException', (err) => {
+    if (err?.name === 'PrismaClientRustPanicError' ||
+        (err?.message && err.message.includes('timer has gone away'))) {
+      logger.error({ err }, 'Prisma panic — restarting process');
+      process.exit(1);
+    }
     logger.fatal({ err }, 'uncaughtException');
     process.exit(1);
   });
