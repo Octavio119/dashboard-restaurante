@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from "../lib/i18nFormatters"
 import {
   Download, Plus, DollarSign, ShoppingBag,
   Calendar, Activity, ArrowRight, ChefHat,
-  Flame, Clock, CheckCircle2,
+  Flame, Clock, CheckCircle2, TrendingUp, TrendingDown,
 } from "lucide-react"
 import {
   ResponsiveContainer, AreaChart, CartesianGrid,
@@ -15,9 +15,6 @@ import {
 import AIInsightsWidget from "../features/dashboard/components/AIInsightsWidget"
 import OnboardingBanner from "../components/OnboardingBanner"
 import { useOnboarding } from "../hooks/useOnboarding"
-import MetricCard from "../components/ui/MetricCard"
-import StatusBadge from "../components/ui/StatusBadge"
-import { MagicCard } from "../components/ui/magic-card"
 import { ShineBorder } from "../components/ui/shine-border"
 import { AnimatedBeam } from "../components/ui/animated-beam"
 import {
@@ -26,6 +23,16 @@ import {
   DEMO_RESERVAS,
   DEMO_SALES_DATA,
 } from "../lib/demoData"
+
+// ─── Shared card style — KPIs, gráfico, cocina, actividad ──────────────────────
+const CARD_BG = "rgba(255,255,255,0.05)"
+const CARD_BORDER = "1px solid rgba(255,255,255,0.08)"
+
+// Color por estado de pedido — usado en el ícono circular de Actividad reciente
+const ACTIVITY_STATUS_COLOR = {
+  pendiente: "#F59E0B", en_preparacion: "#3B82F6", listo: "#8B5CF6",
+  completado: "#10B981", pagado: "#10B981", entregado: "#10B981",
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function Skeleton({ className }) {
@@ -50,6 +57,52 @@ function AnimatedNumber({ value }) {
   return <span ref={ref}>{value}</span>
 }
 
+// ─── KPI card ───────────────────────────────────────────────────────────────────
+function KpiCard({ title, value, trend, icon: Icon, iconColor = "#8B5CF6" }) {
+  const positive = trend >= 0
+  return (
+    <div
+      className="relative min-w-0 flex flex-col gap-4"
+      style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px" }}
+    >
+      <span
+        className="absolute top-4 right-4 flex shrink-0 items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-semibold"
+        style={{
+          background: positive ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+          color: positive ? "#10B981" : "#EF4444",
+        }}
+      >
+        {positive
+          ? <TrendingUp size={9} strokeWidth={2.5} />
+          : <TrendingDown size={9} strokeWidth={2.5} />}
+        {Math.abs(trend)}%
+      </span>
+
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+        style={{ background: `${iconColor}1A` }}
+      >
+        <Icon size={18} style={{ color: iconColor }} />
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <p
+          className="truncate uppercase"
+          style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, letterSpacing: "1px" }}
+        >
+          {title}
+        </p>
+        <span
+          className="block truncate tabular-nums leading-none"
+          style={{ fontSize: "36px", fontWeight: 800, color: "var(--text-1)" }}
+        >
+          <AnimatedNumber value={value} />
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ─── Kitchen card ───────────────────────────────────────────────────────────────
 function KitchenCard({ order, index }) {
   const { t } = useTranslation("dashboard")
@@ -64,11 +117,11 @@ function KitchenCard({ order, index }) {
       initial={{ opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05, duration: 0.22, ease: "easeOut" }}
-      className="flex-shrink-0 w-[168px] rounded-[10px] border p-3.5 flex flex-col gap-2.5"
+      className="flex-shrink-0 w-[150px] rounded-[10px] border p-3 flex flex-col gap-2"
       style={{ background: cfg.bg, borderColor: `${cfg.color}25` }}
     >
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[13px] font-bold" style={{ color: cfg.color }}>
+        <span className="text-[12px] font-bold" style={{ color: cfg.color }}>
           {order.mesa ? `Mesa ${order.mesa}` : order.cliente_nombre?.split("·")[0]?.trim()}
         </span>
         <span className="flex items-center gap-1 rounded-md px-1.5 py-[2px] text-[10px] font-semibold"
@@ -90,14 +143,17 @@ function KitchenCard({ order, index }) {
 // ─── Metric skeleton ────────────────────────────────────────────────────────────
 function MetricSkeleton() {
   return (
-    <div className="rounded-[12px] border border-white/[0.05] bg-[#16162A] p-5 flex flex-col gap-4">
+    <div
+      className="flex flex-col gap-4"
+      style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px" }}
+    >
       <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-8 rounded-lg" />
+        <Skeleton className="h-10 w-10 rounded-lg" />
         <Skeleton className="h-5 w-10 rounded-full" />
       </div>
       <div className="flex flex-col gap-1.5">
         <Skeleton className="h-2.5 w-20" />
-        <Skeleton className="h-7 w-28" />
+        <Skeleton className="h-9 w-28" />
       </div>
     </div>
   )
@@ -186,7 +242,7 @@ export default function DashboardPage({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.14 }}
-      className="flex flex-col gap-5 p-5 sm:p-7 max-w-[1440px] w-full mx-auto"
+      className="flex flex-col gap-6 px-6 py-6 max-w-[1400px] w-full mx-auto"
     >
 
       {!onboardingLoading && !onboardingComplete && (
@@ -278,7 +334,7 @@ export default function DashboardPage({
           variants={stagger.container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
@@ -311,7 +367,7 @@ export default function DashboardPage({
                 },
               ].map((card, i) => (
                 <motion.div key={i} variants={stagger.item} ref={kpiRefs[i]} className="min-w-0">
-                  <MetricCard {...card} />
+                  <KpiCard {...card} />
                 </motion.div>
               ))
           }
@@ -337,6 +393,7 @@ export default function DashboardPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18, duration: 0.22 }}
           className="flex flex-col gap-3"
+          style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "20px" }}
         >
           {/* Strip header */}
           <div className="flex items-center justify-between">
@@ -366,7 +423,7 @@ export default function DashboardPage({
           </div>
 
           {/* Horizontal scroll */}
-          <div className="flex gap-3 overflow-x-auto pb-0.5 scrollbar-none">
+          <div className="flex gap-2.5 overflow-x-auto pb-0.5 scrollbar-none">
             {activeOrders.map((order, i) => (
               <KitchenCard key={order.id || i} order={order} index={i} />
             ))}
@@ -374,143 +431,157 @@ export default function DashboardPage({
         </motion.div>
       )}
 
-      {/* ── Charts + Activity ────────────────────────────────────────────────── */}
+      {/* ── Sales Chart — ancho completo ─────────────────────────────────────── */}
       <motion.div
-        variants={stagger.container}
+        variants={stagger.item}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+        className="flex flex-col gap-4"
+        style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px", minHeight: "280px" }}
       >
-        {/* Area chart ── 2/3 */}
-        <motion.div variants={stagger.item} className="lg:col-span-2">
-          <MagicCard className="p-5 sm:p-6 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-3)" }}>
-                  {t("chart.section_label", { ns: "dashboard" })}
-                </p>
-                <h3 className="mt-0.5 text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
-                  {t("chart.title", { ns: "dashboard" })}
-                </h3>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
-                <span className="inline-block h-[2px] w-4 rounded bg-violet-500/50" />
-                {t("chart.legend_income", { ns: "dashboard" })}
-              </div>
-            </div>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-3)" }}>
+              {t("chart.section_label", { ns: "dashboard" })}
+            </p>
+            <h3 className="mt-0.5" style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>
+              {t("chart.title", { ns: "dashboard" })}
+            </h3>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
+            <span className="inline-block h-[2px] w-4 rounded bg-violet-500/50" />
+            {t("chart.legend_income", { ns: "dashboard" })}
+          </div>
+        </div>
 
-            <div className="h-[200px] sm:h-[226px]">
-              {isLoading ? (
-                <Skeleton className="h-full w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={displaySalesData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%"   stopColor="#8B5CF6" stopOpacity={0.18} />
-                        <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0}    />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.035)" />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#50506A", fontSize: 11 }} dy={6} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#50506A", fontSize: 11 }} />
-                    <Tooltip
-                      contentStyle={{
-                        background: "#1A1A2E",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        borderRadius: "10px",
-                        color: "#F0F0FF",
-                        fontSize: "12px",
-                        padding: "7px 12px",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                      }}
-                      cursor={{ stroke: "rgba(255,255,255,0.04)", strokeWidth: 1 }}
-                      formatter={v => [
-                        formatCurrency(Number(v), i18n.language),
-                        t("chart.tooltip_sales", { ns: "dashboard" }),
-                      ]}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="sales"
-                      stroke="#8B5CF6"
-                      strokeWidth={1.5}
-                      fill="url(#salesGrad)"
-                      dot={false}
-                      activeDot={{ r: 3.5, fill: "#8B5CF6", stroke: "#0A0A12", strokeWidth: 2 }}
-                      animationDuration={900}
-                      animationEasing="ease-out"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </MagicCard>
-        </motion.div>
+        <div className="flex-1 min-h-[200px]">
+          {isLoading ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={displaySalesData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#8B5CF6" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0}    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.035)" />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#50506A", fontSize: 11 }} dy={6} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#50506A", fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "#1A1A2E",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: "10px",
+                    color: "#F0F0FF",
+                    fontSize: "12px",
+                    padding: "7px 12px",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                  }}
+                  cursor={{ stroke: "rgba(255,255,255,0.04)", strokeWidth: 1 }}
+                  formatter={v => [
+                    formatCurrency(Number(v), i18n.language),
+                    t("chart.tooltip_sales", { ns: "dashboard" }),
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#8B5CF6"
+                  strokeWidth={1.5}
+                  fill="url(#salesGrad)"
+                  dot={false}
+                  activeDot={{ r: 3.5, fill: "#8B5CF6", stroke: "#0A0A12", strokeWidth: 2 }}
+                  animationDuration={900}
+                  animationEasing="ease-out"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </motion.div>
 
-        {/* Activity feed ── 1/3 */}
-        <motion.div variants={stagger.item}>
-          <MagicCard className="p-5 flex flex-col gap-3 h-full">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-3)" }}>
-                  {t("activity.section_label", { ns: "dashboard" })}
-                </p>
-                <h3 className="mt-0.5 text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
-                  {t("activity.title", { ns: "dashboard" })}
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveTab("Pedidos")}
-                className="flex cursor-pointer items-center gap-1 text-[11px] font-medium transition-colors duration-150 hover:text-white"
-                style={{ color: "var(--text-3)" }}
-              >
-                {t("view_all", { ns: "common" })} <ArrowRight size={10} />
-              </button>
-            </div>
+      {/* ── Actividad reciente — ancho completo ──────────────────────────────── */}
+      <motion.div
+        variants={stagger.item}
+        initial="hidden"
+        animate="show"
+        className="flex flex-col gap-1"
+        style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px" }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-3)" }}>
+              {t("activity.section_label", { ns: "dashboard" })}
+            </p>
+            <h3 className="mt-0.5 text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
+              {t("activity.title", { ns: "dashboard" })}
+            </h3>
+          </div>
+          <button
+            onClick={() => setActiveTab("Pedidos")}
+            className="flex cursor-pointer items-center gap-1 text-[11px] font-medium transition-colors duration-150 hover:text-white"
+            style={{ color: "var(--text-3)" }}
+          >
+            {t("view_all", { ns: "common" })} <ArrowRight size={10} />
+          </button>
+        </div>
 
-            <div className="flex flex-col">
-              {isLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 px-1 py-2.5">
-                      <Skeleton className="h-1.5 w-1.5 shrink-0 rounded-full" />
-                      <Skeleton className="h-3 flex-1" />
-                      <Skeleton className="h-3 w-12" />
-                    </div>
-                  ))
-                : displayPedidos.slice(0, 7).map((order, i) => (
-                    <motion.div
-                      key={order.id || i}
-                      initial={{ opacity: 0, x: -4 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.03, duration: 0.18 }}
-                      className="flex cursor-default items-center gap-2.5 rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-white/[0.025]"
-                    >
-                      <StatusBadge status={order.estado} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
-                          {order.cliente_nombre}
-                        </p>
-                        {order.item && (
-                          <p className="truncate text-[11px]" style={{ color: "var(--text-3)" }}>{order.item}</p>
-                        )}
-                      </div>
-                      <span className="shrink-0 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-                        {formatCurrency(order.total || 0, i18n.language)}
-                      </span>
-                    </motion.div>
-                  ))
-              }
-
-              {!isLoading && displayPedidos.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "var(--text-3)" }}>
-                  <ShoppingBag size={20} className="opacity-30" />
-                  <p className="text-[12px]">{t("activity.empty", { ns: "dashboard" })}</p>
+        <div className="flex flex-col">
+          {isLoading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-1 py-3">
+                  <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                  <Skeleton className="h-3 flex-1" />
+                  <Skeleton className="h-3 w-12" />
                 </div>
-              )}
+              ))
+            : displayPedidos.slice(0, 7).map((order, i) => {
+                const statusColor = ACTIVITY_STATUS_COLOR[order.estado] || "#9090B0"
+                return (
+                  <motion.div
+                    key={order.id || i}
+                    initial={{ opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03, duration: 0.18 }}
+                    className="flex cursor-default items-center gap-3 rounded-lg px-2 py-3 transition-colors duration-150 hover:bg-white/[0.025]"
+                    style={{ borderBottom: i < Math.min(displayPedidos.length, 7) - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}
+                  >
+                    {/* Avatar circular */}
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                      style={{ background: `${statusColor}1A` }}
+                    >
+                      <ShoppingBag size={14} style={{ color: statusColor }} />
+                    </div>
+
+                    {/* Nombre + descripción */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
+                        {order.cliente_nombre}
+                      </p>
+                      {order.item && (
+                        <p className="truncate text-[11px]" style={{ color: "var(--text-3)" }}>{order.item}</p>
+                      )}
+                    </div>
+
+                    {/* Monto en verde */}
+                    <span className="shrink-0 text-[13px] font-bold tabular-nums" style={{ color: "#10B981" }}>
+                      {formatCurrency(order.total || 0, i18n.language)}
+                    </span>
+                  </motion.div>
+                )
+              })
+          }
+
+          {!isLoading && displayPedidos.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "var(--text-3)" }}>
+              <ShoppingBag size={20} className="opacity-30" />
+              <p className="text-[12px]">{t("activity.empty", { ns: "dashboard" })}</p>
             </div>
-          </MagicCard>
-        </motion.div>
+          )}
+        </div>
       </motion.div>
 
       {/* ── Operational Stats Strip ─────────────────────────────────────────── */}
