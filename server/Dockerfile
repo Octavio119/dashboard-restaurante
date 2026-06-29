@@ -38,5 +38,8 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# PM2 en modo runtime — gestiona el cluster y reenvía señales SIGTERM correctamente
-CMD ["pm2-runtime", "ecosystem.config.cjs", "--env", "production"]
+# Node directo: PM2 cluster mode forkeaba workers y Railway no veía el puerto
+# abierto hasta que todos terminaban de inicializar, lo que hacía fallar el
+# healthcheck. Railway maneja restarts de contenedor (restartPolicyType en
+# railway.json) — no necesitamos que PM2 lo haga también.
+CMD ["node", "index.js"]
