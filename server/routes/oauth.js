@@ -11,14 +11,6 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BACKEND_URL  = process.env.BACKEND_URL  || `http://localhost:${process.env.PORT || 9000}`;
 const GOOGLE_CONFIGURED = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
-logger.info({
-  configured: GOOGLE_CONFIGURED,
-  clientIdPrefix: process.env.GOOGLE_CLIENT_ID
-    ? process.env.GOOGLE_CLIENT_ID.substring(0, 25)
-    : 'NOT SET',
-  backendUrl: BACKEND_URL,
-}, 'OAuth startup check');
-
 // passport.initialize() solo se monta en ESTE router (no en toda la app) —
 // con session:false en authenticate() no hace falta passport.session() ni
 // express-session: el perfil de Google llega en req.user para esta request
