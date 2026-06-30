@@ -107,8 +107,8 @@ function KpiCard({ title, value, trend, icon: Icon, iconColor = "#8B5CF6" }) {
 function KitchenCard({ order, index }) {
   const { t } = useTranslation("dashboard")
   const KITCHEN_STATUS = {
-    pendiente:      { color: "#F59E0B", bg: "rgba(245,158,11,0.08)",  icon: Clock,  label: t("kitchen_status.waiting") },
-    en_preparacion: { color: "#3B82F6", bg: "rgba(59,130,246,0.08)",  icon: Flame,  label: t("kitchen_status.in_kitchen") },
+    pendiente:      { color: "#F59E0B", bg: "rgba(245,158,11,0.06)",  icon: Clock,  label: t("kitchen_status.waiting") },
+    en_preparacion: { color: "#3B82F6", bg: "rgba(59,130,246,0.06)",  icon: Flame,  label: t("kitchen_status.in_kitchen") },
   }
   const cfg = KITCHEN_STATUS[order.estado] || KITCHEN_STATUS.pendiente
   const StatusIcon = cfg.icon
@@ -117,19 +117,26 @@ function KitchenCard({ order, index }) {
       initial={{ opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05, duration: 0.22, ease: "easeOut" }}
-      className="flex-shrink-0 w-[150px] rounded-[10px] border p-3 flex flex-col gap-2"
-      style={{ background: cfg.bg, borderColor: `${cfg.color}25` }}
+      className="flex-shrink-0 w-[148px] rounded-[10px] flex flex-col gap-2 p-3"
+      style={{
+        background: cfg.bg,
+        border: `1px solid ${cfg.color}20`,
+        borderLeft: `3px solid ${cfg.color}`,
+      }}
     >
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[12px] font-bold" style={{ color: cfg.color }}>
+        <span className="text-[12px] font-bold truncate" style={{ color: cfg.color }}>
           {order.mesa ? `Mesa ${order.mesa}` : order.cliente_nombre?.split("·")[0]?.trim()}
         </span>
-        <span className="flex items-center gap-1 rounded-md px-1.5 py-[2px] text-[10px] font-semibold"
-          style={{ background: `${cfg.color}18`, color: cfg.color }}>
-          <StatusIcon size={9} strokeWidth={2.5} />
+        <span
+          className="flex shrink-0 items-center gap-[3px] rounded-md px-1.5 py-[2px] text-[9px] font-semibold"
+          style={{ background: `${cfg.color}18`, color: cfg.color }}
+        >
+          <StatusIcon size={8} strokeWidth={2.5} />
           {cfg.label}
         </span>
       </div>
+      <div style={{ height: "1px", background: `${cfg.color}15` }} />
       <p className="text-[11px] leading-snug line-clamp-2" style={{ color: "var(--text-2)" }}>
         {order.item || "—"}
       </p>
@@ -393,23 +400,23 @@ export default function DashboardPage({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18, duration: 0.22 }}
           className="flex flex-col gap-3"
-          style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "20px" }}
+          style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px" }}
         >
           {/* Strip header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ChefHat size={13} style={{ color: "var(--text-3)" }} />
+              <ChefHat size={14} style={{ color: "var(--text-2)" }} />
               <span
-                className="text-[11px] font-semibold uppercase tracking-[0.1em]"
-                style={{ color: "var(--text-3)" }}
+                className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                style={{ color: "var(--text-2)" }}
               >
                 {t("kitchen.title", { ns: "dashboard" })}
               </span>
               <span
-                className="flex items-center justify-center rounded-full px-1.5 py-[1px] text-[10px] font-bold"
-                style={{ background: "rgba(59,130,246,0.1)", color: "#3B82F6" }}
+                className="flex items-center justify-center rounded-full px-2 py-[2px] text-[11px] font-bold"
+                style={{ background: "rgba(59,130,246,0.15)", color: "#3B82F6", minWidth: "22px" }}
               >
-                {t("kitchen.active_other", { ns: "dashboard", count: activeOrders.length })}
+                {activeOrders.length}
               </span>
             </div>
             <button
@@ -423,7 +430,7 @@ export default function DashboardPage({
           </div>
 
           {/* Horizontal scroll */}
-          <div className="flex gap-2.5 overflow-x-auto pb-0.5 scrollbar-none">
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
             {activeOrders.map((order, i) => (
               <KitchenCard key={order.id || i} order={order} index={i} />
             ))}
@@ -454,7 +461,7 @@ export default function DashboardPage({
           </div>
         </div>
 
-        <div className="flex-1 min-h-[200px]">
+        <div className="flex-1 min-h-[240px]">
           {isLoading ? (
             <Skeleton className="h-full w-full" />
           ) : (
@@ -462,11 +469,11 @@ export default function DashboardPage({
               <AreaChart data={displaySalesData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor="#8B5CF6" stopOpacity={0.18} />
+                    <stop offset="0%"   stopColor="#8B5CF6" stopOpacity={0.24} />
                     <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0}    />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.035)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#50506A", fontSize: 11 }} dy={6} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: "#50506A", fontSize: 11 }} />
                 <Tooltip
@@ -479,7 +486,7 @@ export default function DashboardPage({
                     padding: "7px 12px",
                     boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                   }}
-                  cursor={{ stroke: "rgba(255,255,255,0.04)", strokeWidth: 1 }}
+                  cursor={{ stroke: "rgba(255,255,255,0.05)", strokeWidth: 1 }}
                   formatter={v => [
                     formatCurrency(Number(v), i18n.language),
                     t("chart.tooltip_sales", { ns: "dashboard" }),
@@ -489,10 +496,10 @@ export default function DashboardPage({
                   type="monotone"
                   dataKey="sales"
                   stroke="#8B5CF6"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   fill="url(#salesGrad)"
                   dot={false}
-                  activeDot={{ r: 3.5, fill: "#8B5CF6", stroke: "#0A0A12", strokeWidth: 2 }}
+                  activeDot={{ r: 4, fill: "#8B5CF6", stroke: "#0A0A12", strokeWidth: 2 }}
                   animationDuration={900}
                   animationEasing="ease-out"
                 />
