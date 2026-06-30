@@ -929,7 +929,7 @@ export default function VentasPage({
                 <div className="flex flex-col gap-2">
                   <label style={{ fontSize: '13px', fontWeight: 600, color: '#9CA3AF' }} className="uppercase tracking-wider">Items</label>
                   {ventaItems.map((item, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_60px_80px_32px] gap-2 items-center">
+                    <div key={idx} className="grid grid-cols-[1fr_90px_100px_32px] gap-2 items-center">
                       {ventaProductos.length > 0 ? (
                         <select
                           value={item.producto_id ?? ''}
