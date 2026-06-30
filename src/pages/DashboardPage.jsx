@@ -63,7 +63,7 @@ function KpiCard({ title, value, trend, icon: Icon, iconColor = "#8B5CF6" }) {
   return (
     <div
       className="relative min-w-0 flex flex-col gap-3.5"
-      style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "14px", padding: "20px" }}
+      style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px", minHeight: "120px" }}
     >
       <span
         className="absolute top-3.5 right-3.5 flex shrink-0 items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-semibold"
@@ -79,22 +79,22 @@ function KpiCard({ title, value, trend, icon: Icon, iconColor = "#8B5CF6" }) {
       </span>
 
       <div
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
         style={{ background: `${iconColor}1A` }}
       >
-        <Icon size={16} style={{ color: iconColor }} />
+        <Icon size={18} style={{ color: iconColor }} />
       </div>
 
       <div className="flex min-w-0 flex-col gap-1.5">
         <p
           className="truncate uppercase"
-          style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: 500, letterSpacing: "1px" }}
+          style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, letterSpacing: "1px" }}
         >
           {title}
         </p>
         <span
           className="block truncate tabular-nums leading-none"
-          style={{ fontSize: "28px", fontWeight: 800, color: "var(--text-1)" }}
+          style={{ fontSize: "36px", fontWeight: 800, color: "var(--text-1)" }}
         >
           <AnimatedNumber value={value} />
         </span>
@@ -145,15 +145,15 @@ function MetricSkeleton() {
   return (
     <div
       className="flex flex-col gap-3.5"
-      style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "14px", padding: "20px" }}
+      style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px", minHeight: "120px" }}
     >
       <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-10 w-10 rounded-lg" />
         <Skeleton className="h-5 w-10 rounded-full" />
       </div>
       <div className="flex flex-col gap-1.5">
         <Skeleton className="h-2.5 w-20" />
-        <Skeleton className="h-7 w-28" />
+        <Skeleton className="h-8 w-28" />
       </div>
     </div>
   )
