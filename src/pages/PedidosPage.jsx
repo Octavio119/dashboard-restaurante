@@ -925,7 +925,7 @@ export default function PedidosPage({
                 </div>
               </div>
 
-              <div className="w-64 flex flex-col">
+              <div className="w-44 sm:w-64 flex flex-col overflow-hidden">
                 <div className="px-4 py-3 border-b border-zinc-800">
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                     Pedido ({pedidoItems.length} items)
