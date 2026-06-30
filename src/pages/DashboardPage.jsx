@@ -6,8 +6,9 @@ import { formatCurrency, formatDate } from "../lib/i18nFormatters"
 import {
   Download, Plus, DollarSign, ShoppingBag,
   Calendar, Activity, ArrowRight, ChefHat,
-  Flame, Clock, CheckCircle2, TrendingUp, TrendingDown,
+  Flame, Clock, CheckCircle2,
 } from "lucide-react"
+import { KpiCard } from "../components/ui/KpiCard"
 import {
   ResponsiveContainer, AreaChart, CartesianGrid,
   XAxis, YAxis, Tooltip, Area,
@@ -55,52 +56,6 @@ function AnimatedNumber({ value }) {
     return ctrl.stop
   }, [value, numLocale])
   return <span ref={ref}>{value}</span>
-}
-
-// ─── KPI card ───────────────────────────────────────────────────────────────────
-function KpiCard({ title, value, trend, icon: Icon, iconColor = "#8B5CF6" }) {
-  const positive = trend >= 0
-  return (
-    <div
-      className="relative min-w-0 flex flex-col gap-3.5"
-      style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px", minHeight: "120px" }}
-    >
-      <span
-        className="absolute top-3.5 right-3.5 flex shrink-0 items-center gap-1 rounded-full px-2 py-[3px] text-[11px] font-semibold"
-        style={{
-          background: positive ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
-          color: positive ? "#10B981" : "#EF4444",
-        }}
-      >
-        {positive
-          ? <TrendingUp size={9} strokeWidth={2.5} />
-          : <TrendingDown size={9} strokeWidth={2.5} />}
-        {Math.abs(trend)}%
-      </span>
-
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-        style={{ background: `${iconColor}1A` }}
-      >
-        <Icon size={18} style={{ color: iconColor }} />
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-1.5">
-        <p
-          className="truncate uppercase"
-          style={{ fontSize: "12px", color: "#9CA3AF", fontWeight: 500, letterSpacing: "1px" }}
-        >
-          {title}
-        </p>
-        <span
-          className="block truncate tabular-nums leading-none"
-          style={{ fontSize: "36px", fontWeight: 800, color: "var(--text-1)" }}
-        >
-          <AnimatedNumber value={value} />
-        </span>
-      </div>
-    </div>
-  )
 }
 
 // ─── Kitchen card ───────────────────────────────────────────────────────────────
@@ -374,7 +329,9 @@ export default function DashboardPage({
                 },
               ].map((card, i) => (
                 <motion.div key={i} variants={stagger.item} ref={kpiRefs[i]} className="min-w-0">
-                  <KpiCard {...card} />
+                  <KpiCard title={card.title} icon={card.icon} iconColor={card.iconColor} trend={card.trend}>
+                    <AnimatedNumber value={card.value} />
+                  </KpiCard>
                 </motion.div>
               ))
           }

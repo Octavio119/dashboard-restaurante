@@ -9,7 +9,7 @@ import { exportVentasPDF }   from '../lib/export-pdf';
 import { exportVentasExcel as exportVentasExcelFull } from '../lib/export-excel';
 import { jsPDF } from 'jspdf';
 import { AreaChart, Area, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { MagicCard } from '../components/ui/magic-card';
+import { KpiCard } from '../components/ui/KpiCard';
 import { CosmicButton } from '../components/ui/cosmic-button';
 import { RippleButton } from '../components/ui/ripple';
 import { DEMO_SALES_DATA, DEMO_VENTAS_RESUMEN } from '../lib/demoData';
@@ -435,38 +435,20 @@ export default function VentasPage({
       )}
 
       {/* ── KPI Cards ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        {kpiCards.map((card, i) => {
-          const [r, g, b] = hexToRgb(card.iconColor);
-          return (
-            <MagicCard key={i} gradientColor={`rgba(${r},${g},${b},0.06)`} className="cursor-default p-6">
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: i * 0.06, ease: 'easeOut' }}
-                className="flex flex-col gap-4"
-              >
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-lg"
-                  style={{ background: `rgba(${r},${g},${b},0.10)` }}
-                >
-                  <card.icon size={14} style={{ color: card.iconColor }}/>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.09em]" style={{ color: 'var(--text-3)' }}>
-                    {card.title}
-                  </p>
-                  <AnimatedCount
-                    value={card.value}
-                    prefix={card.prefix}
-                    className={card.large ? 'text-[34px] font-bold' : 'text-[28px] font-bold'}
-                    style={{ color: card.large ? card.iconColor : '#F8FAFC' }}
-                  />
-                </div>
-              </motion.div>
-            </MagicCard>
-          );
-        })}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpiCards.map((card, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: i * 0.06, ease: 'easeOut' }}
+            className="min-w-0"
+          >
+            <KpiCard title={card.title} icon={card.icon} iconColor={card.iconColor}>
+              <AnimatedCount value={card.value} prefix={card.prefix} />
+            </KpiCard>
+          </motion.div>
+        ))}
       </div>
 
       {/* ── Analytics Row ──────────────────────────────────────── */}

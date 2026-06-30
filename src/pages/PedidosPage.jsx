@@ -8,7 +8,7 @@ import {
   MoreVertical, Trash2, X, ShoppingCart, Clock, DollarSign
 } from 'lucide-react';
 import StatusBadge from '../components/ui/StatusBadge';
-import { MagicCard } from '../components/ui/magic-card';
+import { KpiCard } from '../components/ui/KpiCard';
 import { DEMO_PEDIDOS } from '../lib/demoData';
 import { RippleButton } from '../components/ui/ripple';
 
@@ -45,11 +45,6 @@ const rowVariants = {
     opacity: 1, y: 0,
     transition: { delay: i * 0.028, duration: 0.2, ease: [0.16, 1, 0.3, 1] },
   }),
-}
-
-// ── Hex → [r,g,b] ───────────────────────────────────────────────
-function hexToRgb(hex) {
-  return hex.slice(1).match(/.{2}/g).map(h => parseInt(h, 16))
 }
 
 export default function PedidosPage({
@@ -322,41 +317,19 @@ export default function PedidosPage({
         <SkeletonMetricGrid count={4} cols={4} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" />
       ) : null}
       <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${pedidosLoading ? 'hidden' : ''}`}>
-        {kpiCards.map((card, i) => {
-          const [r, g, b] = hexToRgb(card.iconColor)
-          return (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: i * 0.06, ease: 'easeOut' }}
-              className="relative min-w-0 flex flex-col gap-3.5"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '16px',
-                padding: '24px',
-                minHeight: '120px',
-              }}
-            >
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                style={{ background: `rgba(${r},${g},${b},0.12)` }}
-              >
-                <card.icon size={18} style={{ color: card.iconColor }} />
-              </div>
-              <div className="flex min-w-0 flex-col gap-1.5">
-                <p
-                  className="truncate uppercase"
-                  style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 500, letterSpacing: '1px' }}
-                >
-                  {card.label}
-                </p>
-                <AnimatedCount value={card.value} prefix={card.prefix} />
-              </div>
-            </motion.div>
-          )
-        })}
+        {kpiCards.map((card, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: i * 0.06, ease: 'easeOut' }}
+            className="min-w-0"
+          >
+            <KpiCard title={card.label} icon={card.icon} iconColor={card.iconColor}>
+              <AnimatedCount value={card.value} prefix={card.prefix} />
+            </KpiCard>
+          </motion.div>
+        ))}
       </div>
 
       {/* ── Vista Por Mesa ─────────────────────────────────────── */}
