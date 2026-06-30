@@ -571,7 +571,7 @@ const MenuPage = ({
               <label
                 htmlFor="producto-foto-input"
                 className="flex items-center gap-1.5 cursor-pointer transition-colors text-[13px] font-semibold"
-                style={{ color: color.purple }}
+                style={{ color: color.purple, minHeight: '36px' }}
               >
                 📷 {editProduct ? 'Cambiar foto' : 'Subir foto'}
               </label>
@@ -616,8 +616,8 @@ const MenuPage = ({
               <button
                 onClick={saveProducto}
                 disabled={!isFormValid || categorias.length === 0}
-                className="flex items-center gap-1.5 px-6 rounded-lg text-[15px] font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                style={{ background: color.purpleDark, color: '#fff', height: '44px', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
+                className="flex items-center gap-1.5 rounded-lg transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                style={{ background: color.purpleDark, color: '#fff', height: '44px', padding: '0 24px', fontSize: '15px', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
                 onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = color.purpleDeep; }}
                 onMouseLeave={e => { e.currentTarget.style.background = color.purpleDark; }}
               >
