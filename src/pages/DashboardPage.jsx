@@ -514,15 +514,15 @@ export default function DashboardPage({
         variants={stagger.item}
         initial="hidden"
         animate="show"
-        className="flex flex-col gap-1"
+        className="flex flex-col gap-0"
         style={{ background: CARD_BG, border: CARD_BORDER, borderRadius: "16px", padding: "24px" }}
       >
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--text-3)" }}>
               {t("activity.section_label", { ns: "dashboard" })}
             </p>
-            <h3 className="mt-0.5 text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>
+            <h3 className="mt-0.5" style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-1)" }}>
               {t("activity.title", { ns: "dashboard" })}
             </h3>
           </div>
@@ -539,42 +539,54 @@ export default function DashboardPage({
           {isLoading
             ? Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 px-1 py-3">
-                  <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
-                  <Skeleton className="h-3 flex-1" />
-                  <Skeleton className="h-3 w-12" />
+                  <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-2.5 w-20" />
+                  </div>
+                  <Skeleton className="h-3 w-14" />
                 </div>
               ))
             : displayPedidos.slice(0, 7).map((order, i) => {
                 const statusColor = ACTIVITY_STATUS_COLOR[order.estado] || "#9090B0"
+                const isLast = i >= Math.min(displayPedidos.length, 7) - 1
                 return (
                   <motion.div
                     key={order.id || i}
                     initial={{ opacity: 0, x: -4 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03, duration: 0.18 }}
-                    className="flex cursor-default items-center gap-3 rounded-lg px-2 py-3 transition-colors duration-150 hover:bg-white/[0.025]"
-                    style={{ borderBottom: i < Math.min(displayPedidos.length, 7) - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}
+                    className="flex cursor-default items-center gap-3 rounded-lg px-2 py-3 transition-colors duration-150 hover:bg-white/[0.03]"
+                    style={{ borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.06)" }}
                   >
-                    {/* Avatar circular */}
+                    {/* Avatar circular con color de estado */}
                     <div
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                      style={{ background: `${statusColor}1A` }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                      style={{ background: `${statusColor}1A`, border: `1px solid ${statusColor}25` }}
                     >
-                      <ShoppingBag size={14} style={{ color: statusColor }} />
+                      <ShoppingBag size={15} style={{ color: statusColor }} />
                     </div>
 
-                    {/* Nombre + descripción */}
+                    {/* Nombre + item */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>
-                        {order.cliente_nombre}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-[13px] font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
+                          {order.cliente_nombre || (order.mesa ? `Mesa ${order.mesa}` : "—")}
+                        </p>
+                        <span
+                          className="shrink-0 rounded-full px-1.5 py-[2px] text-[9px] font-bold uppercase"
+                          style={{ background: `${statusColor}18`, color: statusColor, letterSpacing: "0.04em" }}
+                        >
+                          {order.estado?.replace("_", " ")}
+                        </span>
+                      </div>
                       {order.item && (
-                        <p className="truncate text-[11px]" style={{ color: "var(--text-3)" }}>{order.item}</p>
+                        <p className="truncate text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>{order.item}</p>
                       )}
                     </div>
 
                     {/* Monto en verde */}
-                    <span className="shrink-0 text-[13px] font-bold tabular-nums" style={{ color: "#10B981" }}>
+                    <span className="shrink-0 text-[14px] font-bold tabular-nums" style={{ color: "#10B981" }}>
                       {formatCurrency(order.total || 0, i18n.language)}
                     </span>
                   </motion.div>
