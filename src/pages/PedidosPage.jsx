@@ -13,7 +13,7 @@ import { DEMO_PEDIDOS } from '../lib/demoData';
 import { RippleButton } from '../components/ui/ripple';
 
 // ── Animated numeric counter ────────────────────────────────────
-function AnimatedCount({ value, prefix = '' }) {
+function AnimatedCount({ value, prefix = '', style: styleProp = {} }) {
   const ref = useRef(null)
   useEffect(() => {
     const num = typeof value === 'number' ? value : parseInt(String(value).replace(/[^0-9]/g, ''), 10)
@@ -28,7 +28,11 @@ function AnimatedCount({ value, prefix = '' }) {
     return ctrl.stop
   }, [value, prefix])
   return (
-    <span ref={ref} className="text-[26px] font-bold tabular-nums leading-none" style={{ color: '#F8FAFC' }}>
+    <span
+      ref={ref}
+      className="tabular-nums leading-none"
+      style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text-1)', ...styleProp }}
+    >
       {prefix}{typeof value === 'number' ? value.toLocaleString('es-CL') : value}
     </span>
   )
@@ -315,40 +319,42 @@ export default function PedidosPage({
 
       {/* ── KPI Cards ──────────────────────────────────────────── */}
       {pedidosLoading ? (
-        <SkeletonMetricGrid count={4} cols={4} className="grid grid-cols-2 md:grid-cols-4" />
+        <SkeletonMetricGrid count={4} cols={4} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" />
       ) : null}
-      <div className={`grid grid-cols-2 md:grid-cols-4 gap-5 ${pedidosLoading ? 'hidden' : ''}`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${pedidosLoading ? 'hidden' : ''}`}>
         {kpiCards.map((card, i) => {
           const [r, g, b] = hexToRgb(card.iconColor)
           return (
-            <MagicCard
+            <motion.div
               key={i}
-              gradientColor={`rgba(${r},${g},${b},0.06)`}
-              className="cursor-default p-5"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: i * 0.06, ease: 'easeOut' }}
+              className="relative min-w-0 flex flex-col gap-3.5"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '16px',
+                padding: '24px',
+                minHeight: '120px',
+              }}
             >
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: i * 0.06, ease: 'easeOut' }}
-                className="flex flex-col gap-4"
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                style={{ background: `rgba(${r},${g},${b},0.12)` }}
               >
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-lg"
-                  style={{ background: `rgba(${r},${g},${b},0.10)` }}
+                <card.icon size={18} style={{ color: card.iconColor }} />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <p
+                  className="truncate uppercase"
+                  style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 500, letterSpacing: '1px' }}
                 >
-                  <card.icon size={14} style={{ color: card.iconColor }} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p
-                    className="text-[11px] font-medium uppercase tracking-[0.09em]"
-                    style={{ color: 'var(--text-3)' }}
-                  >
-                    {card.label}
-                  </p>
-                  <AnimatedCount value={card.value} prefix={card.prefix} />
-                </div>
-              </motion.div>
-            </MagicCard>
+                  {card.label}
+                </p>
+                <AnimatedCount value={card.value} prefix={card.prefix} />
+              </div>
+            </motion.div>
           )
         })}
       </div>
