@@ -122,16 +122,17 @@ const CategoryChip = memo(({ cat, count, isActive, canEdit, isAdmin, editCategor
   );
 });
 
-const ProductRow = memo(({ prod, onEdit, onDelete, canEdit }) => {
+const ProductRow = memo(({ prod, onEdit, onDelete, canEdit, isEven }) => {
   const st = stockStatus(prod.stock ?? 0);
+  const rowBg = isEven ? 'rgba(255,255,255,0.02)' : 'transparent';
 
   return (
     <motion.tr
       variants={rowAnim}
       className="group border-b transition-colors duration-150"
-      style={{ borderColor: 'rgba(255,255,255,0.04)' }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+      style={{ borderColor: 'rgba(255,255,255,0.04)', background: rowBg }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+      onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
     >
       {/* Foto */}
       <td className="px-5 py-3.5">
@@ -231,13 +232,13 @@ const ProductRow = memo(({ prod, onEdit, onDelete, canEdit }) => {
 
 // ─── Input / Select shared styles ─────────────────────────────────────────────
 const fieldStyle = {
-  background: surface.input,
-  border: `1px solid ${border.base}`,
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: radius.sm,
   color: text.primary,
   fontSize: '13px',
   height: '40px',
-  padding: '0 12px',
+  padding: '0 16px',
   outline: 'none',
   width: '100%',
   transition: 'border-color 150ms ease',
@@ -362,8 +363,8 @@ const MenuPage = ({
       {/* ── Categories Panel ── */}
       <motion.div
         variants={fadeUp}
-        className="rounded-2xl overflow-hidden"
-        style={{ background: surface.card, border: `1px solid ${border.base}` }}
+        className="rounded-xl overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
       >
         {/* Panel header */}
         <div
@@ -461,8 +462,8 @@ const MenuPage = ({
       <motion.div
         variants={fadeUp}
         layout
-        className="rounded-2xl overflow-hidden"
-        style={{ background: surface.card, border: `1px solid ${border.base}` }}
+        className="rounded-xl overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
       >
         <div
           className="flex items-center gap-2 px-5 py-3.5"
@@ -636,8 +637,8 @@ const MenuPage = ({
       {/* ── Products Table ── */}
       <motion.div
         variants={fadeUp}
-        className="rounded-2xl overflow-hidden"
-        style={{ background: surface.card, border: `1px solid ${border.base}` }}
+        className="rounded-xl overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
       >
         {/* Table header */}
         <div
@@ -751,13 +752,14 @@ const MenuPage = ({
               </thead>
               <motion.tbody variants={stagger} initial="hidden" animate="show">
                 <AnimatePresence mode="popLayout">
-                  {filteredProducts.map(p => (
+                  {filteredProducts.map((p, i) => (
                     <ProductRow
                       key={p.id}
                       prod={p}
                       onEdit={setEditProduct}
                       onDelete={deleteProducto}
                       canEdit={canEditMenu}
+                      isEven={i % 2 === 1}
                     />
                   ))}
                 </AnimatePresence>
