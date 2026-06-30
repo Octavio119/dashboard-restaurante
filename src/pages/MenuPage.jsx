@@ -310,6 +310,16 @@ const MenuPage = ({
     reader.readAsDataURL(file);
   }, [editProduct, setEditProduct, setNewProduct]);
 
+  const handleQuitarFoto = useCallback(() => {
+    if (editProduct) {
+      setEditProduct(prev => ({ ...prev, imagen_base64: null, imagen_url: '' }));
+    } else {
+      setNewProduct(prev => ({ ...prev, imagen_base64: null }));
+    }
+    const input = document.getElementById('producto-foto-input');
+    if (input) input.value = '';
+  }, [editProduct, setEditProduct, setNewProduct]);
+
   const fotoPreview = editProduct
     ? (editProduct.imagen_base64 || editProduct.imagen_url || null)
     : (newProduct.imagen_base64 || null);
@@ -552,27 +562,27 @@ const MenuPage = ({
           </div>
 
           {/* Foto del producto */}
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex items-start gap-4 mt-4">
             {fotoPreview ? (
               <img
                 src={fotoPreview}
                 alt="Preview"
-                className="w-[60px] h-[60px] rounded-full object-cover shrink-0"
+                className="w-[64px] h-[64px] rounded-xl object-cover shrink-0"
                 style={{ border: `1px solid ${border.base}` }}
               />
             ) : (
               <div
-                className="w-[60px] h-[60px] rounded-full flex items-center justify-center shrink-0 text-2xl"
+                className="w-[64px] h-[64px] rounded-xl flex items-center justify-center shrink-0 text-2xl"
                 style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${border.base}` }}
               >
                 🍽️
               </div>
             )}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <label
                 htmlFor="producto-foto-input"
                 className="flex items-center gap-1.5 cursor-pointer transition-colors text-[13px] font-semibold"
-                style={{ color: color.purple, minHeight: '36px' }}
+                style={{ color: color.purple, minHeight: '32px' }}
               >
                 📷 {editProduct ? 'Cambiar foto' : 'Subir foto'}
               </label>
@@ -583,9 +593,33 @@ const MenuPage = ({
                 hidden
                 onChange={handleImagenChange}
               />
-              <span className="text-[11px]" style={{ color: fotoPreview ? '#10B981' : text.muted }}>
-                {fotoPreview ? '✓ Se incluirá al guardar' : 'Opcional — JPG o PNG'}
-              </span>
+              {fotoPreview ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    className="transition-all duration-150 active:scale-95 cursor-pointer"
+                    style={{ background: '#10B981', color: '#fff', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#059669'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#10B981'; }}
+                  >
+                    ✓ Usar esta foto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleQuitarFoto}
+                    className="transition-all duration-150 active:scale-95 cursor-pointer"
+                    style={{ background: 'rgba(255,255,255,0.08)', color: '#9CA3AF', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, border: '1px solid rgba(255,255,255,0.12)', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.13)'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#9CA3AF'; }}
+                  >
+                    ✕ Quitar
+                  </button>
+                </div>
+              ) : (
+                <span className="text-[11px]" style={{ color: text.muted }}>
+                  Opcional — JPG o PNG
+                </span>
+              )}
             </div>
           </div>
 
