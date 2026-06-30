@@ -301,13 +301,13 @@ const MenuPage = ({
     const reader = new FileReader();
     reader.onload = () => {
       if (editProduct) {
-        setEditProduct({ ...editProduct, imagen_base64: reader.result });
+        setEditProduct(prev => ({ ...prev, imagen_base64: reader.result }));
       } else {
-        setNewProduct({ ...newProduct, imagen_base64: reader.result });
+        setNewProduct(prev => ({ ...prev, imagen_base64: reader.result }));
       }
     };
     reader.readAsDataURL(file);
-  }, [editProduct, newProduct, setEditProduct, setNewProduct]);
+  }, [editProduct, setEditProduct, setNewProduct]);
 
   const fotoPreview = editProduct
     ? (editProduct.imagen_base64 || editProduct.imagen_url || null)
@@ -582,8 +582,8 @@ const MenuPage = ({
                 hidden
                 onChange={handleImagenChange}
               />
-              <span className="text-[11px]" style={{ color: text.muted }}>
-                Opcional — JPG o PNG
+              <span className="text-[11px]" style={{ color: fotoPreview ? '#10B981' : text.muted }}>
+                {fotoPreview ? '✓ Se incluirá al guardar' : 'Opcional — JPG o PNG'}
               </span>
             </div>
           </div>
