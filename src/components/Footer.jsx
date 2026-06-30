@@ -69,6 +69,12 @@ export default function Footer() {
                 farahfo4715@gmail.com
               </a>
             </li>
+            <li>
+              <a href="mailto:infra@mastexo.com">
+                <EmailIcon />
+                Soporte: infra@mastexo.com
+              </a>
+            </li>
           </ul>
         </div>
 

@@ -52,7 +52,7 @@ const ConfiguracionPage = ({
         {(configTab === 'negocio' || configTab === 'facturacion') && (
           <button onClick={saveConfig} disabled={configSaving}
             className={`btn-primary flex items-center gap-2 transition-all active:scale-[0.97] ${configSaved ? '!bg-green-500 !text-white' : 'hover:opacity-90'} disabled:opacity-60`}
-            style={{ height: '40px', padding: '0 22px', fontSize: '14px', fontWeight: 500, borderRadius: '8px' }}>
+            style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, borderRadius: '8px', whiteSpace: 'nowrap' }}>
             <Save size={15}/> {configSaving ? 'Guardando…' : configSaved ? '¡Guardado!' : 'Guardar cambios'}
           </button>
         )}
@@ -70,13 +70,13 @@ const ConfiguracionPage = ({
           <button key={key} onClick={() => setConfigTab(key)}
             className="flex items-center gap-2 transition-all"
             style={{
-              fontSize: '14px', fontWeight: 600, height: '42px', padding: '0 20px', borderRadius: '8px',
+              fontSize: '14px', fontWeight: 600, height: '44px', padding: '0 20px', borderRadius: '8px',
               ...(configTab === key
-                ? { background: 'rgba(139,92,246,.12)', border: '1px solid rgba(139,92,246,.28)', color: '#C4B5FD' }
-                : { background: 'transparent', border: '1px solid transparent', color: '#52525B' })
+                ? { background: '#7C3AED', border: '1px solid transparent', color: '#fff' }
+                : { background: 'rgba(255,255,255,0.05)', border: '1px solid transparent', color: '#52525B' })
             }}
-            onMouseEnter={e => { if (configTab !== key) { e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.background = 'rgba(139,92,246,.05)'; } }}
-            onMouseLeave={e => { if (configTab !== key) { e.currentTarget.style.color = '#52525B'; e.currentTarget.style.background = 'transparent'; } }}
+            onMouseEnter={e => { if (configTab !== key) { e.currentTarget.style.color = '#A78BFA'; e.currentTarget.style.background = 'rgba(255,255,255,0.10)'; } }}
+            onMouseLeave={e => { if (configTab !== key) { e.currentTarget.style.color = '#52525B'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; } }}
           >
             <Icon size={15} />{label}
           </button>
@@ -380,7 +380,8 @@ const ConfiguracionPage = ({
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-bold text-zinc-300">Usuarios del sistema</h3>
             {user.rol === 'admin' && (
-              <button onClick={() => setUserFormOpen(v=>!v)} className="btn-primary flex items-center gap-2 text-sm">
+              <button onClick={() => setUserFormOpen(v=>!v)} className="btn-primary flex items-center gap-2"
+                style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 <Plus size={14}/> Agregar usuario
               </button>
             )}
@@ -412,8 +413,10 @@ const ConfiguracionPage = ({
                 </div>
               </div>
               <div className="flex gap-3">
-                <button onClick={() => { setUserFormOpen(false); setNewUser({nombre:'',email:'',password:'',rol:'staff'}); }} className="btn-ghost text-sm">Cancelar</button>
-                <button onClick={createUsuario} className="btn-primary text-sm">Crear usuario</button>
+                <button onClick={() => { setUserFormOpen(false); setNewUser({nombre:'',email:'',password:'',rol:'staff'}); }} className="btn-ghost"
+                  style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap' }}>Cancelar</button>
+                <button onClick={createUsuario} className="btn-primary"
+                  style={{ height: '44px', padding: '0 20px', fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap' }}>Crear usuario</button>
               </div>
             </div>
           )}
