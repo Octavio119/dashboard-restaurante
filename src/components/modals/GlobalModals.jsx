@@ -358,7 +358,7 @@ export default function GlobalModals({
             <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={() => setIsMovModalOpen(false)} className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.7)' }}/>
             <motion.div initial={{ opacity:0, scale:0.97, y:8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.97 }}
               transition={{ duration:0.2, ease:[0.16,1,0.3,1] }}
-              className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+              className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
               <div className="px-6 py-4 flex justify-between items-center" style={{ background: 'linear-gradient(135deg,#8B5CF6,#6D28D9)' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Registrar movimiento</h3>
                 <button onClick={() => setIsMovModalOpen(false)} className="text-white/60 hover:text-white"><X size={18}/></button>
