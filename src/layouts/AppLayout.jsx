@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Utensils, Calendar, Users, BarChart3, Settings, LogOut,
-  ChevronRight, Search, Bell, Menu, Package, ShoppingBag, Receipt,
+  ChevronRight, Search, Bell, Menu, Package, ShoppingBag, Receipt, HelpCircle,
 } from 'lucide-react';
 import SidebarItem from '../components/layout/SidebarItem';
 import UsageBanner from '../components/UsageBanner';
@@ -177,6 +177,13 @@ export default function AppLayout({
         </nav>
 
         <div className="border-t pt-3 flex flex-col gap-0.5" style={{ borderColor: 'rgba(255,255,255,0.055)' }}>
+          <SidebarItem
+            icon={HelpCircle}
+            label="Ayuda"
+            active={activeTab === 'Ayuda'}
+            collapsed={sidebarCollapsed}
+            onClick={() => { setActiveTab('Ayuda'); setSidebarOpen(false); }}
+          />
           <SidebarItem
             icon={Settings}
             label={t('nav.Configuración')}

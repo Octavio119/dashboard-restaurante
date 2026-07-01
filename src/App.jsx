@@ -29,6 +29,7 @@ import InventarioPage    from './pages/InventarioPage';
 import VentasPage        from './pages/VentasPage';
 import AnalyticsPage     from './pages/AnalyticsPage';
 import ConfiguracionPage from './pages/ConfiguracionPage';
+import AyudaPage         from './pages/AyudaPage';
 import Landing           from './pages/Landing';
 import Register          from './pages/Register';
 import Login             from './pages/Login';
@@ -350,6 +351,10 @@ const App = () => {
               analytics={vtas.analytics}
               analyticsError={vtas.analyticsError}
             />
+          )}
+
+          {nav.activeTab === 'Ayuda' && (
+            <AyudaPage />
           )}
 
           {nav.activeTab === 'Configuración' && (
